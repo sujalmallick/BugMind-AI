@@ -1,0 +1,44 @@
+# Python
+
+**pycache**/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+
+.venv/
+venv/
+env/
+
+# Environment Variables
+
+.env
+
+# IDE
+
+.vscode/
+.idea/
+
+# OS Files
+
+.DS_Store
+Thumbs.db
+
+# Pytest
+
+.pytest_cache/
+
+# Coverage
+
+.coverage
+htmlcov/
+
+# Build
+
+build/
+dist/
+*.egg-info/
+
+# Logs
+
+*.log
