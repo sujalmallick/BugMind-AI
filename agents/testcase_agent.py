@@ -1,12 +1,13 @@
 from utils import call_gemini
-
+import json
 
 def generate_test_cases_agent(
-    workflow: str,
-    observed_steps: list[str] | None = None
+    workflow,
+    modules,
+    critical_workflows,
+    high_risk_areas,
+    observed_steps
 ):
-
-    steps_section = ""
 
     if observed_steps:
 
@@ -18,10 +19,6 @@ def generate_test_cases_agent(
         steps_section = f"""
 Observed User Steps:
 {formatted_steps}
-
-Use these exact steps as the basis for generating test cases.
-
-Generate additional negative and edge case scenarios around these steps.
 """
 
     else:
@@ -29,56 +26,67 @@ Generate additional negative and edge case scenarios around these steps.
         steps_section = """
 No observed steps were provided.
 
-Generate high-level test cases.
-Clearly indicate where execution steps are assumed.
+Assume reasonable execution steps wherever necessary.
 """
 
     prompt = f"""
-You are an experienced QA Engineer.
+You are a Senior QA Engineer.
 
 Application Workflow:
 {workflow}
 
+Confirmed Modules:
+{", ".join(modules.get("confirmed_modules", []))}
+
+Critical Workflows:
+{", ".join(critical_workflows)}
+
+High Risk Areas:
+{", ".join(high_risk_areas)}
+
 {steps_section}
 
-Generate execution-ready manual test cases.
+Generate manual test cases.
 
-For each test case, use EXACTLY the following format:
+Return ONLY valid JSON.
 
-Test Case ID:
-Test Description:
-Test Objective:
-Preconditions:
-Test Steps:
-Input Data:
-Expected Results:
-Actual Results:
-Test Environment:
-Test Execution Status:
-Priority:
-Attachments:
-Test Case Author:Sujal
-Test Case Reviewer:
-Notes:
-Developer Remarks:
-Solved:
+Format:
 
-Requirements:
-- Generate functional, negative, and edge case scenarios.
-- Prioritize important user journeys first.
-- Leave the following fields blank:
-    Actual Results
-    Test Environment
-    Test Execution Status
-    Attachments
-    Test Case Author
-    Test Case Reviewer
-    Notes
-    Developer Remarks
-    Solved
-- Use concise language.
-- Keep steps clear and actionable.
-- Generate between 5 and 15 test cases.
+[
+    {{
+        "module":"",
+        "type":"",
+        "description":"",
+        "objective":"",
+        "preconditions":"",
+        "steps":[
+            ""
+        ],
+        "input_data":"",
+        "expected_result":"",
+        "priority":""
+    }}
+]
+
+Rules:
+
+- Cover every confirmed module.
+- Generate functional, negative and edge cases.
+- Do not return markdown.
+- Do not explain anything.
+- Return only JSON.
 """
 
-    return call_gemini(prompt)
+    response = call_gemini(prompt)
+    try:
+        cleaned = (
+            response
+            .replace("```json", "")
+            .replace("```", "")
+            .strip()
+        )
+        return json.loads(cleaned)
+    except Exception:
+        return{
+            "raw_response": response,
+        }

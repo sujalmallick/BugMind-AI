@@ -52,7 +52,8 @@ Rules:
             .strip()
         )
 
-        return json.loads(cleaned_response)
+        result= json.loads(cleaned_response)
+        return result
 
     except Exception:
 

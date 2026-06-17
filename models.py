@@ -12,12 +12,16 @@ class WorkflowInput(BaseModel):
 
 
 class WorkflowState(TypedDict):
-    workflow: str
 
+    # User Input
+    workflow: str
     observed_steps: list[str] | None
 
+    # Shared Agent Knowledge
     modules: dict
+    critical_workflows: list[str]
+    high_risk_areas: list[str]
 
+    # Agent Outputs
     checklist: str
-
     test_cases: str

@@ -10,36 +10,67 @@ from agents.testcase_agent import generate_test_cases_agent
 # Module Agent Node
 def module_node(state: WorkflowState):
 
+    module_data = identify_modules_agent(
+        state["workflow"]
+    )
+
     return {
-        "modules":
-        identify_modules_agent(
-            state["workflow"]
-        )
+
+        "modules": module_data,
+
+        "critical_workflows":
+            module_data.get(
+                "critical_workflows",
+                []
+            ),
+
+        "high_risk_areas":
+            module_data.get(
+                "high_risk_areas",
+                []
+            )
+
     }
 
 
 # Checklist Agent Node
 def checklist_node(state: WorkflowState):
 
+    checklist = generate_checklist_agent(
+
+        workflow=state["workflow"],
+
+        modules=state["modules"],
+
+        critical_workflows=state["critical_workflows"],
+
+        high_risk_areas=state["high_risk_areas"]
+
+    )
+
     return {
-        "checklist":
-        generate_checklist_agent(
-            state["workflow"]
-        )
+
+        "checklist": checklist
+
     }
-
-
 # Test Case Agent Node
 def test_case_node(state: WorkflowState):
 
     return {
-        "test_cases":
-        generate_test_cases_agent(
-            state["workflow"],
-            state.get("observed_steps")
+        "test_cases": generate_test_cases_agent(
+
+            workflow=state["workflow"],
+
+            modules=state["modules"],
+
+            critical_workflows=state["critical_workflows"],
+
+            high_risk_areas=state["high_risk_areas"],
+
+            observed_steps=state.get("observed_steps")
+
         )
     }
-
 
 # Build graph
 graph_builder = StateGraph(WorkflowState)

@@ -1,13 +1,32 @@
 from utils import call_gemini
 
 
-def generate_checklist_agent(workflow: str):
+def generate_checklist_agent(
+
+    workflow: str,
+
+    modules: dict,
+
+    critical_workflows: list,
+
+    high_risk_areas: list
+
+):
 
     prompt = f"""
 You are a senior QA engineer specializing in exploratory testing.
 
 Application Workflow:
 {workflow}
+
+Identified Modules:
+{modules}
+
+Critical Workflows:
+{critical_workflows}
+
+High Risk Areas:
+{high_risk_areas}
 
 Tasks:
 1. Identify all modules involved.
