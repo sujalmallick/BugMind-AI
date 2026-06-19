@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
-
+import { useNavigate } from "react-router-dom";
 export default function CommandPalette({ open, onClose, commands }) {
   const [query, setQuery] = useState('')
   const [highlighted, setHighlighted] = useState(0)
