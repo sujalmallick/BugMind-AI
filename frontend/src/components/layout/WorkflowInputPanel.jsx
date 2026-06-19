@@ -1,4 +1,4 @@
-import { Route, Pencil, Loader2 } from 'lucide-react'
+import { Route, Pencil, Loader2 } from "lucide-react";
 
 export default function WorkflowInputPanel({
   workflow,
@@ -14,83 +14,114 @@ export default function WorkflowInputPanel({
 }) {
   if (isCollapsed) {
     return (
-      <div className="flex items-center justify-between gap-3 border-b border-hairline bg-paper px-5 py-2.5">
-        <div className="flex min-w-0 items-center gap-2 text-[13px] text-muted">
-          <Route size={16} className="shrink-0 text-muted" />
-          <span className="truncate font-medium text-ink">{workflow}</span>
-          <span className="hidden shrink-0 sm:inline">· analyzed just now</span>
+      <div className="mt-4 rounded-xl border border-hairline bg-white px-6 py-4 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3 text-sm text-muted">
+            <Route size={17} className="shrink-0 text-signal" />
+
+            <span className="truncate font-medium text-ink">
+              {workflow}
+            </span>
+
+            <span className="hidden shrink-0 sm:inline">
+              • analyzed just now
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={onExpand}
+            className="flex shrink-0 items-center gap-2 rounded-lg border border-hairline bg-white px-3 py-2 text-sm text-muted transition-all duration-200 hover:border-signal hover:bg-paper hover:text-ink"
+          >
+            <Pencil size={14} />
+            Edit workflow
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onExpand}
-          className="flex shrink-0 items-center gap-1.5 rounded-md border border-hairline px-2.5 py-1 text-[12px] text-muted transition-colors hover:text-ink"
-        >
-          <Pencil size={13} />
-          Edit workflow
-        </button>
       </div>
-    )
+    );
   }
 
   return (
-    <div className={`border-b border-hairline px-5 py-5 ${hasResult ? '' : 'py-10'}`}>
-      <div className="mx-auto flex max-w-2xl flex-col gap-3">
+    <div className={`px-5 ${hasResult ? "py-6" : "py-10"}`}>
+      <div className="mx-auto max-w-5xl rounded-2xl border border-hairline bg-white p-8 shadow-sm">
         {!hasResult && (
-          <div className="mb-1 text-center">
-            <h1 className="text-[20px] font-semibold text-ink">Describe the workflow to test</h1>
-            <p className="mt-1 text-[13px] text-muted">
-              Paste the app flow and, optionally, the steps you observed while testing it.
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-bold text-ink">
+              Describe the workflow to test
+            </h1>
+
+            <p className="mt-3 text-sm leading-6 text-muted">
+              Paste your application's workflow and optionally include the
+              steps you observed while testing.
             </p>
           </div>
         )}
 
-        <div>
-          <label className="mb-1.5 block text-[13px] font-medium text-ink">Workflow</label>
-          <textarea
-            value={workflow}
-            onChange={(event) => onWorkflowChange(event.target.value)}
-            placeholder="Login → Dashboard → Messages"
-            rows={2}
-            className="w-full resize-none rounded-md border border-hairline bg-surface px-3 py-2 text-[14px] text-ink placeholder:text-muted focus:border-signal"
-          />
-        </div>
+        <div className="space-y-6">
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-ink">
+              Application Workflow
+            </label>
 
-        <div>
-          <label className="mb-1.5 block text-[13px] font-medium text-ink">
-            Observed steps <span className="text-muted">(optional)</span>
-          </label>
-          <textarea
-            value={observedSteps}
-            onChange={(event) => onObservedStepsChange(event.target.value)}
-            placeholder={'1. Open App\n2. Tap Login\n3. Enter Email'}
-            rows={4}
-            className="w-full resize-none rounded-md border border-hairline bg-surface px-3 py-2 font-mono text-[13px] text-ink placeholder:text-muted focus:border-signal"
-          />
-        </div>
+            <textarea
+              value={workflow}
+              onChange={(event) => onWorkflowChange(event.target.value)}
+              placeholder="Login → Dashboard → Messages"
+              rows={2}
+              className="w-full resize-none rounded-xl border border-hairline bg-surface px-4 py-3 text-sm text-ink placeholder:text-muted transition-all duration-200 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/10"
+            />
+          </div>
 
-        {error && <p className="text-[13px] text-flagged">{error}</p>}
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-ink">
+              Observed Steps
+              <span className="ml-1 text-xs font-normal text-muted">
+                (Optional)
+              </span>
+            </label>
 
-        <div className="flex items-center justify-end gap-2">
-          {hasResult && (
+            <textarea
+              value={observedSteps}
+              onChange={(event) => onObservedStepsChange(event.target.value)}
+              placeholder={"1. Open App\n2. Tap Login\n3. Enter Email"}
+              rows={4}
+              className="w-full resize-none rounded-xl border border-hairline bg-surface px-4 py-3 font-mono text-sm text-ink placeholder:text-muted transition-all duration-200 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/10"
+            />
+          </div>
+
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              {error}
+            </div>
+          )}
+<div className="mt-2 flex items-center justify-end gap-3">
+            {hasResult && (
+              <button
+                type="button"
+                onClick={onExpand}
+                className="rounded-lg border border-hairline bg-white px-4 py-2 text-sm text-muted transition-all duration-200 hover:border-signal hover:bg-paper hover:text-ink"
+              >
+                Cancel
+              </button>
+            )}
+
             <button
               type="button"
-              onClick={onExpand}
-              className="rounded-md border border-hairline px-3 py-2 text-[13px] text-muted hover:text-ink"
+              onClick={onAnalyze}
+              disabled={isAnalyzing}
+              className="flex items-center gap-2 rounded-lg bg-signal px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Cancel
+              {isAnalyzing && (
+                <Loader2 size={15} className="animate-spin" />
+              )}
+
+              {isAnalyzing
+                ? "Analyzing workflow..."
+                : "Analyze workflow"}
             </button>
-          )}
-          <button
-            type="button"
-            onClick={onAnalyze}
-            disabled={isAnalyzing}
-            className="flex items-center gap-2 rounded-md bg-signal px-4 py-2 text-[13px] font-medium text-white transition-opacity disabled:opacity-60"
-          >
-            {isAnalyzing && <Loader2 size={14} className="animate-spin" />}
-            {isAnalyzing ? 'Analyzing workflow…' : 'Analyze workflow'}
-          </button>
+          </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

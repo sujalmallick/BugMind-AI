@@ -45,9 +45,11 @@ export default function ModulesTab({ analysis, isLoading }) {
       </div>
     )
   }
+  
 
   return (
-    <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2">
+    
+    <div className="grid grid-cols-1 gap-5 p-6 sm:grid-cols-2">
       <Card icon={<ShieldCheck size={18} className="text-verified" />} title="Confirmed modules">
         <ChipRow items={analysis.confirmedModules} tone="verified" confidence="confirmed" />
       </Card>

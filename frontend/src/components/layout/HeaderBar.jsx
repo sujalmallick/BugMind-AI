@@ -13,26 +13,25 @@ export default function HeaderBar({
       : "Ctrl K";
 
   return (
-    <header className="flex items-center justify-between border-b border-hairline bg-white px-6 py-3">
+  <header className="sticky top-0 z-50 flex items-center justify-between border-b border-hairline bg-white px-6 py-4 shadow-sm">
       {/* Left */}
       <div className="flex items-center gap-3">
         <img
           src={favicon}
           alt="BugMind"
-          className="h-9 w-9 object-contain"
+          className="h-10 w-10 object-contain"
         />
 
         <img
           src={logo}
           alt="BugMind AI"
-          className="h-10 w-auto object-contain"
+          className="h-11 w-auto object-contain"
         />
       </div>
 
       {/* Right */}
       <div className="flex items-center gap-4 text-[13px] text-muted">
-        <span className="flex items-center gap-1.5">
-          <Circle
+<span className="flex items-center gap-2 rounded-full border border-hairline bg-paper px-3 py-1.5 text-[12px] font-medium">          <Circle
             size={8}
             className={
               connected
@@ -48,7 +47,7 @@ export default function HeaderBar({
         <button
           type="button"
           onClick={onOpenCommandPalette}
-          className="flex items-center gap-2 rounded-lg border border-hairline bg-white px-3 py-2 text-[13px] transition-all hover:border-signal hover:bg-paper hover:text-ink"
+         className="flex items-center gap-2 rounded-lg border border-hairline bg-surface px-3 py-2 text-[13px] font-medium shadow-sm transition-all duration-200 hover:border-signal hover:bg-paper hover:text-ink"
         >
           <Search size={15} />
 

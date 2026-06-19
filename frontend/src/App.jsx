@@ -195,9 +195,10 @@ function handleCopyIssueResult() {
   ]
 
   return (
-    <div className="flex min-h-screen flex-col font-sans text-ink">
+  <div className="min-h-screen bg-slate-50 font-sans text-ink">
       <HeaderBar connected onOpenCommandPalette={() => setCommandPaletteOpen(true)} />
 
+<div className="mx-auto max-w-7xl">
       <WorkflowInputPanel
         workflow={workflow}
         observedSteps={observedSteps}
@@ -210,7 +211,7 @@ function handleCopyIssueResult() {
         error={analysisError}
         hasResult={showWorkspace}
       />
-
+</div>
 {analysisStatus === "error" && (
   <main className="flex-1">
     <APIErrorCard
@@ -234,7 +235,7 @@ function handleCopyIssueResult() {
       />
     ) : (
       <>
-       <div className="border-b border-hairline bg-paper">
+     <div className="mt-6 rounded-xl border border-hairline bg-white shadow-sm">
   <button
     type="button"
     onClick={() => setShowSummary(true)}
@@ -249,8 +250,7 @@ function handleCopyIssueResult() {
     onChange={setActiveTab}
   />
 </div>
-
-        <main className="flex-1">
+<main className="mt-6 pb-10">
 
           {activeTab === "modules" && (
             <ModulesTab
