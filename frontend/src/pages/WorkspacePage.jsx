@@ -31,7 +31,8 @@ export default function WorkspacePage() {
   const { projectId } = useParams();
   const location = useLocation();
 const navigate = useNavigate();
-
+const [analysisMeta, setAnalysisMeta] = useState(null);
+const [analysisOutdated, setAnalysisOutdated] = useState(false);
 const isWorkspaceRoute =
   location.pathname.endsWith("/workspace");
   const { toasts, showToast } = useToasts()
@@ -98,6 +99,9 @@ useEffect(() => {
 
   setAnalysis(selectedProject.analysis || null);
 
+  setAnalysisMeta(
+  selectedProject.analysisMeta || null
+);
   setTestCases(
     selectedProject.testCases || []
   );
@@ -179,6 +183,21 @@ useEffect(() => {
   issueForm,
   projectId,
 ]);
+
+useEffect(() => {
+  if (!analysisMeta) {
+    setAnalysisOutdated(false);
+    return;
+  }
+
+  const changed =
+    workflow.trim() !==
+    analysisMeta.workflowSnapshot?.trim();
+
+  setAnalysisOutdated(changed);
+
+}, [workflow, analysisMeta]);
+
 
 
 
@@ -340,12 +359,14 @@ if (projectNotFound) {
   <div className="min-h-screen bg-slate-50 font-sans text-ink">
       <HeaderBar connected onOpenCommandPalette={() => setCommandPaletteOpen(true)} />
 
+
 <div className="mx-auto max-w-7xl">
       <WorkflowInputPanel
         workflow={workflow}
         observedSteps={observedSteps}
         onWorkflowChange={setWorkflow}
         onObservedStepsChange={setObservedSteps}
+        analysisOutdated={analysisOutdated}
         onAnalyze={handleAnalyze}
         isAnalyzing={isAnalyzing}
         isCollapsed={panelCollapsed && showWorkspace}

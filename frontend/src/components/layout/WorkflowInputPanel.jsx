@@ -11,6 +11,7 @@ export default function WorkflowInputPanel({
   onExpand,
   error,
   hasResult,
+  analysisOutdated,
 }) {
   if (isCollapsed) {
     return (
@@ -23,9 +24,16 @@ export default function WorkflowInputPanel({
               {workflow}
             </span>
 
-            <span className="hidden shrink-0 sm:inline">
-              • analyzed just now
-            </span>
+         {analysisOutdated ? (
+  <span className="hidden shrink-0 rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700 sm:inline">
+    Modified after last analysis
+  </span>
+) : (
+  <span className="hidden shrink-0 sm:inline">
+    • analyzed just now
+  </span>
+)}
+
           </div>
 
           <button
@@ -115,9 +123,11 @@ export default function WorkflowInputPanel({
                 <Loader2 size={15} className="animate-spin" />
               )}
 
-              {isAnalyzing
-                ? "Analyzing workflow..."
-                : "Analyze workflow"}
+            {isAnalyzing
+  ? "Analyzing workflow..."
+  : analysisOutdated
+  ? "Re-analyze Workflow"
+  : "Analyze Workflow"}
             </button>
           </div>
         </div>

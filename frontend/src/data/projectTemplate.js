@@ -16,6 +16,10 @@ export function createProject({
     observedSteps: "",
 
     analysis: null,
+    analysisMeta: {
+  workflowSnapshot: "",
+  analyzedAt: null,
+},
 
     testCases: [],
 
