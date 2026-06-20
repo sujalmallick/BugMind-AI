@@ -29,6 +29,7 @@ function SummaryCard({ icon, title, value }) {
 export default function AnalysisSummary({
   analysis,
   testCases,
+  testEnvironment,
   onContinue,
 }) {
   return (
@@ -76,7 +77,59 @@ export default function AnalysisSummary({
           />
 
         </div>
+{/* Test Environment */}
 
+<div className="mt-8 rounded-xl border border-hairline bg-paper p-5">
+
+  <h3 className="mb-4 text-base font-semibold text-ink">
+    Test Environment
+  </h3>
+
+  <div className="grid gap-4 sm:grid-cols-2">
+
+    <div>
+      <p className="text-xs text-muted">
+        Platform
+      </p>
+
+      <p className="mt-1 text-sm font-medium text-ink">
+        {testEnvironment.platform || "-"}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-xs text-muted">
+        OS Version
+      </p>
+
+      <p className="mt-1 text-sm font-medium text-ink">
+        {testEnvironment.osVersion || "-"}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-xs text-muted">
+        App Build
+      </p>
+
+      <p className="mt-1 text-sm font-medium text-ink">
+        {testEnvironment.build || "-"}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-xs text-muted">
+        Device
+      </p>
+
+      <p className="mt-1 text-sm font-medium text-ink">
+        {testEnvironment.device || "-"}
+      </p>
+    </div>
+
+  </div>
+
+</div>
         {/* Footer */}
 
         <div className="mt-8 flex items-center justify-between border-t border-hairline pt-6">

@@ -12,6 +12,8 @@ export default function WorkflowInputPanel({
   error,
   hasResult,
   analysisOutdated,
+ testEnvironment,
+onTestEnvironmentChange,
 }) {
   if (isCollapsed) {
     return (
@@ -79,7 +81,95 @@ export default function WorkflowInputPanel({
               className="w-full resize-none rounded-xl border border-hairline bg-surface px-4 py-3 text-sm text-ink placeholder:text-muted transition-all duration-200 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/10"
             />
           </div>
+<div>
+  <label className="mb-3 block text-sm font-semibold text-ink">
+    Test Environment
+  </label>
 
+  <div className="grid gap-4 sm:grid-cols-2">
+
+    <div>
+      <label className="mb-2 block text-xs font-medium text-muted">
+        Platform
+      </label>
+
+      <select
+        value={testEnvironment.platform}
+        onChange={(e) =>
+        onTestEnvironmentChange({
+  ...testEnvironment,
+  platform: e.target.value,
+})
+        }
+        className="w-full rounded-xl border border-hairline bg-surface px-4 py-3 text-sm transition-all duration-200 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/10"
+      >
+        <option value="">Select Platform</option>
+        <option value="Android">Android</option>
+        <option value="iOS">iOS</option>
+        <option value="Web">Web</option>
+        <option value="Desktop">Desktop</option>
+      </select>
+    </div>
+
+    <div>
+      <label className="mb-2 block text-xs font-medium text-muted">
+        OS Version
+      </label>
+
+      <input
+        type="text"
+        placeholder="Android 15"
+    value={testEnvironment.osVersion}
+        onChange={(e) =>
+      onTestEnvironmentChange({
+  ...testEnvironment,
+  osVersion: e.target.value,
+})
+        }
+        className="w-full rounded-xl border border-hairline bg-surface px-4 py-3 text-sm transition-all duration-200 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/10"
+      />
+    </div>
+
+    <div>
+      <label className="mb-2 block text-xs font-medium text-muted">
+        App Build
+      </label>
+
+      <input
+        type="text"
+        placeholder="1.4.2 (145)"
+    value={testEnvironment.build}
+        onChange={(e) =>
+       onTestEnvironmentChange({
+  ...testEnvironment,
+  build: e.target.value,
+})
+        }
+        className="w-full rounded-xl border border-hairline bg-surface px-4 py-3 text-sm transition-all duration-200 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/10"
+      />
+    </div>
+
+    <div>
+      <label className="mb-2 block text-xs font-medium text-muted">
+        Device
+      </label>
+
+      <input
+        type="text"
+        placeholder="Pixel 8 Pro"
+      value={testEnvironment.device}
+        onChange={(e) =>
+     onTestEnvironmentChange({
+  ...testEnvironment,
+  device: e.target.value,
+})
+        }
+        className="w-full rounded-xl border border-hairline bg-surface px-4 py-3 text-sm transition-all duration-200 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/10"
+      />
+    </div>
+
+  </div>
+</div>
           <div>
             <label className="mb-2 block text-sm font-semibold text-ink">
               Observed Steps

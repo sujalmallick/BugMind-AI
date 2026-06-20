@@ -42,6 +42,12 @@ const hasLoadedProject = useRef(false);
   // Workflow input + analysis
   const [workflow, setWorkflow] = useState('')
   const [observedSteps, setObservedSteps] = useState('')
+  const [testEnvironment, setTestEnvironment] = useState({
+  platform: "",
+  osVersion: "",
+  build: "",
+  device: "",
+});
   const [analysisStatus, setAnalysisStatus] = useState('idle') 
   // idle | loading | success | error
   const [analysisError, setAnalysisError] = useState(null)
@@ -96,7 +102,14 @@ useEffect(() => {
   // Restore workflow
   setWorkflow(selectedProject.workflow || "");
   setObservedSteps(selectedProject.observedSteps || "");
-
+setTestEnvironment(
+selectedProject.testEnvironment || {
+    platform: "",
+    osVersion: "",
+    build: "",
+    device: "",
+  }
+);
   // Restore analysis
   setAnalysisStatus(
     selectedProject.analysisStatus || "idle"
@@ -154,7 +167,7 @@ useEffect(() => {
   projectService.saveWorkspace(projectId, {
     workflow,
     observedSteps,
-   
+  testEnvironment,
 
     analysisStatus,
     analysis,
@@ -188,6 +201,7 @@ useEffect(() => {
   panelCollapsed,
   issueForm,
   projectId,
+  testEnvironment,
 ]);
 
 useEffect(() => {
@@ -343,10 +357,11 @@ function handleCopyIssueResult() {
 
   return (
   <div className="min-h-screen bg-slate-50 font-sans text-ink">
-    <HeaderBar
+  <HeaderBar
   connected
-  projectName={project?.name}
   onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+  projectName={project?.name}
+  updatedAt={project?.updatedAt}
 />
 
 
@@ -363,6 +378,7 @@ function handleCopyIssueResult() {
         onExpand={() => setPanelCollapsed(false)}
         error={analysisError}
         hasResult={showWorkspace}
+testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnvironment}
       />
 </div>
 {analysisStatus === "error" && (
@@ -382,13 +398,14 @@ function handleCopyIssueResult() {
   <>
     {/* ---------------- ANALYZE PAGE ---------------- */}
     {!isWorkspaceRoute ? (
-      <AnalysisSummary
-        analysis={analysis}
-        testCases={testCases}
-        onContinue={() =>
-          navigate(`/project/${projectId}/workspace`)
-        }
-      />
+    <AnalysisSummary
+  analysis={analysis}
+  testCases={testCases}
+  testEnvironment={testEnvironment}
+  onContinue={() =>
+    navigate(`/project/${projectId}/workspace`)
+  }
+/>
     ) : (
       <>
         {/* ---------------- WORKSPACE ---------------- */}

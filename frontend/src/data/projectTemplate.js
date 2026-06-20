@@ -21,6 +21,12 @@ export function createProject({
   workflowSnapshot: "",
   analyzedAt: null,
 },
+ testEnvironment: {
+    platform: "",
+    osVersion: "",
+    build: "",
+    device: "",
+},
 
     testCases: [],
 

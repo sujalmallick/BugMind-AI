@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { formatRelativeTime } from "../../utils/time";
 
 import {
   FolderOpen,
@@ -165,8 +166,7 @@ useEffect(() => {
       <div className="mt-5 flex items-center justify-between border-t border-hairline pt-4 text-xs text-muted">
         <div className="flex items-center gap-1.5">
           <Calendar size={13} />
-          Updated{" "}
-          {new Date(project.updatedAt).toLocaleDateString()}
+       Updated {formatRelativeTime(project.updatedAt)}
         </div>
 
         <span className="font-medium text-signal">

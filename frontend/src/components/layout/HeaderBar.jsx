@@ -1,6 +1,6 @@
 import { Search, Circle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
+import { formatRelativeTime } from "../../utils/time";
 import logo from "../../assets/bugmind2.png";
 import favicon from "../../assets/favicon.png";
 
@@ -8,6 +8,7 @@ export default function HeaderBar({
   connected = true,
   onOpenCommandPalette,
   projectName,
+    updatedAt,
 }) {
   const navigate = useNavigate();
 
@@ -50,7 +51,13 @@ export default function HeaderBar({
               </p>
 
               <p className="text-xs text-muted">
-                (Current Project)
+          <div className="mt-1 flex items-center gap-1.5 text-xs text-muted">
+  <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+
+  <span>
+    Updated {formatRelativeTime(updatedAt)}
+  </span>
+</div>
               </p>
             </div>
           </>
