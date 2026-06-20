@@ -1,7 +1,9 @@
+from datetime import datetime
+
 from sqlalchemy.orm import Session
-
 from database.models.project import Project
-
+from database.models.analysis import Analysis
+from database.models.test_case import TestCase
 from database.models.workspace import Workspace
 def create_project(
     db: Session,
@@ -33,7 +35,49 @@ def create_project(
 def get_all_projects(
     db: Session,
 ):
-    return db.query(Project).all()
+    projects = db.query(Project).all()
+
+    result = []
+
+    for project in projects:
+
+        workspace = project.workspace
+
+        module_count = 0
+        test_case_count = 0
+
+        if workspace:
+
+            test_case_count = len(
+                workspace.test_cases
+            )
+
+            if (
+                workspace.analysis
+                and workspace.analysis.result
+            ):
+                module_count = len(
+                    workspace.analysis.result.get(
+                        "confirmedModules",
+                        [],
+                    )
+                )
+
+        result.append(
+            {
+                "id": project.id,
+                "owner_id": project.owner_id,
+                "name": project.name,
+                "description": project.description,
+                "status": project.status,
+                "created_at": project.created_at,
+                "updated_at": project.updated_at,
+                "module_count": module_count,
+                "test_case_count": test_case_count,
+            }
+        )
+
+    return result
 
 def get_project_by_id(
     db: Session,
@@ -64,6 +108,7 @@ def update_project(
     project.name = name
     project.description = description
     project.status = status
+    project.updated_at = datetime.utcnow()
 
     db.commit()
     db.refresh(project)
@@ -87,3 +132,24 @@ def delete_project(
     db.commit()
 
     return {"message": "Project deleted successfully"}
+
+
+def touch_project(
+    db: Session,
+    project_id: int,
+):
+    project = (
+        db.query(Project)
+        .filter(Project.id == project_id)
+        .first()
+    )
+
+    if not project:
+        return None
+
+    project.updated_at = datetime.utcnow()
+
+    db.commit()
+    db.refresh(project)
+
+    return project

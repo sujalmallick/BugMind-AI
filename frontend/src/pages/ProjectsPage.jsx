@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { projectService } from "../services/projectService";
+import { touchProject } from "../services/projectApi";
 
 import ProjectsHeader from "../components/projects/ProjectsHeader";
 import ProjectGrid from "../components/projects/ProjectGrid";
@@ -10,6 +11,7 @@ import DeleteProjectModal from "../components/projects/DeleteProjectModal";
 
 import ToastStack from "../components/shared/ToastStack";
 import useToasts from "../components/shared/useToasts";
+import { parseTimestamp } from "../utils/time";
 
 import { useProjects } from "../hooks/useProjects";
 import { createProject } from "../data/projectTemplate";
@@ -89,8 +91,12 @@ function handleShare(project) {
       showToast("Failed to copy link.");
     });
 }
-function handleOpen(id) {
-  const project = projects.find((p) => p.id === id);
+async function handleOpen(id) {
+  await touchProject(id);
+
+  const project = projects.find(
+    (p) => p.id === id
+  );
 
   selectProject(id);
 
@@ -118,24 +124,24 @@ const filteredProjects = projects.filter((project) => {
 });
 
 const sortedProjects = [...filteredProjects].sort((a, b) => {
+  const bUpdated =
+    parseTimestamp(b.updatedAt)?.getTime() || 0;
+  const aUpdated =
+    parseTimestamp(a.updatedAt)?.getTime() || 0;
+  const bCreated =
+    parseTimestamp(b.createdAt)?.getTime() || 0;
+  const aCreated =
+    parseTimestamp(a.createdAt)?.getTime() || 0;
+
   switch (sortBy) {
     case "updated":
-      return (
-        new Date(b.updatedAt) -
-        new Date(a.updatedAt)
-      );
+      return bUpdated - aUpdated;
 
     case "newest":
-      return (
-        new Date(b.createdAt) -
-        new Date(a.createdAt)
-      );
+      return bCreated - aCreated;
 
     case "oldest":
-      return (
-        new Date(a.createdAt) -
-        new Date(b.createdAt)
-      );
+      return aCreated - bCreated;
 
     case "az":
       return a.name.localeCompare(b.name);

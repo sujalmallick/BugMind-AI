@@ -12,6 +12,7 @@ from services.project_service import (
     get_project_by_id,
      update_project,
       delete_project,
+      touch_project,
 )
 router = APIRouter(
     prefix="/projects",
@@ -67,6 +68,16 @@ def delete_existing_project(
     db: Session = Depends(get_db),
 ):
     return delete_project(
+        db=db,
+        project_id=project_id,
+    )
+
+@router.put("/{project_id}/touch")
+def touch_existing_project(
+    project_id: int,
+    db: Session = Depends(get_db),
+):
+    return touch_project(
         db=db,
         project_id=project_id,
     )

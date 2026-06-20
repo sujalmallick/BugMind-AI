@@ -21,8 +21,10 @@ import {
   saveAnalysis,
   getAnalysis,
 } from "../services/analysisApi";
-
-import { getProject } from "../services/projectApi";
+import {
+  getProject,
+  updateProject,
+} from "../services/projectApi";
 import {
   saveTestCases,
   getTestCases,
@@ -267,6 +269,7 @@ if (result.success === false) {
 
 setApiError(null)
 setAnalysis(result)
+
 await saveAnalysis(
   projectId,
   result
@@ -276,7 +279,16 @@ await saveTestCases(
   projectId,
   result.testCases
 );
+await updateProject(projectId, {
+  name: project.name,
+  description: project.description,
+  status: "Analyzed",
+});
 
+const updatedProject =
+  await getProject(projectId);
+
+setProject(updatedProject);
 setCheckedItems({})
 
 setAnalysisStatus("success")
@@ -445,9 +457,13 @@ function handleCopyIssueResult() {
 
   return (
   <div className="min-h-screen bg-slate-50 font-sans text-ink">
- <HeaderBar
+
+  
+<HeaderBar
   connected
   onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+  projectName={project?.name}
+  updatedAt={project?.updatedAt}
 />
 
 

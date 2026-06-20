@@ -40,13 +40,19 @@ useEffect(() => {
       handleClickOutside
     );
 }, []);
-
-  return (
-    <button
-      type="button"
-      onClick={() => onOpen(project.id)}
-      className="group w-full rounded-xl border border-hairline bg-white p-5 text-left shadow-sm transition hover:border-signal hover:shadow-md"
-    >
+return (
+  <div
+    role="button"
+    tabIndex={0}
+    onClick={() => onOpen(project.id)}
+    onKeyDown={(e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        onOpen(project.id);
+      }
+    }}
+    className="group w-full cursor-pointer rounded-xl border border-hairline bg-white p-5 text-left shadow-sm transition hover:border-signal hover:shadow-md"
+  >
       {/* Header */}
 
       <div className="flex items-start justify-between">
@@ -149,17 +155,17 @@ useEffect(() => {
 
       {/* Stats */}
 
-      <div className="mt-5 flex items-center gap-5 text-sm text-muted">
-        <div className="flex items-center gap-1.5">
-          <ClipboardList size={15} />
-          {project.testCases?.length ?? 0} Test Cases
-        </div>
+    <div className="mt-5 flex items-center gap-5 text-sm text-muted">
+  <div className="flex items-center gap-1.5">
+    <ClipboardList size={15} />
+    {project.testCaseCount ?? 0} Test Cases
+  </div>
 
-        <div className="flex items-center gap-1.5">
-          <Boxes size={15} />
-          {project.analysis?.confirmedModules?.length ?? 0} Modules
-        </div>
-      </div>
+  <div className="flex items-center gap-1.5">
+    <Boxes size={15} />
+    {project.moduleCount ?? 0} Modules
+  </div>
+</div>
 
       {/* Footer */}
 
@@ -173,6 +179,7 @@ useEffect(() => {
           Open
         </span>
       </div>
-    </button>
+       </div>
+   
   );
 }

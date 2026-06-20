@@ -26,8 +26,11 @@ useEffect(() => {
   });
 
   setProjects((prev) => [savedProject, ...prev]);
-
-  setCurrentProject(savedProject);
+setCurrentProject({
+  ...savedProject,
+  createdAt: savedProject.created_at,
+  updatedAt: savedProject.updated_at,
+});
 };
 
 const updateProject = async (updatedProject) => {

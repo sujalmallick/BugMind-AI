@@ -12,6 +12,8 @@ return data.map((project) => ({
   ...project,
   createdAt: project.created_at,
   updatedAt: project.updated_at,
+  moduleCount: project.module_count,
+  testCaseCount: project.test_case_count,
 }));
 }
 
@@ -80,4 +82,18 @@ export async function getProject(id) {
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   };
+}
+export async function touchProject(id) {
+  const response = await fetch(
+    `${API_BASE_URL}/projects/${id}/touch`,
+    {
+      method: "PUT",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to update project time");
+  }
+
+  return response.json();
 }

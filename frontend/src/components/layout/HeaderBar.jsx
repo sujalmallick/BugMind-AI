@@ -50,15 +50,15 @@ export default function HeaderBar({
                 {projectName}
               </p>
 
-              <p className="text-xs text-muted">
-          <div className="mt-1 flex items-center gap-1.5 text-xs text-muted">
+           <div className="mt-1 flex items-center gap-1.5 text-xs text-muted">
   <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
 
   <span>
     Updated {formatRelativeTime(updatedAt)}
   </span>
 </div>
-              </p>
+
+
             </div>
           </>
         )}

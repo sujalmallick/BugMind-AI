@@ -1,178 +1,143 @@
-# TestPilot AI
+# BugMind AI
 
-TestPilot AI is a **LangGraph-powered AI QA copilot** designed to assist manual testers during exploratory testing.
+BugMind AI is a full-stack QA copilot for exploratory testing.
 
-Given an application workflow, TestPilot AI identifies probable functional modules, highlights high-risk areas, generates exploratory testing checklists, and produces execution-ready manual test cases aligned with QA documentation practices.
+It takes a workflow description and observed steps, runs AI-driven analysis, and stores structured QA outputs (modules, checklist, test cases, issue analysis) in PostgreSQL so teams can continue work across sessions.
 
----
+## What It Does
 
-## Problem Statement
-
-During manual testing, testers often need to:
-
-* Understand the scope of testing from incomplete information.
-* Think of functional, negative, and edge-case scenarios.
-* Document structured test cases in spreadsheets.
-* Identify high-risk areas requiring additional attention.
-
-This process is time-consuming and heavily dependent on individual experience.
-
-TestPilot AI aims to **augment manual testers** by accelerating exploratory testing activities and generating structured QA artifacts from application workflows.
-
----
-
-## Features
-
-* Multi-agent architecture using **LangGraph**
-* Workflow-based module identification
-* Exploratory testing checklist generation
-* High-risk area identification
-* Manual test case generation
-* Support for **observed user steps**
-* FastAPI-based REST APIs
-* Gemini-powered reasoning engine
-* Modular and extensible project structure
-
----
-
-## Architecture
-
-```text
-User Workflow
-      ↓
-FastAPI Backend
-      ↓
-LangGraph Supervisor
-      ↓
-┌─────────────────────────┐
-│ Module Agent            │
-├─────────────────────────┤
-│ Checklist Agent         │
-├─────────────────────────┤
-│ Test Case Agent         │
-└─────────────────────────┘
-      ↓
-Google Gemini API
-```
-
----
+- Creates and manages testing projects
+- Captures workspace context (workflow, observed steps, environment)
+- Analyzes workflows using multi-agent reasoning
+- Generates modules, checklist items, and manual test cases
+- Supports issue classification from tester observations
+- Persists analysis/test cases/issues/workspaces in PostgreSQL
 
 ## Tech Stack
 
-* Python
-* FastAPI
-* LangGraph
-* Google Gemini API
-* Pydantic
-* Uvicorn
-* Python Dotenv
+- Frontend: React + Vite
+- Backend: FastAPI + SQLAlchemy
+- Database: PostgreSQL
+- Migrations: Alembic
+- AI orchestration: LangGraph + agent modules
 
----
-
-## Project Structure
+## High-Level Architecture
 
 ```text
-TestPilot AI/
-│
-├── agents/
-│   ├── checklist_agent.py
-│   ├── module_agent.py
-│   └── testcase_agent.py
-│
-├── graph.py
+React Frontend
+      |
+      v
+FastAPI Routes
+      |
+      v
+Service Layer
+      |
+      v
+SQLAlchemy Models + PostgreSQL
+      |
+      v
+LangGraph Supervisor + Agents
+```
+
+## Repository Layout
+
+```text
+BugMind Ai/
 ├── main.py
-├── models.py
-├── utils.py
+├── graph.py
+├── constants.py
 ├── requirements.txt
-├── .gitignore
-└── .env
+├── alembic.ini
+├── agents/
+├── routes/
+├── services/
+├── schemas/
+├── database/
+├── alembic/
+└── frontend/
 ```
 
----
+## Backend Structure
 
-## API Endpoints
+- `routes/`: API endpoints (`project`, `workspace`, `analysis`, `test_case`, `issue`)
+- `services/`: business logic for each domain
+- `schemas/`: Pydantic request/response contracts
+- `database/models/`: SQLAlchemy ORM models
+- `agents/`: AI agents used by graph flow
+- `alembic/versions/`: DB migration history
 
-### Generate Exploratory Checklist
+## Frontend Structure
 
-```http
-POST /generate-checklist
+- `frontend/src/pages/`: `ProjectsPage`, `WorkspacePage`
+- `frontend/src/components/`: layout, tabs, project cards, shared UI
+- `frontend/src/services/`: API clients for backend routes
+- `frontend/src/hooks/`: project/workspace state hooks
+- `frontend/src/utils/`: shared utilities (time formatting, exports)
+
+## Core Entities
+
+- `Project`: name, description, status, `created_at`, `updated_at`
+- `Workspace`: workflow + observed test context
+- `Analysis`: generated AI output
+- `TestCase`: structured manual test cases
+- `Issue`: classified bug/observation outputs
+
+## Project Timestamp Behavior
+
+Project timestamps are persisted in PostgreSQL and returned by backend APIs.
+
+- `updated_at` changes whenever a project is updated/touched
+- Frontend maps API fields to camelCase (`updated_at` -> `updatedAt`)
+- Relative time labels in project cards/header are computed in UI
+
+Important:
+- Backend datetime values may arrive as UTC strings without explicit timezone suffix.
+- Frontend timestamp parsing normalizes these values as UTC before computing relative time, preventing fixed offset bugs (for example, always showing `5-6 hours ago`).
+
+## Local Development
+
+### 1) Backend
+
+Install Python dependencies:
+
+```bash
+pip install -r requirements.txt
 ```
 
----
-
-### Identify Modules
-
-```http
-POST /identify-modules
-```
-
----
-
-### Generate Manual Test Cases
-
-```http
-POST /generate-test-cases
-```
-
----
-
-### Analyze Workflow (LangGraph Supervisor)
-
-```http
-POST /analyze-workflow
-```
-
----
-
-## Example Request
-
-```json
-{
-    "workflow": "Login → Dashboard → Messages",
-    "observed_steps": [
-        "Open app",
-        "Tap Login",
-        "Enter email",
-        "Enter password",
-        "Tap Sign In"
-    ]
-}
-```
-
-### Run the Application
+Run API server:
 
 ```bash
 uvicorn main:app --reload
 ```
 
----
+### 2) Frontend
 
-## Limitations
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-* Functional modules are **inferred from the provided workflow** and may not represent the complete application architecture.
-* Generated execution steps may contain assumptions if observed user steps are not provided.
-* Output quality depends on the completeness and accuracy of the supplied workflow.
-* Gemini API usage is subject to rate limits and quota restrictions.
+### 3) Database Migrations
 
----
+```bash
+alembic upgrade head
+```
 
-## Future Enhancements
+## Expected Workflow
 
-* CSV export for direct Google Sheets integration
-* Requirement document ingestion
-* APK-assisted workflow extraction
-* Additional QA agents for bug report generation
-* Support for multiple LLM providers (OpenAI, Ollama, etc.)
-* Persistent storage of generated QA artifacts
+1. Create/open a project
+2. Enter workflow and observed steps
+3. Run analysis
+4. Review modules/checklist/test cases
+5. Classify issues and track progress
+6. Re-open project later with persisted state
 
----
+## Notes
 
-## Disclaimer
-
-TestPilot AI is designed to **assist manual testers**, not replace them. Human validation remains essential to ensure complete test coverage and domain-specific accuracy.
-
----
+- AI output quality depends on workflow clarity and detail.
+- Manual validation is still required for final QA sign-off.
 
 ## Author
 
-Developed by **Sujal** as part of exploring the intersection of **Software Testing, LLMs, and Agentic AI**.
+Developed by Sujal.
