@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useWorkspace } from "../hooks/useWorkspace";
 import HeaderBar from "../components/layout/HeaderBar";
 import WorkflowInputPanel from "../components/layout/WorkflowInputPanel";
 import TabBar from "../components/layout/TabBar";
@@ -15,8 +16,23 @@ import TestCasesTab from "../components/tabs/TestCasesTab";
 import IssueAnalysisTab from "../components/tabs/IssueAnalysisTab";
 import TrackerTab from "../components/tabs/TrackerTab";
 import { analyzeWorkflow, classifyIssue } from "../api/TestPilotApi";
-import { projectService } from "../services/projectService";
 import { useRef } from "react";
+import {
+  saveAnalysis,
+  getAnalysis,
+} from "../services/analysisApi";
+
+import { getProject } from "../services/projectApi";
+import {
+  saveTestCases,
+  getTestCases,
+} from "../services/testCaseApi";
+import {
+  saveIssue,
+  getIssues,
+} from "../services/issueApi";
+
+
 
 const TABS = [
   { key: 'modules', label: 'Modules' },
@@ -33,11 +49,41 @@ export default function WorkspacePage() {
 const navigate = useNavigate();
 const [analysisMeta, setAnalysisMeta] = useState(null);
 const [analysisOutdated, setAnalysisOutdated] = useState(false);
+const {
+  workspace,
+  loading: workspaceLoading,
+  save: saveWorkspace,
+} = useWorkspace(projectId);
+
 const isWorkspaceRoute =
   location.pathname.endsWith("/workspace");
+ 
   const { toasts, showToast } = useToasts()
-const [project, setProject] = useState(null);
+  useEffect(() => {
+
+  async function loadProject() {
+
+    try {
+
+      const data =
+        await getProject(projectId);
+
+      setProject(data);
+
+    } catch (err) {
+
+      console.error(err);
+
+    }
+
+  }
+
+  loadProject();
+
+}, [projectId]);
+
 const hasLoadedProject = useRef(false);
+const [project, setProject] = useState(null);
 
   // Workflow input + analysis
   const [workflow, setWorkflow] = useState('')
@@ -64,6 +110,7 @@ const hasLoadedProject = useRef(false);
   const [issueStatus, setIssueStatus] = useState('idle')
   const [issueError, setIssueError] = useState(null)
   const [issueResult, setIssueResult] = useState(null)
+  const [issueHistory, setIssueHistory] = useState([]);
 
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   
@@ -81,126 +128,108 @@ const hasLoadedProject = useRef(false);
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-
-
 useEffect(() => {
-  const selectedProject = projectService.getById(projectId);
 
-  if (!selectedProject) {
-  navigate("/", {
-    replace: true,
-    state: {
-      deleted: true,
-    },
-  });
+  async function loadWorkspaceData() {
 
-  return;
+   if (!workspace) return;
+
+    setWorkflow(workspace.workflow || "");
+    setObservedSteps(workspace.observed_steps || "");
+
+    setTestEnvironment({
+      platform: workspace.platform || "",
+      osVersion: workspace.os_version || "",
+      build: workspace.build || "",
+      device: workspace.device || "",
+    });
+
+    try {
+
+      const analysisData =
+        await getAnalysis(projectId);
+
+      if (analysisData?.result) {
+
+        setAnalysis(analysisData.result);
+
+        try {
+  const cases =
+  await getTestCases(projectId);
+
+setTestCases(
+  cases.map(tc => ({
+    id: tc.test_case_id,
+    description: tc.description,
+    module: tc.module,
+    category: tc.category,
+    priority: tc.priority,
+    status: tc.status,
+    preconditions: tc.preconditions,
+    steps: tc.steps,
+    expectedResult: tc.expected_result,
+    actualResult: tc.actual_result,
+    notes: tc.notes,
+  }))
+);
+
+} catch (e) {
+  console.log("No saved test cases.");
+}
+try {
+
+  const issues =
+    await getIssues(projectId);
+
+  setIssueHistory(issues);
+
+} catch (e) {
+
+  console.log("No saved issues.");
+
 }
 
-  setProject(selectedProject);
 
-  // Restore workflow
-  setWorkflow(selectedProject.workflow || "");
-  setObservedSteps(selectedProject.observedSteps || "");
-setTestEnvironment(
-selectedProject.testEnvironment || {
-    platform: "",
-    osVersion: "",
-    build: "",
-    device: "",
-  }
-);
-  // Restore analysis
-  setAnalysisStatus(
-    selectedProject.analysisStatus || "idle"
-  );
+        setAnalysisStatus("success");
 
-  setAnalysis(selectedProject.analysis || null);
+      }
 
-  setAnalysisMeta(
-  selectedProject.analysisMeta || null
-);
-  setTestCases(
-    selectedProject.testCases || []
-  );
+    } catch (error) {
 
-  // Restore UI state
-  setCheckedItems(
-    selectedProject.checkedItems || {}
-  );
+      console.log("No saved analysis found.");
 
-  setActiveTab(
-    selectedProject.activeTab || "modules"
-  );
-
-  setPanelCollapsed(
-    selectedProject.panelCollapsed ?? false
-  );
-
-  setIssueForm(
-    selectedProject.issueForm || EMPTY_ISSUE_FORM
-  );
-
-  // Decide whether to show Summary or Workspace
-  if (selectedProject.analysisStatus === "success") {
-
-    if (location.pathname.endsWith("/workspace")) {
-      setShowSummary(false);
-    } else {
-      setShowSummary(true);
     }
 
-  } else {
-    setShowSummary(false);
+
   }
 
-  // Mark project as fully restored
-  hasLoadedProject.current = true;
+  loadWorkspaceData();
 
-}, [projectId, location.pathname]);
-
-
+}, [workspace,projectId]);
 
 useEffect(() => {
-  if (!hasLoadedProject.current || !projectId) return;
+  if (!workspace) return;
 
-  projectService.saveWorkspace(projectId, {
-    workflow,
-    observedSteps,
-  testEnvironment,
+  const timer = setTimeout(async () => {
+    try {
+      await saveWorkspace({
+        workflow,
+        observed_steps: observedSteps,
+        platform: testEnvironment.platform,
+        os_version: testEnvironment.osVersion,
+        build: testEnvironment.build,
+        device: testEnvironment.device,
+      });
+    } catch (err) {
+      console.error("Workspace save failed:", err);
+    }
+  }, 600);
 
-    analysisStatus,
-    analysis,
-
-    testCases,
-
-    checkedItems,
-
-    activeTab,
-
-    showSummary,
-
-    panelCollapsed,
-
-    issueForm,
-
-    issueHistory: project?.issueHistory || [],
-
-    tracker: project?.tracker || [],
-  });
+  return () => clearTimeout(timer);
 
 }, [
   workflow,
   observedSteps,
-  analysisStatus,
-  analysis,
-  testCases,
-  checkedItems,
-  activeTab,
-  showSummary,
-  panelCollapsed,
-  issueForm,
-  projectId,
   testEnvironment,
 ]);
 
@@ -238,7 +267,16 @@ if (result.success === false) {
 
 setApiError(null)
 setAnalysis(result)
+await saveAnalysis(
+  projectId,
+  result
+);
 setTestCases(result.testCases)
+await saveTestCases(
+  projectId,
+  result.testCases
+);
+
 setCheckedItems({})
 
 setAnalysisStatus("success")
@@ -246,10 +284,14 @@ setPanelCollapsed(true);
 setActiveTab("modules");
 
 showToast("Workflow analyzed successfully!");
-projectService.update(projectId, {
-  ...project,
-  status: "Analyzed",
-});
+
+
+// projectService.update(projectId, {
+//   ...project,
+//   status: "Analyzed",
+// });
+// TODO: Replace with API
+
 navigate(`/project/${projectId}/workspace`);
 
     } catch (error) {
@@ -258,11 +300,31 @@ navigate(`/project/${projectId}/workspace`);
     }
   }
 
-  function handleStatusChange(id, status) {
-    setTestCases((current) => current.map((tc) => (tc.id === id ? { ...tc, status } : tc)))
-    showToast(`${id} marked ${status}`)
+async function handleStatusChange(id, status) {
+
+  const updated = testCases.map((tc) =>
+    tc.id === id
+      ? { ...tc, status }
+      : tc
+  );
+
+  setTestCases(updated);
+
+  try {
+
+    await saveTestCases(
+      projectId,
+      updated
+    );
+
+  } catch (err) {
+
+    console.error(err);
+
   }
 
+  showToast(`${id} marked ${status}`);
+}
   function handleToggleChecklistItem(id) {
     setCheckedItems((current) => ({ ...current, [id]: !current[id] }))
   }
@@ -307,9 +369,35 @@ async function handleGenerateIssue() {
       return
     }
 
-    setIssueResult(result)
-    setIssueStatus("success")
-    showToast("Issue analysis completed!")
+   setIssueResult(result);
+
+await saveIssue(
+  projectId,
+  {
+    test_case_id: issueForm.observation,
+    bug_id:
+      `BUG-${Date.now()}`,
+    title:
+      result.title || "Untitled Bug",
+    description:
+      issueForm.observation,
+    severity:
+      result.severity,
+    priority:
+      result.priority,
+    status: "Open",
+    reproduction_steps:
+      issueForm.observation,
+    expected_result:
+      issueForm.expected,
+    actual_result:
+      issueForm.actual,
+  }
+);
+
+setIssueStatus("success");
+
+showToast("Issue analysis completed!");
 
   } catch (error) {
 
@@ -357,11 +445,9 @@ function handleCopyIssueResult() {
 
   return (
   <div className="min-h-screen bg-slate-50 font-sans text-ink">
-  <HeaderBar
+ <HeaderBar
   connected
   onOpenCommandPalette={() => setCommandPaletteOpen(true)}
-  projectName={project?.name}
-  updatedAt={project?.updatedAt}
 />
 
 

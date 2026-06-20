@@ -1,51 +1,74 @@
 import { useEffect, useState } from "react";
-import { projectService } from "../services/projectService";
+import {
+  getProjects,
+  createProject as createProjectApi,
+  updateProject as updateProjectApi,
+  deleteProject as deleteProjectApi,
+} from "../services/projectApi";
 
 export function useProjects() {
   const [projects, setProjects] = useState([]);
   const [currentProject, setCurrentProject] = useState(null);
 
-  useEffect(() => {
-    setProjects(projectService.getAll());
-  }, []);
+useEffect(() => {
+  async function loadProjects() {
+    const data = await getProjects();
+    setProjects(data);
+  }
 
-  const createProject = (project) => {
-    const updated = [project, ...projects];
+  loadProjects();
+}, []);
 
-    setProjects(updated);
+  const createProject = async (project) => {
+  const savedProject = await createProjectApi({
+    name: project.name,
+    description: project.description,
+  });
 
-    projectService.saveAll(updated);
+  setProjects((prev) => [savedProject, ...prev]);
 
-    setCurrentProject(project);
-  };
+  setCurrentProject(savedProject);
+};
 
-  const updateProject = (updatedProject) => {
-    const updated = projects.map((project) =>
-      project.id === updatedProject.id
-        ? updatedProject
+const updateProject = async (updatedProject) => {
+  const savedProject =
+    await updateProjectApi(
+      updatedProject.id,
+      {
+        name: updatedProject.name,
+        description: updatedProject.description,
+        status: updatedProject.status || "Draft",
+      }
+    );
+
+  setProjects((prev) =>
+    prev.map((project) =>
+      project.id === savedProject.id
+        ? {
+            ...savedProject,
+            createdAt: savedProject.created_at,
+            updatedAt: savedProject.updated_at,
+          }
         : project
-    );
+    )
+  );
 
-    setProjects(updated);
+  setCurrentProject(savedProject);
+};
 
-    projectService.saveAll(updated);
+const deleteProject = async (id) => {
+  await deleteProjectApi(id);
 
-    setCurrentProject(updatedProject);
-  };
-
-  const deleteProject = (id) => {
-    const updated = projects.filter(
+  setProjects((prev) =>
+    prev.filter(
       (project) => project.id !== id
-    );
+    )
+  );
 
-    setProjects(updated);
-
-    projectService.saveAll(updated);
-
-    if (currentProject?.id === id) {
-      setCurrentProject(null);
-    }
-  };
+  if (currentProject?.id === id) {
+    setCurrentProject(null);
+  }
+};
 
   const selectProject = (id) => {
     const project = projects.find(

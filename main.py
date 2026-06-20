@@ -1,9 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from routes.workspace import router as workspace_router
 from models import WorkflowInput, IssueInput
 from graph import workflow_graph
 from agents.issue_agent import analyze_issue_agent
+from routes.project import router as project_router
+from routes.analysis import router as analysis_router
+from routes.test_case import router as test_case_router
+from routes.issue import router as issue_router
 
 app = FastAPI()
 
@@ -16,6 +20,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(project_router)
+app.include_router(workspace_router)
+app.include_router(analysis_router)
+app.include_router(test_case_router)
+app.include_router(issue_router)
 
 @app.post("/analyze-workflow")
 def analyze_workflow(data: WorkflowInput):

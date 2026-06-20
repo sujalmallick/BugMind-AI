@@ -44,38 +44,39 @@ const [sortBy, setSortBy] = useState("updated");
     });
   }, [location, navigate, showToast]);
 
-  function handleCreate(data) {
+  async function handleCreate(data) {
     const project = createProject(data);
 
-    addProject(project);
+    await addProject(project);
 
     showToast("Project created successfully!");
 
     setShowModal(false);
   }
 
-  function handleRename(data) {
-    const updatedProject = {
-      ...editingProject,
-      name: data.name,
-      description: data.description,
-      updatedAt: new Date().toISOString(),
-    };
+  async function handleRename(data) {
+  const updatedProject = {
+    ...editingProject,
+    name: data.name,
+    description: data.description,
+    updatedAt: new Date().toISOString(),
+  };
 
-    updateProject(updatedProject);
+  await updateProject(updatedProject);
 
-    showToast("Project renamed successfully!");
+  showToast("Project renamed successfully!");
 
-    setEditingProject(null);
-  }
+  setEditingProject(null);
+}
 
-  function handleDelete(id) {
-    deleteProject(id);
+  async function handleDelete(id) {
+  await deleteProject(id);
 
-    showToast("Project deleted successfully!");
+  showToast("Project deleted successfully!");
 
-    setDeletingProject(null);
-  }
+  setDeletingProject(null);
+}
+
 function handleShare(project) {
   const shareUrl = `${window.location.origin}/project/${project.id}`;
 
@@ -88,17 +89,17 @@ function handleShare(project) {
       showToast("Failed to copy link.");
     });
 }
-  function handleOpen(id) {
-    const project = projectService.getById(id);
+function handleOpen(id) {
+  const project = projects.find((p) => p.id === id);
 
-    selectProject(id);
+  selectProject(id);
 
-    if (project?.analysis) {
-      navigate(`/project/${id}/workspace`);
-    } else {
-      navigate(`/project/${id}`);
-    }
+  if (project?.analysis) {
+    navigate(`/project/${id}/workspace`);
+  } else {
+    navigate(`/project/${id}`);
   }
+}
 const filteredProjects = projects.filter((project) => {
   switch (filterBy) {
     case "draft":
