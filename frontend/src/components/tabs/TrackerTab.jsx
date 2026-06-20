@@ -5,7 +5,7 @@ import {
   Ban,
   ClipboardList,
   Search,
-    Download,
+  Download,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import EmptyState from "../shared/EmptyState";
@@ -14,13 +14,13 @@ import { exportTestCasesCSV } from "../../lib/exportCSV";
 
 function MetricCard({ icon, label, value, tone }) {
   return (
-    <div className="rounded-xl border border-hairline bg-surface p-5 shadow-sm">
-      <div className="mb-3 flex items-center gap-2 text-sm text-muted">
+    <div className="rounded-xl border border-hairline bg-surface p-4 shadow-sm">
+      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
         {icon}
         <span>{label}</span>
       </div>
 
-      <p className={`text-3xl font-semibold ${tone}`}>{value}</p>
+      <p className={`text-3xl font-semibold leading-none ${tone}`}>{value}</p>
     </div>
   );
 }
@@ -30,12 +30,12 @@ export default function TrackerTab({
   onStatusChange,
   onJumpToIssue,
   showToast,
-}){
+}) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-const [priorityFilter, setPriorityFilter] = useState("all");
-const [selectedRows, setSelectedRows] = useState([]);
-const [bulkAction, setBulkAction] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [bulkAction, setBulkAction] = useState("");
   const hasTestCases = testCases.length > 0;
 
   const counts = useMemo(() => {
@@ -127,92 +127,83 @@ const [bulkAction, setBulkAction] = useState("");
         }
       });
     }
-    // Priority Filter
-if (priorityFilter !== "all") {
-  filtered = filtered.filter((tc) => {
-    const priority = (tc.priority || "").toLowerCase().trim();
+    if (priorityFilter !== "all") {
+      filtered = filtered.filter((tc) => {
+        const priority = (tc.priority || "").toLowerCase().trim();
 
-    return priority === priorityFilter;
-  });
-}
+        return priority === priorityFilter;
+      });
+    }
 
     return filtered;
   }, [search, statusFilter, priorityFilter, testCases]);
+
   const toggleRow = (id) => {
-  setSelectedRows((prev) =>
-    prev.includes(id)
-      ? prev.filter((rowId) => rowId !== id)
-      : [...prev, id]
-  );
-};
+    setSelectedRows((prev) =>
+      prev.includes(id)
+        ? prev.filter((rowId) => rowId !== id)
+        : [...prev, id]
+    );
+  };
 
-const toggleAll = () => {
-  if (selectedRows.length === filteredTestCases.length) {
+  const toggleAll = () => {
+    if (selectedRows.length === filteredTestCases.length) {
+      setSelectedRows([]);
+    } else {
+      setSelectedRows(filteredTestCases.map((tc) => tc.id));
+    }
+  };
+
+  const applyBulkAction = () => {
+    if (!bulkAction) return;
+
+    selectedRows.forEach((id) => {
+      onStatusChange(id, bulkAction);
+    });
+
     setSelectedRows([]);
-  } else {
-    setSelectedRows(filteredTestCases.map((tc) => tc.id));
-  }
-};
+    setBulkAction("");
+  };
 
-const applyBulkAction = () => {
-  if (!bulkAction) return;
+  const statusChips = [
+    ["all", "All"],
+    ["passed", "Passed"],
+    ["failed", "Failed"],
+    ["blocked", "Blocked"],
+    ["pending", "Not Executed"],
+  ];
 
-  selectedRows.forEach((id) => {
-    onStatusChange(id, bulkAction);
-  });
-
-  setSelectedRows([]);
-  setBulkAction("");
-};
-const exportCSV = () => {
-  const rows = filteredTestCases.map((tc) => ({
-    ID: tc.id,
-    Description: tc.description,
-    Module: tc.module,
-    Category: tc.category,
-    Priority: tc.priority,
-    Status: tc.status,
-  }));
-
-  if (rows.length === 0) return;
-
-  const headers = Object.keys(rows[0]);
-
-  const csv = [
-    headers.join(","),
-    ...rows.map((row) =>
-      headers
-        .map((field) => `"${String(row[field] ?? "").replace(/"/g, '""')}"`)
-        .join(",")
-    ),
-  ].join("\n");
-
-  const blob = new Blob([csv], {
-    type: "text/csv;charset=utf-8;",
-  });
-
-  const url = URL.createObjectURL(blob);
-
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `BugMind_TestCases_${new Date()
-    .toISOString()
-    .slice(0, 10)}.csv`;
-
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-
-  URL.revokeObjectURL(url);
-};
-
-
+  const priorityChips = [
+    ["all", "All"],
+    ["high", "High"],
+    ["medium", "Medium"],
+    ["low", "Low"],
+  ];
 
   return (
-    <div className="p-6">
-      {/* Summary */}
+    <div className="rounded-2xl border border-hairline bg-white p-5 shadow-sm md:p-6">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-ink">Execution Tracker</h3>
+          <p className="mt-1 text-xs text-muted">Monitor status progress and update test outcomes in bulk.</p>
+        </div>
 
-      <div className="grid gap-4 md:grid-cols-5">
+        <button
+          onClick={() => {
+            exportTestCasesCSV(
+              filteredTestCases,
+              "BugMind_Tracker"
+            );
+            showToast("Tracker exported successfully!");
+          }}
+          className="inline-flex items-center gap-1.5 self-start rounded-lg border border-hairline bg-surface px-3 py-2 text-xs font-semibold text-ink shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-signal hover:bg-paper hover:text-signal"
+        >
+          <Download size={14} />
+          Export CSV
+        </button>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-5">
         <MetricCard
           icon={<ClipboardList size={18} />}
           label="Total Tests"
@@ -249,9 +240,7 @@ const exportCSV = () => {
         />
       </div>
 
-      {/* Progress */}
-
-      <div className="mt-8 rounded-xl border border-hairline bg-surface p-5">
+      <div className="mt-5 rounded-xl border border-hairline bg-surface p-5">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-ink">
             Execution Progress
@@ -276,221 +265,155 @@ const exportCSV = () => {
         </p>
       </div>
 
-      {/* Search */}
-
       {hasTestCases && (
         <>
-          <div className="mt-8 flex items-center gap-3">
+          <div className="mt-5 rounded-xl border border-hairline bg-paper p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="relative w-full lg:max-w-xl">
+                <Search
+                  size={16}
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+                />
 
-  <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by ID, description, module or status..."
+                  className="w-full rounded-lg border border-hairline bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-signal"
+                />
+              </div>
 
-    <Search
-      size={18}
-      className="absolute left-4 top-1/2 -translate-y-1/2 text-muted"
-    />
+              <p className="text-xs text-muted">
+                Showing <b>{filteredTestCases.length}</b> of <b>{counts.total}</b> test cases
+              </p>
+            </div>
 
-    <input
-      type="text"
-      value={search}
-      onChange={(e) => setSearch(e.target.value)}
-      placeholder="Search by ID, description or module..."
-      className="w-full rounded-xl border border-hairline bg-surface py-3 pl-11 pr-4 text-sm outline-none focus:border-signal"
-    />
+            <div className="mt-4 flex flex-wrap gap-2">
+              {statusChips.map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() => setStatusFilter(value)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                    statusFilter === value
+                      ? "border-signal bg-signal text-white"
+                      : "border-hairline bg-white text-muted hover:border-signal hover:text-ink"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
 
-  </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-muted">Priority</span>
+              {priorityChips.map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() => setPriorityFilter(value)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                    priorityFilter === value
+                      ? "border-signal bg-signal text-white"
+                      : "border-hairline bg-white text-muted hover:border-signal hover:text-ink"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
 
-  <button
-    onClick={() =>{
-  exportTestCasesCSV(
-    filteredTestCases,
-    "BugMind_Tracker"
-  );
-   showToast("Tracker exported successfully!");
-}
-}
-   className="flex items-center gap-1.5 rounded-md border border-hairline bg-surface px-2.5 py-1.5 text-[12px] font-medium text-ink transition-all duration-200 hover:border-signal hover:bg-paper hover:text-signal"
-  >
-    <Download size={18} />
-    Export CSV
-  </button>
-
-</div>
-
-          {/* Status Chips */}
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {[
-              ["all", "All"],
-              ["passed", "Passed"],
-              ["failed", "Failed"],
-              ["blocked", "Blocked"],
-              ["pending", "Not Executed"],
-            ].map(([value, label]) => (
-              <button
-                key={value}
-                onClick={() => setStatusFilter(value)}
-                className={`rounded-full border px-4 py-2 text-sm transition ${
-                  statusFilter === value
-                    ? "border-signal bg-signal text-white"
-                    : "border-hairline bg-surface hover:border-signal hover:text-signal"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+              {(statusFilter !== "all" || priorityFilter !== "all") && (
+                <button
+                  onClick={() => {
+                    setStatusFilter("all");
+                    setPriorityFilter("all");
+                  }}
+                  className="ml-1 text-xs font-semibold text-signal hover:underline"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
           </div>
 
-            {/* Priority Chips */}
-
-<div className="mt-4 flex flex-wrap gap-2">
-
-  <span className="mr-2 flex items-center text-sm font-medium text-muted">
-    Priority
-  </span>
-
-  {[
-    ["all", "All"],
-    ["high", "High"],
-    ["medium", "Medium"],
-    ["low", "Low"],
-  ].map(([value, label]) => (
-
-    <button
-      key={value}
-      onClick={() => setPriorityFilter(value)}
-      className={`rounded-full border px-4 py-2 text-sm transition ${
-        priorityFilter === value
-          ? "border-signal bg-signal text-white"
-          : "border-hairline bg-surface hover:border-signal hover:text-signal"
-      }`}
-    >
-      {label}
-    </button>
-
-  ))}
-
-</div>
-
-          <div className="mb-3 mt-5 flex items-center justify-between">
-            <p className="text-sm text-muted">
-              Showing <b>{filteredTestCases.length}</b> of{" "}
-              <b>{counts.total}</b> test cases
-            </p>
-
-          {(statusFilter !== "all" || priorityFilter !== "all") && (
-              <button
-               onClick={() => {
-  setStatusFilter("all");
-  setPriorityFilter("all");
-}}
-                className="text-sm text-signal hover:underline"
-              >
-                Clear Filter
-              </button>
-            )}
-          </div>
         </>
       )}
 
-      {/* Table */}
-
       {!hasTestCases ? (
-        <div className="mt-8">
+        <div className="mt-5">
           <EmptyState
             title="Nothing to track yet"
             description="Execute some test cases to populate the tracker."
           />
         </div>
       ) : (
+        <div className="mt-5">
+          {selectedRows.length > 0 && (
+            <div className="mb-4 flex flex-col gap-3 rounded-xl border border-hairline bg-paper p-4 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-sm font-medium text-ink">
+                {selectedRows.length} test case(s) selected
+              </span>
 
+              <div className="flex items-center gap-2">
+                <select
+                  value={bulkAction}
+                  onChange={(e) => setBulkAction(e.target.value)}
+                  className="rounded-lg border border-hairline bg-white px-3 py-2 text-sm"
+                >
+                  <option value="">Bulk Action</option>
+                  <option value="pass">Mark Passed</option>
+                  <option value="fail">Mark Failed</option>
+                  <option value="blocked">Mark Blocked</option>
+                  <option value="pending">Mark Not Executed</option>
+                </select>
 
-        <div className="mt-6">
+                <button
+                  onClick={applyBulkAction}
+                  disabled={!bulkAction}
+                  className="rounded-lg bg-signal px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95 disabled:opacity-50"
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          )}
 
-  {selectedRows.length > 0 && (
+          {filteredTestCases.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-hairline bg-surface py-14 text-center">
+              <Search
+                size={38}
+                className="mx-auto mb-4 text-muted"
+              />
 
-    <div className="mb-4 flex items-center justify-between rounded-xl border border-hairline bg-surface p-4">
+              <h3 className="text-lg font-semibold text-ink">
+                No test cases found
+              </h3>
 
-      <span className="text-sm font-medium">
-        {selectedRows.length} test case(s) selected
-      </span>
+              <p className="mt-2 text-sm text-muted">
+                Try changing your search or clear the applied filters.
+              </p>
 
-      <div className="flex items-center gap-3">
-
-        <select
-          value={bulkAction}
-          onChange={(e) => setBulkAction(e.target.value)}
-          className="rounded-lg border border-hairline bg-surface px-3 py-2 text-sm"
-        >
-          <option value="">Bulk Action</option>
-          <option value="pass">Mark Passed</option>
-          <option value="fail">Mark Failed</option>
-          <option value="blocked">Mark Blocked</option>
-          <option value="pending">Mark Not Executed</option>
-        </select>
-
-        <button
-          onClick={applyBulkAction}
-          disabled={!bulkAction}
-          className="rounded-lg bg-signal px-4 py-2 text-sm text-white disabled:opacity-50"
-        >
-          Apply
-        </button>
-
-      </div>
-
-    </div>
-
-  )}
-  
-  
-
- {filteredTestCases.length === 0 ? (
-
-  <div className="rounded-xl border border-dashed border-hairline bg-surface py-16 text-center">
-
-    <Search
-      size={42}
-      className="mx-auto mb-4 text-muted"
-    />
-
-    <h3 className="text-lg font-semibold text-ink">
-      No test cases found
-    </h3>
-
-    <p className="mt-2 text-sm text-muted">
-      Try changing your search or clear the applied filters.
-    </p>
-
-    <button
-      onClick={() => {
-        setSearch("");
-        setStatusFilter("all");
-        setPriorityFilter("all");
-      }}
-      className="mt-5 rounded-lg bg-signal px-5 py-2 text-sm text-white"
-    >
-      Clear Filters
-    </button>
-
-  </div>
-
-) : (
-
-<TrackerTable
-    testCases={filteredTestCases}
-    onStatusChange={onStatusChange}
-    onJumpToIssue={onJumpToIssue}
-    selectedRows={selectedRows}
-    onToggleRow={toggleRow}
-    onToggleAll={toggleAll}
-  />
-
-)}
-
-</div>
-
-
-
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setStatusFilter("all");
+                  setPriorityFilter("all");
+                }}
+                className="mt-5 rounded-lg bg-signal px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95"
+              >
+                Clear Filters
+              </button>
+            </div>
+          ) : (
+            <TrackerTable
+              testCases={filteredTestCases}
+              onStatusChange={onStatusChange}
+              onJumpToIssue={onJumpToIssue}
+              selectedRows={selectedRows}
+              onToggleRow={toggleRow}
+              onToggleAll={toggleAll}
+            />
+          )}
+        </div>
       )}
     </div>
   );

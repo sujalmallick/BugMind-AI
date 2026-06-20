@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useWorkspace } from "../hooks/useWorkspace";
 import HeaderBar from "../components/layout/HeaderBar";
+import AppFooter from "../components/layout/AppFooter";
 import WorkflowInputPanel from "../components/layout/WorkflowInputPanel";
 import TabBar from "../components/layout/TabBar";
 import CommandPalette from "../components/layout/CommandPalette";
@@ -456,7 +457,7 @@ function handleCopyIssueResult() {
   ]
 
   return (
-  <div className="min-h-screen bg-slate-50 font-sans text-ink">
+  <div className="workspace-atmosphere min-h-screen font-sans text-ink">
 
   
 <HeaderBar
@@ -467,7 +468,7 @@ function handleCopyIssueResult() {
 />
 
 
-<div className="mx-auto max-w-7xl">
+<div className="mx-auto max-w-7xl px-4 sm:px-8">
       <WorkflowInputPanel
         workflow={workflow}
         observedSteps={observedSteps}
@@ -511,27 +512,31 @@ testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnviron
     ) : (
       <>
         {/* ---------------- WORKSPACE ---------------- */}
-        <div className="mt-6 rounded-xl border border-hairline bg-white shadow-sm">
+        <div className="mt-6 rounded-2xl border border-hairline bg-white p-2 shadow-sm sm:p-3">
+          <div className="mb-1 flex items-center justify-between gap-2 px-2 pt-1">
+            <button
+              type="button"
+              onClick={() =>
+                navigate(`/project/${projectId}`)
+              }
+              className="rounded-lg border border-hairline bg-paper px-3 py-1.5 text-xs font-semibold text-muted transition hover:border-signal hover:text-ink"
+            >
+              Back to Summary
+            </button>
 
-          <button
-            type="button"
-            onClick={() =>
-              navigate(`/project/${projectId}`)
-            }
-            className="px-5 py-3 text-sm font-medium text-signal transition hover:text-ink"
-          >
-            ← Analysis Summary
-          </button>
+            <span className="hidden text-xs font-semibold uppercase tracking-wide text-muted sm:inline">
+              Workspace Tabs
+            </span>
+          </div>
 
           <TabBar
             tabs={tabsWithCounts}
             activeTab={activeTab}
             onChange={setActiveTab}
           />
-
         </div>
 
-        <main className="mt-6 pb-10">
+        <main className="mt-5 pb-10">
 
           {activeTab === "modules" && (
             <ModulesTab
@@ -585,6 +590,8 @@ testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnviron
     )}
   </>
 )}
+
+      <AppFooter />
 
       <CommandPalette open={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} commands={commands} />
       <ToastStack toasts={toasts} />

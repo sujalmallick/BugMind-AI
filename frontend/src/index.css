@@ -38,6 +38,228 @@ body {
   outline-offset: 1px;
 }
 
+.projects-atmosphere {
+  position: relative;
+  isolation: isolate;
+}
+
+.projects-atmosphere::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(
+      circle at 12% 10%,
+      rgba(52, 84, 209, 0.1),
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 88% 16%,
+      rgba(26, 127, 90, 0.1),
+      transparent 44%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(250, 250, 249, 0.96) 100%
+    );
+}
+
+.workspace-atmosphere {
+  position: relative;
+  isolation: isolate;
+}
+
+.workspace-atmosphere::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(
+      circle at 8% 12%,
+      rgba(52, 84, 209, 0.08),
+      transparent 42%
+    ),
+    radial-gradient(
+      circle at 88% 20%,
+      rgba(184, 134, 11, 0.08),
+      transparent 42%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(250, 250, 249, 0.98) 100%
+    );
+}
+
+.dashboard-stat-card {
+  border: 1px solid var(--color-hairline);
+  border-radius: 0.85rem;
+  background: #ffffff;
+  padding: 1rem;
+  box-shadow: 0 6px 20px rgba(20, 23, 31, 0.05);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.dashboard-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(20, 23, 31, 0.08);
+}
+
+.dashboard-stat-total {
+  border-color: #d6dff7;
+  background: linear-gradient(
+    180deg,
+    #f7f9ff 0%,
+    #ffffff 100%
+  );
+}
+
+.dashboard-stat-analyzed {
+  border-color: #cfe9de;
+  background: linear-gradient(
+    180deg,
+    #effaf5 0%,
+    #ffffff 100%
+  );
+}
+
+.dashboard-stat-draft {
+  border-color: #f0dfb7;
+  background: linear-gradient(
+    180deg,
+    #fff9ec 0%,
+    #ffffff 100%
+  );
+}
+
+.dashboard-stat-stale {
+  border-color: #f2d0ca;
+  background: linear-gradient(
+    180deg,
+    #fff3f1 0%,
+    #ffffff 100%
+  );
+}
+
+.dashboard-stat-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.dashboard-stat-icon {
+  opacity: 0.82;
+}
+
+.dashboard-stat-value {
+  margin-top: 0.3rem;
+  font-size: 1.8rem;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.dashboard-stat-subtext {
+  margin-top: 0.45rem;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+@keyframes statCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dashboard-stat-enter {
+  opacity: 0;
+  animation: statCardEnter 0.42s ease forwards;
+}
+
+.dashboard-stat-enter.delay-1 {
+  animation-delay: 90ms;
+}
+
+.dashboard-stat-enter.delay-2 {
+  animation-delay: 170ms;
+}
+
+.dashboard-stat-enter.delay-3 {
+  animation-delay: 240ms;
+}
+
+/* Gentle premium glow behind hero sections */
+.hero-glow {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.hero-glow::before {
+  content: "";
+  position: absolute;
+  inset: -28% -16% auto -16%;
+  height: 125%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      56% 44% at 15% 18%,
+      rgba(52, 84, 209, 0.18),
+      rgba(52, 84, 209, 0) 72%
+    ),
+    radial-gradient(
+      50% 42% at 86% 24%,
+      rgba(79, 70, 229, 0.14),
+      rgba(79, 70, 229, 0) 74%
+    ),
+    radial-gradient(
+      46% 38% at 52% 90%,
+      rgba(56, 189, 248, 0.1),
+      rgba(56, 189, 248, 0) 78%
+    );
+  filter: blur(110px);
+  opacity: 0.42;
+  transform: translate3d(0, 0, 0) scale(1.03);
+  animation: heroGlowFlow 34s ease-in-out infinite alternate;
+}
+
+.hero-glow-soft::before {
+  opacity: 0.3;
+  filter: blur(120px);
+}
+
+@keyframes heroGlowFlow {
+  0% {
+    transform: translate3d(-1%, -1%, 0) scale(1.03);
+  }
+  50% {
+    transform: translate3d(1.2%, -0.3%, 0) scale(1.06);
+  }
+  100% {
+    transform: translate3d(-0.7%, 1.1%, 0) scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-glow::before {
+    animation: none;
+  }
+}
+
 /* compact scrollbars for the dense tables */
 .scroll-thin::-webkit-scrollbar {
   height: 6px;

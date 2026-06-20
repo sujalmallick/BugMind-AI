@@ -10,10 +10,10 @@ export default function TrackerTable({
   onToggleAll,
 }) {
   return (
-    <div className="scroll-thin overflow-x-auto rounded-lg border border-hairline">
-      <table className="w-full min-w-[900px] text-left text-[13px]">
+    <div className="scroll-thin overflow-x-auto rounded-xl border border-hairline bg-white">
+      <table className="w-full min-w-225 text-left text-[13px]">
         <thead>
-          <tr className="border-b border-hairline bg-paper text-[12px] text-muted">
+          <tr className="border-b border-hairline bg-paper text-[11px] uppercase tracking-wide text-muted">
             <th className="w-10 px-3 py-2.5">
               <input
                 type="checkbox"
@@ -40,9 +40,9 @@ export default function TrackerTable({
           {testCases.map((testCase) => (
             <tr
               key={testCase.id}
-              className={`border-b border-hairline last:border-0 hover:bg-paper ${
+              className={`border-b border-hairline last:border-0 hover:bg-paper/70 ${
                 selectedRows.includes(testCase.id)
-                  ? "bg-blue-50"
+                  ? "bg-signal-soft"
                   : ""
               }`}
             >

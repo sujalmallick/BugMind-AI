@@ -4,22 +4,23 @@ import {
   FileText,
   TriangleAlert,
   ArrowRight,
+  ShieldCheck,
 } from "lucide-react";
 
 function SummaryCard({ icon, title, value }) {
   return (
     <div className="rounded-xl border border-hairline bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between">
         <span className="text-muted">
           {icon}
         </span>
 
-        <span className="text-3xl font-semibold text-ink">
+        <span className="text-3xl font-semibold leading-none text-ink">
           {value}
         </span>
       </div>
 
-      <p className="text-sm font-medium text-muted">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted">
         {title}
       </p>
     </div>
@@ -33,24 +34,37 @@ export default function AnalysisSummary({
   onContinue,
 }) {
   return (
-    <div className="mx-auto max-w-7xl px-6 py-8">
-      <div className="rounded-2xl border border-hairline bg-white p-8 shadow-sm">
+    <div className="mx-auto max-w-7xl px-6 py-8 sm:px-8">
+      <div className="rounded-2xl border border-hairline bg-white p-6 shadow-sm md:p-8">
 
-        {/* Heading */}
+        <div className="hero-glow rounded-2xl border border-hairline bg-linear-to-r from-white via-sky-50 to-emerald-50 p-5 md:p-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                <ShieldCheck size={14} />
+                Analysis Complete
+              </p>
 
-        <div className="mb-8 border-b border-hairline pb-6">
-          <h1 className="text-3xl font-semibold text-ink">
-            Analysis Complete
-          </h1>
+              <h1 className="mt-3 text-2xl font-semibold text-ink md:text-3xl">
+                Your workflow is now execution ready.
+              </h1>
 
-          <p className="mt-2 text-sm text-muted">
-            Your workflow has been analyzed successfully. 
-          </p>
+              <p className="mt-2 text-sm text-muted">
+                Review the generated QA artifacts below and continue into workspace execution.
+              </p>
+            </div>
+
+            <button
+              onClick={onContinue}
+              className="inline-flex items-center gap-2 self-start rounded-lg bg-signal px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            >
+              Open Workspace
+              <ArrowRight size={16} />
+            </button>
+          </div>
         </div>
 
-        {/* Metrics */}
-
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 
           <SummaryCard
             icon={<Boxes size={20} />}
@@ -77,75 +91,40 @@ export default function AnalysisSummary({
           />
 
         </div>
-{/* Test Environment */}
+        <div className="mt-6 rounded-xl border border-hairline bg-paper p-5 md:p-6">
+          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">
+            Test Environment
+          </h3>
 
-<div className="mt-8 rounded-xl border border-hairline bg-paper p-5">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-lg border border-hairline bg-white p-3">
+              <p className="text-xs font-medium text-muted">Platform</p>
+              <p className="mt-1 text-sm font-semibold text-ink">
+                {testEnvironment.platform || "-"}
+              </p>
+            </div>
 
-  <h3 className="mb-4 text-base font-semibold text-ink">
-    Test Environment
-  </h3>
+            <div className="rounded-lg border border-hairline bg-white p-3">
+              <p className="text-xs font-medium text-muted">OS Version</p>
+              <p className="mt-1 text-sm font-semibold text-ink">
+                {testEnvironment.osVersion || "-"}
+              </p>
+            </div>
 
-  <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-lg border border-hairline bg-white p-3">
+              <p className="text-xs font-medium text-muted">App Build</p>
+              <p className="mt-1 text-sm font-semibold text-ink">
+                {testEnvironment.build || "-"}
+              </p>
+            </div>
 
-    <div>
-      <p className="text-xs text-muted">
-        Platform
-      </p>
-
-      <p className="mt-1 text-sm font-medium text-ink">
-        {testEnvironment.platform || "-"}
-      </p>
-    </div>
-
-    <div>
-      <p className="text-xs text-muted">
-        OS Version
-      </p>
-
-      <p className="mt-1 text-sm font-medium text-ink">
-        {testEnvironment.osVersion || "-"}
-      </p>
-    </div>
-
-    <div>
-      <p className="text-xs text-muted">
-        App Build
-      </p>
-
-      <p className="mt-1 text-sm font-medium text-ink">
-        {testEnvironment.build || "-"}
-      </p>
-    </div>
-
-    <div>
-      <p className="text-xs text-muted">
-        Device
-      </p>
-
-      <p className="mt-1 text-sm font-medium text-ink">
-        {testEnvironment.device || "-"}
-      </p>
-    </div>
-
-  </div>
-
-</div>
-        {/* Footer */}
-
-        <div className="mt-8 flex items-center justify-between border-t border-hairline pt-6">
-
-          <p className="text-sm text-muted">
-            Everything is ready for execution.
-          </p>
-
-          <button
-            onClick={onContinue}
-            className="flex items-center gap-2 rounded-lg bg-signal px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
-          >
-            Open Workspace
-            <ArrowRight size={16} />
-          </button>
-
+            <div className="rounded-lg border border-hairline bg-white p-3">
+              <p className="text-xs font-medium text-muted">Device</p>
+              <p className="mt-1 text-sm font-semibold text-ink">
+                {testEnvironment.device || "-"}
+              </p>
+            </div>
+          </div>
         </div>
 
       </div>

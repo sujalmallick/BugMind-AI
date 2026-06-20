@@ -9,15 +9,24 @@ export default function ProjectsHeader({
 }) {
   const navigate = useNavigate();
 
+  const currentDate = new Intl.DateTimeFormat(
+    undefined,
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }
+  ).format(new Date());
+
   return (
-    <header className="sticky top-0 z-50 border-b border-hairline bg-white shadow-sm">
-      <div className="flex w-full items-center justify-between px-9 py-4">
+    <header className="sticky top-0 z-50 border-b border-hairline/70 bg-white/90 shadow-sm backdrop-blur">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-8 sm:py-4">
 
         {/* Logo */}
         <div
           title="Go to Projects"
           onClick={() => navigate("/")}
-          className="flex cursor-pointer items-center gap-3 transition-opacity hover:opacity-90"
+          className="group flex cursor-pointer items-center gap-3 transition-opacity hover:opacity-90"
         >
           <img
             src={favicon}
@@ -30,16 +39,32 @@ export default function ProjectsHeader({
             alt="BugMind AI"
             className="h-11 w-auto object-contain"
           />
+
+          <div className="hidden border-l border-hairline pl-3 lg:block">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+              Project Hub
+            </p>
+            <p className="mt-0.5 text-xs text-muted">
+              {currentDate}
+            </p>
+          </div>
         </div>
 
         {/* Action */}
-        <button
-          onClick={onCreateProject}
-          className="flex items-center gap-2 rounded-lg bg-signal px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:opacity-90"
-        >
-          <Plus size={16} />
-          New Project
-        </button>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span className="hidden rounded-full border border-hairline bg-paper px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted sm:inline-flex">
+            Workspace Ready
+          </span>
+
+          <button
+            type="button"
+            onClick={onCreateProject}
+            className="inline-flex items-center gap-2 rounded-lg bg-signal px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95 sm:px-4"
+          >
+            <Plus size={16} />
+            New Project
+          </button>
+        </div>
 
       </div>
     </header>
