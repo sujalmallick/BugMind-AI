@@ -1,24 +1,25 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from auth.dependencies import get_current_user
+from database.models.user import User
 from database.session import get_db
+
 from schemas.project import (
     WorkspaceResponse,
     WorkspaceUpdate,
 )
+
 from services.workspace_service import (
     get_workspace,
     update_workspace,
 )
-from sqlalchemy.orm import Session
-from schemas.project import WorkspaceResponse
-from database.session import get_db
-from services.workspace_service import get_workspace
 
 router = APIRouter(
     prefix="/workspaces",
     tags=["Workspaces"],
 )
+
 
 @router.put(
     "/{project_id}",
@@ -27,11 +28,13 @@ router = APIRouter(
 def update_workspace_by_project(
     project_id: int,
     workspace: WorkspaceUpdate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     return update_workspace(
         db=db,
         project_id=project_id,
+        owner_id=current_user.id,
         workflow=workspace.workflow,
         observed_steps=workspace.observed_steps,
         platform=workspace.platform,
@@ -40,12 +43,18 @@ def update_workspace_by_project(
         device=workspace.device,
     )
 
-@router.get("/{project_id}", response_model=WorkspaceResponse,)
+
+@router.get(
+    "/{project_id}",
+    response_model=WorkspaceResponse,
+)
 def get_workspace_by_project(
     project_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     return get_workspace(
         db=db,
         project_id=project_id,
+        owner_id=current_user.id,
     )

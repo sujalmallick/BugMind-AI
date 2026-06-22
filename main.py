@@ -8,6 +8,8 @@ from routes.project import router as project_router
 from routes.analysis import router as analysis_router
 from routes.test_case import router as test_case_router
 from routes.issue import router as issue_router
+from routes.auth import router as auth_router
+
 
 app = FastAPI()
 
@@ -25,6 +27,8 @@ app.include_router(workspace_router)
 app.include_router(analysis_router)
 app.include_router(test_case_router)
 app.include_router(issue_router)
+app.include_router(auth_router)
+
 
 @app.post("/analyze-workflow")
 def analyze_workflow(data: WorkflowInput):

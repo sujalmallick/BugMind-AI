@@ -2,13 +2,27 @@ from sqlalchemy.orm import Session
 
 from database.models.analysis import Analysis
 from database.models.workspace import Workspace
+from database.models.project import Project
 
 
 def save_analysis(
     db: Session,
     project_id: int,
+    owner_id: int,
     result: dict,
 ):
+    project = (
+        db.query(Project)
+        .filter(
+            Project.id == project_id,
+            Project.owner_id == owner_id,
+        )
+        .first()
+    )
+
+    if not project:
+        return None
+
     workspace = (
         db.query(Workspace)
         .filter(
@@ -43,10 +57,24 @@ def save_analysis(
 
     return analysis
 
+
 def get_analysis(
     db: Session,
     project_id: int,
+    owner_id: int,
 ):
+    project = (
+        db.query(Project)
+        .filter(
+            Project.id == project_id,
+            Project.owner_id == owner_id,
+        )
+        .first()
+    )
+
+    if not project:
+        return None
+
     workspace = (
         db.query(Workspace)
         .filter(

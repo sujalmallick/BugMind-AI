@@ -298,13 +298,6 @@ setActiveTab("modules");
 
 showToast("Workflow analyzed successfully!");
 
-
-// projectService.update(projectId, {
-//   ...project,
-//   status: "Analyzed",
-// });
-// TODO: Replace with API
-
 navigate(`/project/${projectId}/workspace`);
 
     } catch (error) {

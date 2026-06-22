@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+from database.models.project import Project
 from database.models.workspace import Workspace
 from database.models.test_case import TestCase
 
@@ -7,8 +8,21 @@ from database.models.test_case import TestCase
 def save_test_cases(
     db: Session,
     project_id: int,
+    owner_id: int,
     test_cases: list,
 ):
+    project = (
+        db.query(Project)
+        .filter(
+            Project.id == project_id,
+            Project.owner_id == owner_id,
+        )
+        .first()
+    )
+
+    if not project:
+        return None
+
     workspace = (
         db.query(Workspace)
         .filter(
@@ -47,10 +61,24 @@ def save_test_cases(
 
     return {"success": True}
 
+
 def get_test_cases(
     db: Session,
     project_id: int,
+    owner_id: int,
 ):
+    project = (
+        db.query(Project)
+        .filter(
+            Project.id == project_id,
+            Project.owner_id == owner_id,
+        )
+        .first()
+    )
+
+    if not project:
+        return []
+
     workspace = (
         db.query(Workspace)
         .filter(

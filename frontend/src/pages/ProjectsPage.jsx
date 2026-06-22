@@ -11,7 +11,6 @@ import {
   Sparkles,
 } from "lucide-react";
 
-import { projectService } from "../services/projectService";
 import { touchProject } from "../services/projectApi";
 
 import ProjectsHeader from "../components/projects/ProjectsHeader";

@@ -34,8 +34,13 @@ def create_project(
 
 def get_all_projects(
     db: Session,
+    owner_id: int,
 ):
-    projects = db.query(Project).all()
+    projects = (
+    db.query(Project)
+    .filter(Project.owner_id == owner_id)
+    .all()
+)
 
     result = []
 
@@ -82,23 +87,32 @@ def get_all_projects(
 def get_project_by_id(
     db: Session,
     project_id: int,
+    owner_id: int,
+    
 ):
     return (
         db.query(Project)
-        .filter(Project.id == project_id)
+        .filter(
+    Project.id == project_id,
+    Project.owner_id == owner_id,
+)
         .first()
     )
 
 def update_project(
     db: Session,
     project_id: int,
+    owner_id: int,
     name: str,
     description: str,
     status: str,
 ):
     project = (
         db.query(Project)
-        .filter(Project.id == project_id)
+     .filter(
+    Project.id == project_id,
+    Project.owner_id == owner_id,
+)
         .first()
     )
 
@@ -118,10 +132,14 @@ def update_project(
 def delete_project(
     db: Session,
     project_id: int,
+    owner_id: int,
 ):
     project = (
         db.query(Project)
-        .filter(Project.id == project_id)
+    .filter(
+    Project.id == project_id,
+    Project.owner_id == owner_id,
+)
         .first()
     )
 
@@ -137,10 +155,14 @@ def delete_project(
 def touch_project(
     db: Session,
     project_id: int,
+    owner_id: int,
 ):
     project = (
         db.query(Project)
-        .filter(Project.id == project_id)
+       .filter(
+    Project.id == project_id,
+    Project.owner_id == owner_id,
+)
         .first()
     )
 
