@@ -1,13 +1,10 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-
 from database.models.user import User
-
 from auth.security import (
     hash_password,
     verify_password,
 )
-
 from auth.jwt import create_access_token
 
 from schemas.auth import (

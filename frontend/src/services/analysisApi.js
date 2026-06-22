@@ -1,39 +1,61 @@
-import API_BASE_URL from "./api";
+import api from "../api/api";
 
-export async function saveAnalysis(
-  projectId,
-  result,
-) {
-  const response = await fetch(
-    `${API_BASE_URL}/analysis/${projectId}`,
+// ---------- AI ----------
+
+export async function analyzeWorkflow(payload) {
+  if (!payload.workflow.trim()) {
+    throw new Error("Describe the workflow first.");
+  }
+
+  const response = await api.post(
+    "/analyze-workflow",
     {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        result,
-      }),
+      workflow: payload.workflow,
+      observed_steps: payload.observedSteps
+        .split("\n")
+        .filter((step) => step.trim() !== ""),
     }
   );
 
-  if (!response.ok) {
-    throw new Error("Failed to save analysis");
-  }
-
-  return response.json();
+  return response.data;
 }
 
-export async function getAnalysis(
-  projectId,
-) {
-  const response = await fetch(
-    `${API_BASE_URL}/analysis/${projectId}`
+export async function classifyIssue(payload) {
+  const response = await api.post(
+    "/analyze-issue",
+    {
+      workflow: payload.workflow,
+      observation: payload.observation,
+      expected_result: payload.expected,
+      actual_result: payload.actual,
+      failed_test_case:
+        payload.mode === "failed",
+    }
   );
 
-  if (!response.ok) {
-    throw new Error("Failed to load analysis");
-  }
+  return response.data;
+}
 
-  return response.json();
+// ---------- Analysis CRUD ----------
+
+export async function getAnalysis(projectId) {
+  const response = await api.get(
+    `/analysis/${projectId}`
+  );
+
+  return response.data;
+}
+
+export async function saveAnalysis(
+  projectId,
+  result
+) {
+  const response = await api.put(
+    `/analysis/${projectId}`,
+    {
+      result,
+    }
+  );
+
+  return response.data;
 }

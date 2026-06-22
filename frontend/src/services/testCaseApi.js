@@ -1,39 +1,25 @@
-import API_BASE_URL from "./api";
+import  api from "./api";
 
 export async function saveTestCases(
   projectId,
   testCases,
 ) {
-  const response = await fetch(
-    `${API_BASE_URL}/test-cases/${projectId}`,
+  const response = await api.put(
+    `/test-cases/${projectId}`,
     {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        test_cases: testCases,
-      }),
+      test_cases: testCases,
     }
   );
 
-  if (!response.ok) {
-    throw new Error("Failed to save test cases");
-  }
-
-  return response.json();
+  return response.data;
 }
 
 export async function getTestCases(
   projectId,
 ) {
-  const response = await fetch(
-    `${API_BASE_URL}/test-cases/${projectId}`
+  const response = await api.get(
+    `/test-cases/${projectId}`
   );
 
-  if (!response.ok) {
-    throw new Error("Failed to load test cases");
-  }
-
-  return response.json();
+  return response.data;
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useWorkspace } from "../hooks/useWorkspace";
 import HeaderBar from "../components/layout/HeaderBar";
 import AppFooter from "../components/layout/AppFooter";
+
 import WorkflowInputPanel from "../components/layout/WorkflowInputPanel";
 import TabBar from "../components/layout/TabBar";
 import CommandPalette from "../components/layout/CommandPalette";
@@ -16,12 +17,9 @@ import ChecklistTab from "../components/tabs/ChecklistTab";
 import TestCasesTab from "../components/tabs/TestCasesTab";
 import IssueAnalysisTab from "../components/tabs/IssueAnalysisTab";
 import TrackerTab from "../components/tabs/TrackerTab";
-import { analyzeWorkflow, classifyIssue } from "../api/TestPilotApi";
+import { analyzeWorkflow, classifyIssue, saveAnalysis, getAnalysis } from "../services/analysisApi";
 import { useRef } from "react";
-import {
-  saveAnalysis,
-  getAnalysis,
-} from "../services/analysisApi";
+
 import {
   getProject,
   updateProject,
@@ -48,6 +46,7 @@ const TABS = [
 const EMPTY_ISSUE_FORM = { observation: '', expected: '', actual: '', mode: 'failed' }
 export default function WorkspacePage() {
   const { projectId } = useParams();
+  console.log("Workspace Route ID:", projectId);
   const location = useLocation();
 const navigate = useNavigate();
 const [analysisMeta, setAnalysisMeta] = useState(null);
@@ -106,8 +105,13 @@ const [project, setProject] = useState(null);
   const [panelCollapsed, setPanelCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState('modules')
   const [showSummary, setShowSummary] = useState(false)
-  const [checkedItems, setCheckedItems] = useState({})
+const [checkedItems, setCheckedItems] = useState(() => {
+  const saved = localStorage.getItem(
+    `checklist-${projectId}`
+  );
 
+  return saved ? JSON.parse(saved) : {};
+});
   // Issue analysis
   const [issueForm, setIssueForm] = useState(EMPTY_ISSUE_FORM)
   const [issueStatus, setIssueStatus] = useState('idle')
@@ -119,6 +123,12 @@ const [project, setProject] = useState(null);
   
   const isAnalyzing = analysisStatus === 'loading'
  const showWorkspace = analysisStatus === 'success'
+useEffect(() => {
+  localStorage.setItem(
+    `checklist-${projectId}`,
+    JSON.stringify(checkedItems)
+  );
+}, [checkedItems, projectId]);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -290,8 +300,11 @@ const updatedProject =
   await getProject(projectId);
 
 setProject(updatedProject);
-setCheckedItems({})
+localStorage.removeItem(
+  `checklist-${projectId}`
+);
 
+setCheckedItems({});
 setAnalysisStatus("success")
 setPanelCollapsed(true);
 setActiveTab("modules");

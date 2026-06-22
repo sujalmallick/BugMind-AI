@@ -106,11 +106,15 @@ function handleShare(project) {
     });
 }
 async function handleOpen(id) {
+  console.log("Clicked id:", id);
+
   await touchProject(id);
 
   const project = projects.find(
     (p) => p.id === id
   );
+
+  console.log(project);
 
   selectProject(id);
 

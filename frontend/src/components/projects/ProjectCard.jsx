@@ -40,10 +40,16 @@ useEffect(() => {
       handleClickOutside
     );
 }, []);
+
+
+console.log(project);
+console.log("ProjectCard:", project);
+
 return (
   <div
     role="button"
     tabIndex={0}
+    
     onClick={() => onOpen(project.id)}
     onKeyDown={(e) => {
       if (e.key === "Enter" || e.key === " ") {

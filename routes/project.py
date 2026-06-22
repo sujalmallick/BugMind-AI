@@ -11,10 +11,11 @@ from services.project_service import (
     create_project,
     get_all_projects,
     get_project_by_id,
-     update_project,
-      delete_project,
-      touch_project,
+    update_project,
+    delete_project,
+    touch_project,
 )
+print("🚀 PROJECT ROUTER LOADED")
 router = APIRouter(
     prefix="/projects",
     tags=["Projects"],
@@ -31,17 +32,21 @@ def create_new_project(
         db=db,
         name=project.name,
         description=project.description,
-      owner_id=current_user.id, # Temporary until authentication is added
+        owner_id=current_user.id,  # Temporary until authentication is added
     )
 
+
+@router.get("/")
 def list_projects(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-   return get_all_projects(
-    db,
-    current_user.id,
-)
+    return get_all_projects(
+        db,
+        current_user.id,
+    )
+
+
 @router.get("/{project_id}")
 def get_project(
     project_id: int,
@@ -51,8 +56,9 @@ def get_project(
     return get_project_by_id(
         db,
         project_id,
-         current_user.id,
+        current_user.id,
     )
+
 
 @router.put("/{project_id}")
 def update_existing_project(
@@ -70,26 +76,28 @@ def update_existing_project(
         owner_id=current_user.id,
     )
 
+
 @router.delete("/{project_id}")
 def delete_existing_project(
     project_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    current_user: User = Depends(get_current_user),
     return delete_project(
         db=db,
         project_id=project_id,
-         owner_id=current_user.id,
+        owner_id=current_user.id,
     )
+
 
 @router.put("/{project_id}/touch")
 def touch_existing_project(
     project_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    current_user: User = Depends(get_current_user),
     return touch_project(
         db=db,
         project_id=project_id,
-         owner_id=current_user.id,
+        owner_id=current_user.id,
     )
