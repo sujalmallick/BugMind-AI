@@ -36,7 +36,9 @@ def analyze_workflow(data: WorkflowInput):
     result = workflow_graph.invoke(
         {
             "workflow": data.workflow,
-            "observed_steps": data.observed_steps
+            "observed_steps": data.observed_steps,
+            "existing_checklist": data.existing_checklist,
+            "existing_test_cases": data.existing_test_cases
         }
     )
 

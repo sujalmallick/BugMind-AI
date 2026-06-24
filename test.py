@@ -1,17 +1,21 @@
-from auth.security import (
-    hash_password,
-    verify_password,
+from services.encryption_service import (
+    EncryptionService
 )
 
-password = "Password123"
+service = EncryptionService()
 
-hashed = hash_password(password)
+encrypted = service.encrypt_key(
+    "my-secret-key"
+)
 
-print(hashed)
+print("Encrypted:")
+print(encrypted)
 
+print()
+
+print("Decrypted:")
 print(
-    verify_password(
-        password,
-        hashed,
+    service.decrypt_key(
+        encrypted
     )
 )

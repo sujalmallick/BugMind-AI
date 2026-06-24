@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useWorkspace } from "../hooks/useWorkspace";
 import HeaderBar from "../components/layout/HeaderBar";
 import AppFooter from "../components/layout/AppFooter";
-
+import ConfirmDialog from "../components/common/ConfirmDialog";
 import WorkflowInputPanel from "../components/layout/WorkflowInputPanel";
 import TabBar from "../components/layout/TabBar";
 import CommandPalette from "../components/layout/CommandPalette";
@@ -106,6 +106,7 @@ const [project, setProject] = useState(null);
   const [activeTab, setActiveTab] = useState('modules')
   const [showSummary, setShowSummary] = useState(false)
 const [checkedItems, setCheckedItems] = useState({});
+const [showReanalyzeDialog, setShowReanalyzeDialog] = useState(false);
   // Issue analysis
   const [issueForm, setIssueForm] = useState(EMPTY_ISSUE_FORM)
   const [issueStatus, setIssueStatus] = useState('idle')
@@ -259,13 +260,15 @@ useEffect(() => {
 
 
 
-  async function handleAnalyze() {
+  async function runAnalysis() {
+    
+
     setAnalysisStatus('loading')
     setAnalysisError(null)
     try {
       const result = await analyzeWorkflow({
     workflow,
-    observedSteps
+    observedSteps,
 })
 
 if (result.success === false) {
@@ -298,6 +301,17 @@ const updatedProject =
 setProject(updatedProject);
 
 setCheckedItems({});
+setCheckedItems({});
+
+await saveWorkspace({
+  workflow,
+  observed_steps: observedSteps,
+  platform: testEnvironment.platform,
+  os_version: testEnvironment.osVersion,
+  build: testEnvironment.build,
+  device: testEnvironment.device,
+  checklist_progress: {},
+});
 setAnalysisStatus("success")
 setPanelCollapsed(true);
 setActiveTab("modules");
@@ -311,7 +325,15 @@ navigate(`/project/${projectId}/workspace`);
       setAnalysisError(error.message)
     }
   }
+function handleAnalyze() {
 
+    if (testCases.length > 0) {
+        setShowReanalyzeDialog(true);
+        return;
+    }
+
+    runAnalysis();
+}
 async function handleStatusChange(id, status) {
 
   const updated = testCases.map((tc) =>
@@ -592,7 +614,18 @@ testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnviron
 
       <AppFooter />
 
-      <CommandPalette open={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} commands={commands} />
+      <CommandPalette open={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} commands={commands} /><ConfirmDialog
+    open={showReanalyzeDialog}
+    title="Replace Existing Analysis?"
+    message="Regenerating will replace the current AI-generated checklist and test cases. Any execution progress associated with them may also be removed."
+    confirmText="Replace & Regenerate"
+    cancelText="Cancel"
+    onCancel={() => setShowReanalyzeDialog(false)}
+    onConfirm={() => {
+        setShowReanalyzeDialog(false);
+        runAnalysis();
+    }}
+/>
       <ToastStack toasts={toasts} />
     </div>
   )

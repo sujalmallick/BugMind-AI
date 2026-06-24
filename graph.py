@@ -14,8 +14,16 @@ def module_node(state: WorkflowState):
         state["workflow"]
     )
 
-    return {
+    # Stop immediately if AI failed
+    if (
+        isinstance(module_data, dict)
+        and module_data.get("success") is False
+    ):
+        return {
+            "modules": module_data
+        }
 
+    return {
         "modules": module_data,
 
         "critical_workflows":
@@ -29,48 +37,66 @@ def module_node(state: WorkflowState):
                 "high_risk_areas",
                 []
             )
-
     }
 
 
 # Checklist Agent Node
 def checklist_node(state: WorkflowState):
 
+    # Forward AI error
+    if (
+        isinstance(state["modules"], dict)
+        and state["modules"].get("success") is False
+    ):
+        return {
+            "checklist": state["modules"]
+        }
+
     checklist = generate_checklist_agent(
-
         workflow=state["workflow"],
-
         modules=state["modules"],
-
         critical_workflows=state["critical_workflows"],
-
         high_risk_areas=state["high_risk_areas"]
-
     )
 
     return {
-
         "checklist": checklist
-
     }
+
+
 # Test Case Agent Node
 def test_case_node(state: WorkflowState):
 
+    # Forward AI error
+    if (
+        isinstance(state["modules"], dict)
+        and state["modules"].get("success") is False
+    ):
+        return {
+            "test_cases": state["modules"]
+        }
+    
+    # Forward AI error
+    if (
+        isinstance(state["checklist"], dict)
+        and state["checklist"].get("success") is False
+    ):
+        return {
+            "test_cases": state["checklist"]
+        }
+
+    test_cases = generate_test_cases_agent(
+        workflow=state["workflow"],
+        modules=state["modules"],
+        critical_workflows=state["critical_workflows"],
+        high_risk_areas=state["high_risk_areas"],
+        observed_steps=state.get("observed_steps")
+    )
+
     return {
-        "test_cases": generate_test_cases_agent(
-
-            workflow=state["workflow"],
-
-            modules=state["modules"],
-
-            critical_workflows=state["critical_workflows"],
-
-            high_risk_areas=state["high_risk_areas"],
-
-            observed_steps=state.get("observed_steps")
-
-        )
+        "test_cases": test_cases
     }
+
 
 # Build graph
 graph_builder = StateGraph(WorkflowState)

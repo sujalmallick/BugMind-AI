@@ -9,6 +9,8 @@ class WorkflowInput(BaseModel):
     )
 
     observed_steps: list[str] | None = None
+    existing_checklist: list[dict] | None = None
+    existing_test_cases: list[dict] | None = None
 
 
 class WorkflowState(TypedDict):
@@ -16,6 +18,8 @@ class WorkflowState(TypedDict):
     # User Input
     workflow: str
     observed_steps: list[str] | None
+    existing_checklist: list[dict] | None
+    existing_test_cases: list[dict] | None
 
     # Shared Agent Knowledge
     modules: dict

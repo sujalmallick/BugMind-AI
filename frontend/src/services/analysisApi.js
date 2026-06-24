@@ -7,14 +7,23 @@ export async function analyzeWorkflow(payload) {
     throw new Error("Describe the workflow first.");
   }
 
+  const body = {
+    workflow: payload.workflow,
+    observed_steps: payload.observedSteps
+      .split("\n")
+      .filter((step) => step.trim() !== ""),
+  };
+
+  if (payload.existingChecklist) {
+    body.existing_checklist = payload.existingChecklist;
+  }
+  if (payload.existingTestCases) {
+    body.existing_test_cases = payload.existingTestCases;
+  }
+
   const response = await api.post(
     "/analyze-workflow",
-    {
-      workflow: payload.workflow,
-      observed_steps: payload.observedSteps
-        .split("\n")
-        .filter((step) => step.trim() !== ""),
-    }
+    body
   );
 
   return response.data;
