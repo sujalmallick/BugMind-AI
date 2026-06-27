@@ -141,6 +141,10 @@ export default function HeaderBar({
           setAiModalOpen(false);
           showToast("Key connected successfully!");
         }}
+        onKeyDeleted={(provider) => {
+          const label = provider.charAt(0).toUpperCase() + provider.slice(1);
+          showToast(`${label} API key deleted.`);
+        }}
       />
       
       {/* Toast notifications */}

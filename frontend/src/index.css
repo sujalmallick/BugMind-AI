@@ -527,3 +527,96 @@ body {
   }
 }
 
+/* WORKSPACE ANIMATIONS */
+@keyframes tabContentEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-tab-enter {
+  animation: tabContentEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ─── WORKFLOW HERO EFFECTS ───────────────────────────────────────────────── */
+
+/* Animated shimmer — blue only, relaxed speed */
+.workflow-hero-title {
+  background: linear-gradient(
+    90deg,
+    #1e3a8a 0%,
+    #3454d1 25%,
+    #93c5fd 50%,
+    #3454d1 75%,
+    #1e3a8a 100%
+  );
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: blueShimmer 10s linear infinite;
+}
+
+@keyframes blueShimmer {
+  0%   { background-position: 0% center; }
+  100% { background-position: 250% center; }
+}
+
+/* Floating orbs — slow, organic */
+@keyframes orbFloat1 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  33%       { transform: translate(10px, -14px) scale(1.04); }
+  66%       { transform: translate(-6px, 8px) scale(0.97); }
+}
+
+@keyframes orbFloat2 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  40%       { transform: translate(-10px, 10px) scale(1.05); }
+  70%       { transform: translate(8px, -6px) scale(0.96); }
+}
+
+@keyframes orbFloat3 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  50%       { transform: translate(6px, 12px) scale(1.03); }
+}
+
+.workflow-orb-1 { animation: orbFloat1 12s ease-in-out infinite; }
+.workflow-orb-2 { animation: orbFloat2 16s ease-in-out infinite; }
+.workflow-orb-3 { animation: orbFloat3 20s ease-in-out infinite; }
+
+/* Dot pulse — slow breathe */
+@keyframes dotPulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50%       { opacity: 0.75; transform: scale(1.3); }
+}
+
+.workflow-dot                { animation: dotPulse 3.5s ease-in-out infinite; }
+.workflow-dot:nth-child(2)   { animation-delay: 1.16s; }
+.workflow-dot:nth-child(3)   { animation-delay: 2.32s; }
+
+/* ─── SHARED SIGNAL BORDER CARD ──────────────────────────────────────────── */
+/* Use on any card that should feel "active" or selected with a blue ring     */
+.signal-card {
+  border: 1px solid rgba(52, 84, 209, 0.18);
+  background: linear-gradient(135deg, #f4f7ff 0%, #ffffff 60%, #eef2ff 100%);
+  box-shadow: 0 0 0 0 rgba(52, 84, 209, 0);
+  transition: box-shadow 0.3s ease;
+}
+.signal-card:hover {
+  box-shadow: 0 0 0 3px rgba(52, 84, 209, 0.08);
+}
+
+/* ─── TOAST SLIDE-IN ─────────────────────────────────────────────────────── */
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+.toast-item {
+  animation: toastSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}

@@ -8,7 +8,7 @@ class WorkflowInput(BaseModel):
         description="Application workflow"
     )
 
-    observed_steps: list[str] | None = None
+    observed_steps: list[str] | None = Field(None, max_length=100)
     existing_checklist: list[dict] | None = None
     existing_test_cases: list[dict] | None = None
 

@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from auth.jwt import verify_access_token
+from jose import JWTError, ExpiredSignatureError
 from database.session import get_db
 from database.models.user import User
 
@@ -16,12 +17,23 @@ def get_current_user(
     db: Session = Depends(get_db),
 ) -> User:
 
-    payload = verify_access_token(token)
+    try:
+        payload = verify_access_token(token)
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expired",
+        )
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+        )
 
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
+            detail="Invalid token payload",
         )
 
     user_id = payload.get("sub")

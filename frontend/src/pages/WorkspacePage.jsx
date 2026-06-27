@@ -60,7 +60,17 @@ const {
 const isWorkspaceRoute =
   location.pathname.endsWith("/workspace");
  
-  const { toasts, showToast } = useToasts()
+  const { toasts, showToast } = useToasts();
+
+  useEffect(() => {
+    const handleOffline = () => {
+      showToast("Network connection lost. You are offline.", "error");
+    };
+    window.addEventListener('network-offline', handleOffline);
+    return () => window.removeEventListener('network-offline', handleOffline);
+  }, [showToast]);
+
+
   useEffect(() => {
 
   async function loadProject() {
@@ -119,6 +129,16 @@ const [showReanalyzeDialog, setShowReanalyzeDialog] = useState(false);
   const isAnalyzing = analysisStatus === 'loading'
  const showWorkspace = analysisStatus === 'success'
 
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (analysisStatus === 'loading') {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [analysisStatus]);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -218,6 +238,7 @@ try {
 useEffect(() => {
   if (!workspace) return;
 
+  const controller = new AbortController();
   const timer = setTimeout(async () => {
     try {
       await saveWorkspace({
@@ -228,13 +249,19 @@ useEffect(() => {
         build: testEnvironment.build,
         device: testEnvironment.device,
          checklist_progress: checkedItems,
-      });
+      }, { signal: controller.signal });
     } catch (err) {
-      console.error("Workspace save failed:", err);
+      if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
+        console.error("Workspace save failed:", err);
+        showToast("Failed to autosave workspace. Please check your connection.", "error");
+      }
     }
   }, 600);
 
-  return () => clearTimeout(timer);
+  return () => {
+    clearTimeout(timer);
+    controller.abort();
+  };
 
 }, [
   workflow,
@@ -326,6 +353,7 @@ navigate(`/project/${projectId}/workspace`);
     }
   }
 function handleAnalyze() {
+    if (analysisStatus === 'loading') return;
 
     if (testCases.length > 0) {
         setShowReanalyzeDialog(true);
@@ -533,20 +561,19 @@ testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnviron
     ) : (
       <>
         {/* ---------------- WORKSPACE ---------------- */}
-        <div className="mt-6 rounded-2xl border border-hairline bg-white p-2 shadow-sm sm:p-3">
-          <div className="mb-1 flex items-center justify-between gap-2 px-2 pt-1">
+        <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 sm:px-5">
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() =>
                 navigate(`/project/${projectId}`)
               }
-              className="rounded-lg border border-hairline bg-paper px-3 py-1.5 text-xs font-semibold text-muted transition hover:border-signal hover:text-ink"
+              className="rounded-lg border border-hairline bg-surface px-3 py-1.5 text-[13px] font-semibold text-muted shadow-sm transition hover:border-signal hover:text-ink hover:shadow"
             >
-              Back to Summary
+              ← Back to Summary
             </button>
-
-            <span className="hidden text-xs font-semibold uppercase tracking-wide text-muted sm:inline">
-              Workspace Tabs
+            <span className="hidden text-xs font-bold uppercase tracking-wide text-muted sm:inline-block">
+              Workspace
             </span>
           </div>
 
@@ -557,7 +584,7 @@ testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnviron
           />
         </div>
 
-        <main className="mt-5 pb-10">
+        <main key={activeTab} className="animate-tab-enter mt-6 pb-12">
 
           {activeTab === "modules" && (
             <ModulesTab

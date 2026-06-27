@@ -17,17 +17,19 @@ onTestEnvironmentChange,
 }) {
   if (isCollapsed) {
     return (
-      <div className="mt-4 rounded-xl border border-hairline bg-white px-4 py-3 shadow-sm sm:px-5 sm:py-4">
+      <div className="mx-auto max-w-4xl mt-4 rounded-2xl border border-white/40 bg-surface/40 px-4 py-3 shadow-[0_4px_24px_rgba(0,0,0,0.03)] backdrop-blur-xl sm:px-5 sm:py-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3 text-sm text-muted">
-            <Route size={16} className="shrink-0 text-signal" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-signal-soft">
+              <Route size={16} className="text-signal" />
+            </div>
 
             <div className="min-w-0">
               <span className="block truncate font-medium text-ink">
                 {workflow || "Workflow not added yet"}
               </span>
 
-              <span className="hidden text-xs text-muted sm:block">
+              <span className="hidden text-[11px] font-semibold uppercase tracking-wider text-muted sm:block">
                 {analysisOutdated
                   ? "Modified after last analysis"
                   : "Analysis up to date"}
@@ -38,10 +40,10 @@ onTestEnvironmentChange,
           <button
             type="button"
             onClick={onExpand}
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-hairline bg-white px-3 py-2 text-sm font-semibold text-muted transition-all duration-200 hover:border-signal hover:text-ink"
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-hairline bg-white/60 px-4 py-2 text-[13px] font-bold text-ink shadow-sm transition-all duration-200 hover:border-signal/30 hover:bg-white hover:text-signal hover:shadow"
           >
             <Pencil size={14} />
-            Edit
+            Edit Scope
           </button>
         </div>
       </div>
@@ -50,21 +52,37 @@ onTestEnvironmentChange,
 
   return (
     <div className={`px-4 sm:px-5 ${hasResult ? "py-6" : "py-8"}`}>
-      <div className="mx-auto max-w-5xl rounded-2xl border border-hairline bg-white p-5 shadow-sm md:p-7">
+      <div className="mx-auto max-w-5xl rounded-[1.5rem] border border-hairline/70 bg-white p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] md:p-8">
         {!hasResult && (
-          <div className="hero-glow hero-glow-soft mb-7 rounded-xl border border-hairline bg-white p-5 text-left">
-            <h1 className="text-2xl font-semibold text-ink md:text-3xl">
+          <div className="hero-glow hero-glow-soft relative mb-8 overflow-hidden rounded-2xl border border-[#3454d1]/15 bg-gradient-to-br from-[#f0f4ff] via-white to-[#eef2ff] p-6 text-center sm:p-8">
+
+            {/* Floating background orbs */}
+            <div className="workflow-orb-1 pointer-events-none absolute -left-8 -top-8 h-40 w-40 rounded-full bg-[#3454d1]/10 blur-2xl" />
+            <div className="workflow-orb-2 pointer-events-none absolute -right-8 -bottom-6 h-48 w-48 rounded-full bg-[#60a5fa]/10 blur-2xl" />
+            <div className="workflow-orb-3 pointer-events-none absolute left-1/2 top-0 h-24 w-24 -translate-x-1/2 rounded-full bg-[#1e3a8a]/08 blur-xl" />
+
+            {/* Pulsing dots row */}
+            <div className="mb-4 flex items-center justify-center gap-2">
+              <span className="workflow-dot h-1.5 w-1.5 rounded-full bg-[#3454d1]" />
+              <span className="workflow-dot h-1.5 w-1.5 rounded-full bg-[#3454d1]" />
+              <span className="workflow-dot h-1.5 w-1.5 rounded-full bg-[#3454d1]" />
+            </div>
+
+            <h1 className="workflow-hero-title relative text-3xl font-extrabold tracking-tight sm:text-4xl">
               Describe the workflow to test
             </h1>
 
-            <p className="mt-2 text-sm leading-6 text-muted">
-              Add your application flow and observed behavior. BugMind will generate
-              structured modules, checklist items, and test cases.
+            {/* Subtle underline accent */}
+            <div className="mx-auto mt-3 h-0.5 w-20 rounded-full bg-gradient-to-r from-transparent via-[#3454d1]/40 to-transparent" />
+
+            <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
+              Add your application flow and observed behavior. BugMind will intelligently generate
+              structured modules, a rigorous checklist, and comprehensive test cases.
             </p>
           </div>
         )}
 
-        <div className="space-y-6">
+        <div className="space-y-7">
           <div>
             <label className="mb-2 block text-sm font-semibold text-ink">
               Application Workflow
@@ -73,9 +91,9 @@ onTestEnvironmentChange,
             <textarea
               value={workflow}
               onChange={(event) => onWorkflowChange(event.target.value)}
-              placeholder="Login → Dashboard → Messages"
+              placeholder="E.g., User logs in → Navigates to Dashboard → Opens Messages → Sends a new message"
               rows={2}
-              className="w-full resize-none rounded-xl border border-hairline bg-surface px-4 py-3 text-sm text-ink placeholder:text-muted transition-all duration-200 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/10"
+              className="w-full resize-none rounded-xl border-2 border-hairline/60 bg-surface px-4 py-3.5 text-sm text-ink placeholder:text-muted/60 transition-all duration-200 focus:border-signal focus:bg-white focus:outline-none focus:ring-4 focus:ring-signal/10"
             />
           </div>
 

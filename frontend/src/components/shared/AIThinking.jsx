@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
 
 const DEFAULT_STEPS = [
   "Understanding workflow",
@@ -27,13 +26,15 @@ export default function AIThinking({
 
   return (
     <div className="flex h-[420px] items-center justify-center px-6">
-      <div className="w-full max-w-xl rounded-xl border border-hairline bg-surface p-8 shadow-sm">
+      <div className="signal-card w-full max-w-xl rounded-2xl p-8">
 
         <div className="flex items-center gap-3">
-          <Loader2
-            size={20}
-            className="animate-spin text-signal"
-          />
+          {/* Pulsing dots instead of spinner — consistent with hero */}
+          <div className="flex items-center gap-1.5">
+            <span className="workflow-dot h-2 w-2 rounded-full bg-signal" />
+            <span className="workflow-dot h-2 w-2 rounded-full bg-signal" />
+            <span className="workflow-dot h-2 w-2 rounded-full bg-signal" />
+          </div>
 
           <div>
             <h2 className="text-lg font-semibold text-ink">

@@ -34,19 +34,10 @@ _call_count = 0
 def call_llm(
     prompt: str,
     user_id: int | None = None,
-    _retry_on_quota: bool = True,
-    _backoff_seconds: int = 15,
+    _retry_count: int = 0,
 ):
     """
     Sends a single request to the configured LLM provider.
-
-    If user_id is provided, the user's stored AI settings (provider, model,
-    and optionally their own API key) are loaded from the database via
-    build_llm_manager(). Otherwise the server-level default is used.
-
-    _retry_on_quota / _backoff_seconds: control a single automatic retry on
-    rate-limit errors. These are internal params — callers just call
-    call_llm(prompt) or call_llm(prompt, user_id=user_id).
     """
     global _call_count
     _call_count += 1
@@ -73,23 +64,38 @@ def call_llm(
     except Exception as e:
         error_str = str(e).lower()
 
-        # Handle rate limit / quota errors from any provider
-        if any(kw in error_str for kw in ["rate limit", "quota", "429", "resource exhausted"]):
-            if _retry_on_quota:
+        # Handle rate limit / quota errors
+        if any(kw in error_str for kw in ["rate limit", "quota", "429", "resource exhausted", "too many requests"]):
+            if _retry_count < 3:
+                backoff = [1, 2, 4][_retry_count]
                 logger.warning(
-                    f"Rate/quota limit hit. Waiting {_backoff_seconds}s before one retry..."
+                    f"Rate/quota limit hit. Waiting {backoff}s before retry {_retry_count + 1}..."
                 )
-                time.sleep(_backoff_seconds)
+                time.sleep(backoff)
                 return call_llm(
                     prompt,
                     user_id=user_id,
-                    _retry_on_quota=False,
+                    _retry_count=_retry_count + 1,
                 )
-            logger.error("Quota exceeded (after backoff retry).")
-            return None
+            logger.error("Quota exceeded (after backoff retries).")
+            return {"success": False, "error": "AI Quota exceeded. Please try again later."}
+
+        # Authentication errors
+        if any(kw in error_str for kw in ["401", "403", "unauthorized", "forbidden", "api key", "invalid key"]):
+            logger.error("Invalid or missing API Key.")
+            return {"success": False, "error": "Invalid or missing API Key."}
+
+        # Model / Provider errors
+        if any(kw in error_str for kw in ["not found", "model", "404", "does not exist"]):
+            logger.error("Model not found or unavailable.")
+            return {"success": False, "error": "The selected AI model is unavailable or incorrect."}
+
+        if any(kw in error_str for kw in ["502", "503", "504", "timeout", "connection", "offline"]):
+            logger.error("AI Provider offline or timed out.")
+            return {"success": False, "error": "AI Provider is currently offline or timed out. Please try again."}
 
         logger.error(f"LLM call failed: {e}")
-        return None
+        return {"success": False, "error": f"LLM call failed: {e}"}
 
 
 def parse_json_response(response, prompt=None):

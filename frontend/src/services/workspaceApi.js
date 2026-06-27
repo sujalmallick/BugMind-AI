@@ -11,10 +11,12 @@ export async function getWorkspace(projectId) {
 export async function updateWorkspace(
   projectId,
   workspace,
+  options = {}
 ) {
   const response = await api.put(
     `/workspaces/${projectId}`,
     workspace,
+    options
   );
 
   return response.data;

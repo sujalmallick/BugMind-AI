@@ -5,32 +5,41 @@ from database.models.project import Project
 from database.models.analysis import Analysis
 from database.models.test_case import TestCase
 from database.models.workspace import Workspace
+from fastapi import HTTPException
+from sqlalchemy import func
 def create_project(
     db: Session,
     name: str,
     description: str,
     owner_id: int,
 ) -> Project:
+    existing = db.query(Project).filter(
+        Project.owner_id == owner_id,
+        func.lower(func.trim(Project.name)) == name.strip().lower()
+    ).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Project with this name already exists")
 
-  project = Project(
-    name=name,
-    description=description,
-    owner_id=owner_id,
-)
 
-  db.add(project)
-  db.commit()
-  db.refresh(project)
+    project = Project(
+        name=name,
+        description=description,
+        owner_id=owner_id,
+    )
 
-  workspace = Workspace(
-    project_id=project.id,
-)
+    db.add(project)
+    db.commit()
+    db.refresh(project)
 
-  db.add(workspace)
-  db.commit()
-  db.refresh(workspace)
+    workspace = Workspace(
+        project_id=project.id,
+    )
 
-  return project
+    db.add(workspace)
+    db.commit()
+    db.refresh(workspace)
+
+    return project
 
 def get_all_projects(
     db: Session,

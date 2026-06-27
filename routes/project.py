@@ -15,7 +15,6 @@ from services.project_service import (
     delete_project,
     touch_project,
 )
-print("🚀 PROJECT ROUTER LOADED")
 router = APIRouter(
     prefix="/projects",
     tags=["Projects"],

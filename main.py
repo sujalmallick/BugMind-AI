@@ -11,7 +11,16 @@ from routes.issue import router as issue_router
 from routes.auth import router as auth_router
 from auth.dependencies import get_current_user
 from database.models.user import User
-from fastapi import Depends
+from fastapi import Depends, Request
+from limiter import limiter
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from middlewares import (
+    RequestIDMiddleware,
+    SecurityHeadersMiddleware,
+    MaxBodySizeMiddleware,
+    TimeoutMiddleware,
+)
 from routes.ai_settings import (
     router as ai_settings_router
 )
@@ -30,6 +39,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(RequestIDMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(MaxBodySizeMiddleware)
+app.add_middleware(TimeoutMiddleware)
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.include_router(project_router)
 app.include_router(workspace_router)
 app.include_router(analysis_router)
@@ -38,8 +55,17 @@ app.include_router(issue_router)
 app.include_router(auth_router)
 
 
+@app.get("/health")
+def health_check():
+    return {
+        "database": "ok",
+        "llm": "ok",
+        "redis": "ok"
+    }
+
 @app.post("/analyze-workflow")
-def analyze_workflow(data: WorkflowInput,  current_user: User = Depends(get_current_user),):
+@limiter.limit("10/minute")
+def analyze_workflow(request: Request, data: WorkflowInput,  current_user: User = Depends(get_current_user)):
 
     result = workflow_graph.invoke(
         {
@@ -91,7 +117,8 @@ def analyze_workflow(data: WorkflowInput,  current_user: User = Depends(get_curr
 
     }
 @app.post("/analyze-issue")
-def analyze_issue(data: IssueInput):
+@limiter.limit("10/minute")
+def analyze_issue(request: Request, data: IssueInput):
 
     return analyze_issue_agent(
 

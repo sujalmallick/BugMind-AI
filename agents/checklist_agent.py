@@ -79,6 +79,8 @@ Rules:
     else:
      checklist = parse_json_response(response, prompt)
 
+     if isinstance(checklist, dict) and checklist.get("success") is False:
+         return checklist
      if not isinstance(checklist, list):checklist = []
     
 

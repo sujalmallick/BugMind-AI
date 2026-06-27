@@ -107,6 +107,8 @@ Rules:
     else:
      test_cases = parse_json_response(response, prompt)
 
+    if isinstance(test_cases, dict) and test_cases.get("success") is False:
+        return test_cases
     if not isinstance(test_cases, list): test_cases = []
    
 

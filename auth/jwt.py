@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from jose import JWTError, jwt
+from jose import JWTError, jwt, ExpiredSignatureError
 
 from auth.config import (
     SECRET_KEY,
@@ -40,5 +40,7 @@ def verify_access_token(token: str):
 
         return payload
 
+    except ExpiredSignatureError:
+        raise
     except JWTError:
-        return None
+        raise

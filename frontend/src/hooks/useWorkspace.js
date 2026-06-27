@@ -23,10 +23,11 @@ export function useWorkspace(projectId) {
     }
   }, [projectId]);
 
-async function save(data) {
+async function save(data, options = {}) {
   await updateWorkspace(
     projectId,
-    data
+    data,
+    options
   );
 }
   return {

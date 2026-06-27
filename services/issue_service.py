@@ -4,6 +4,8 @@ from database.models.project import Project
 from database.models.workspace import Workspace
 from database.models.test_case import TestCase
 from database.models.issue import Issue
+from fastapi import HTTPException
+from sqlalchemy import func
 
 
 def save_issue(
@@ -46,6 +48,19 @@ def save_issue(
 
     if not test_case:
         return None
+
+    normalized_title = issue["title"].strip().lower()
+    duplicate = (
+        db.query(Issue)
+        .join(TestCase)
+        .filter(
+            TestCase.workspace_id == workspace.id,
+            func.lower(func.trim(Issue.title)) == normalized_title
+        )
+        .first()
+    )
+    if duplicate:
+        raise HTTPException(status_code=409, detail="An issue with this title already exists")
 
     new_issue = Issue(
         test_case_id=test_case.id,

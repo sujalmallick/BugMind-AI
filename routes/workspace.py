@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from auth.dependencies import get_current_user
@@ -31,7 +31,7 @@ def update_workspace_by_project(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return update_workspace(
+    updated = update_workspace(
         db=db,
         project_id=project_id,
         owner_id=current_user.id,
@@ -43,6 +43,9 @@ def update_workspace_by_project(
         device=workspace.device,
         checklist_progress=workspace.checklist_progress,
     )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    return updated
 
 
 @router.get(
@@ -54,8 +57,11 @@ def get_workspace_by_project(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return get_workspace(
+    workspace = get_workspace(
         db=db,
         project_id=project_id,
         owner_id=current_user.id,
     )
+    if not workspace:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    return workspace
