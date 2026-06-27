@@ -1,9 +1,12 @@
 import { ArrowRight } from "lucide-react";
 import StatusPill, { PriorityPill } from "./StatusPill";
+import AssigneeSelector from "../common/AssigneeSelector";
 
 export default function TrackerTable({
   testCases = [],
+  projectId,
   onStatusChange,
+  onAssigneeChange,
   onJumpToIssue,
   selectedRows = [],
   onToggleRow,
@@ -32,6 +35,7 @@ export default function TrackerTable({
             <th className="px-3 py-2.5 font-medium">Category</th>
             <th className="px-3 py-2.5 font-medium">Priority</th>
             <th className="px-3 py-2.5 font-medium">Status</th>
+            <th className="px-3 py-2.5 font-medium">Assignee</th>
             <th className="px-3 py-2.5 text-center font-medium">Issue</th>
           </tr>
         </thead>
@@ -81,6 +85,16 @@ export default function TrackerTable({
                   onChange={(status) =>
                     onStatusChange(testCase.id, status)
                   }
+                />
+              </td>
+
+              <td className="px-3 py-3">
+                <AssigneeSelector
+                  type="test_case"
+                  itemId={testCase.id}
+                  projectId={projectId}
+                  currentAssigneeId={testCase.assignee_id}
+                  onAssigneeChange={(userId) => onAssigneeChange?.(testCase.id, userId)}
                 />
               </td>
 

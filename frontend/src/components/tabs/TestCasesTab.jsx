@@ -1,17 +1,22 @@
-import { Download, Table2 } from "lucide-react";
+import { Download, Table2, Plus } from "lucide-react";
+import { useState } from "react";
 import EmptyState from '../shared/EmptyState'
 import TestCaseTable from '../shared/TestCaseTable'
+import CreateTestCaseModal from '../workspace/CreateTestCaseModal'
 import { exportTestCasesCSV } from "../../lib/exportCSV";
 
 
 export default function TestCasesTab({
   testCases,
+  projectId,
   isLoading,
   onStatusChange,
+  onAssigneeChange,
   onJumpToIssue,
   showToast,
+  onManualCreate,
 }) {
-
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const total = testCases?.length || 0;
 
 
@@ -21,8 +26,24 @@ export default function TestCasesTab({
         <EmptyState
           icon={<Table2 size={22} />}
           title="No test cases yet"
-          description="Analyze a workflow above to generate execution-ready test cases."
+          description="Analyze a workflow above to generate execution-ready test cases, or create one manually."
+          action={
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="btn-primary"
+            >
+              <Plus size={16} />
+              Create Test Case
+            </button>
+          }
         />
+        {showCreateModal && (
+          <CreateTestCaseModal
+            projectId={projectId}
+            onClose={() => setShowCreateModal(false)}
+            onSuccess={(newTc) => onManualCreate?.(newTc)}
+          />
+        )}
       </div>
     )
   }
@@ -37,21 +58,41 @@ export default function TestCasesTab({
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            exportTestCasesCSV(testCases, "BugMind_TestCases");
-          }}
-          className="btn-secondary"
-        >
-          <Download size={14} />
-          Export CSV
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setShowCreateModal(true)}
+            className="btn-primary"
+          >
+            <Plus size={14} />
+            Create
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              exportTestCasesCSV(testCases, "BugMind_TestCases");
+            }}
+            className="btn-secondary"
+          >
+            <Download size={14} />
+            Export
+          </button>
+        </div>
       </div>
+
+      {showCreateModal && (
+        <CreateTestCaseModal
+          projectId={projectId}
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={(newTc) => onManualCreate?.(newTc)}
+        />
+      )}
 
       <TestCaseTable
         testCases={testCases}
+        projectId={projectId}
         onStatusChange={onStatusChange}
+        onAssigneeChange={onAssigneeChange}
         onJumpToIssue={onJumpToIssue}
       />
     </div>

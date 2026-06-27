@@ -20,7 +20,7 @@ def register_user(
 
     existing_user = (
         db.query(User)
-        .filter(User.email == request.email)
+        .filter(User.email == request.email.lower().strip())
         .first()
     )
 
@@ -32,7 +32,7 @@ def register_user(
 
     user = User(
         name=request.name,
-        email=request.email,
+        email=request.email.lower().strip(),
         password_hash=hash_password(
             request.password
         ),
@@ -53,7 +53,7 @@ def login_user(
 
     user = (
         db.query(User)
-        .filter(User.email == email)
+        .filter(User.email == email.lower().strip())
         .first()
     )
 

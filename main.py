@@ -14,6 +14,7 @@ from routes.user import router as user_router
 from routes.notification import router as notification_router
 from routes.organization import router as organization_router
 from routes.invitation import router as invitation_router
+from routes.assignment import router as assignment_router
 from auth.dependencies import get_current_user
 from database.models.user import User
 from fastapi import Depends, Request
@@ -62,6 +63,7 @@ app.include_router(user_router)
 app.include_router(notification_router)
 app.include_router(organization_router)
 app.include_router(invitation_router, prefix="/api")
+app.include_router(assignment_router, prefix="/api")
 
 # Serve uploaded avatars as static files
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")

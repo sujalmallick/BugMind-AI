@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy import DateTime, ForeignKey, String, Text, Boolean, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.base import Base
@@ -86,6 +86,23 @@ class TestCase(Base):
         DateTime,
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
+    )
+
+    is_manual: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+
+    assignee_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    assigned_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
     )
 
     workspace = relationship(

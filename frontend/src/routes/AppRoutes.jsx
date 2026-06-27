@@ -15,6 +15,7 @@ import WorkspacePage from "../pages/WorkspacePage";
 import ProfilePage from "../pages/settings/ProfilePage";
 import OrganizationsPage from "../pages/OrganizationsPage";
 import InviteAcceptPage from "../pages/InviteAcceptPage";
+import MyWorkPage from "../pages/MyWorkPage";
 
 export default function AppRoutes() {
   const { authenticated } =
@@ -105,6 +106,15 @@ export default function AppRoutes() {
       <Route
         path="/invite/:token"
         element={<InviteAcceptPage />}
+      />
+
+      <Route
+        path="/my-work"
+        element={
+          <ProtectedRoute>
+            <MyWorkPage />
+          </ProtectedRoute>
+        }
       />
 
     </Routes>

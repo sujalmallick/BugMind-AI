@@ -27,7 +27,9 @@ function MetricCard({ icon, label, value, tone }) {
 
 export default function TrackerTab({
   testCases = [],
+  projectId,
   onStatusChange,
+  onAssigneeChange,
   onJumpToIssue,
   showToast,
 }) {
@@ -406,7 +408,9 @@ export default function TrackerTab({
           ) : (
             <TrackerTable
               testCases={filteredTestCases}
+              projectId={projectId}
               onStatusChange={onStatusChange}
+              onAssigneeChange={onAssigneeChange}
               onJumpToIssue={onJumpToIssue}
               selectedRows={selectedRows}
               onToggleRow={toggleRow}

@@ -602,15 +602,20 @@ testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnviron
             />
           )}
 
-          {activeTab === "testcases" && (
-            <TestCasesTab
-              testCases={testCases}
-              isLoading={false}
-              onStatusChange={handleStatusChange}
-              onJumpToIssue={handleJumpToIssue}
-              showToast={showToast}
-            />
-          )}
+            {activeTab === 'testcases' && (
+              <TestCasesTab
+                testCases={testCases}
+                projectId={projectId}
+                isLoading={isAnalyzing}
+                onStatusChange={handleStatusChange}
+                onAssigneeChange={(tcId, assigneeId) => {
+                  setTestCases(prev => prev.map(tc => tc.id === tcId ? { ...tc, assignee_id: assigneeId } : tc))
+                }}
+                onManualCreate={(newTc) => setTestCases(prev => [newTc, ...prev])}
+                onJumpToIssue={handleJumpToIssue}
+                showToast={showToast}
+              />
+            )}
 
           {activeTab === "issues" && (
             <IssueAnalysisTab
@@ -627,7 +632,11 @@ testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnviron
           {activeTab === "tracker" && (
             <TrackerTab
               testCases={testCases}
+              projectId={projectId}
               onStatusChange={handleStatusChange}
+              onAssigneeChange={(tcId, assigneeId) => {
+                setTestCases(prev => prev.map(tc => tc.id === tcId ? { ...tc, assignee_id: assigneeId } : tc))
+              }}
               onJumpToIssue={handleJumpToIssue}
               showToast={showToast}
             />

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Search, KeyRound, LogOut, User, Users, Bell } from "lucide-react";
+import { Search, Home, LogOut, User, Users, Bell, Briefcase, KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatRelativeTime } from "../../utils/time";
 import { useAuth } from "../../auth/AuthContext";
@@ -194,6 +194,15 @@ export default function HeaderBar({
                     >
                       <User size={15} className="text-muted" />
                       Profile
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => navigate("/my-work")}
+                      className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium text-ink transition hover:bg-paper"
+                    >
+                      <Briefcase size={15} className="text-muted" />
+                      My Work
                     </button>
 
                     <button

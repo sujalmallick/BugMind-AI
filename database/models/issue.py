@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy import DateTime, ForeignKey, String, Text, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.base import Base
@@ -75,6 +75,23 @@ class Issue(Base):
         DateTime,
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
+    )
+
+    assignee_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    assigned_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+
+    reporter_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
     )
 
     test_case = relationship(

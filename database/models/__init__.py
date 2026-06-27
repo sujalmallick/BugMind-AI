@@ -13,6 +13,7 @@ from database.models.team_member import TeamMember
 from database.models.project_member import ProjectMember
 from database.models.project_team_access import ProjectTeamAccess
 from database.models.invitation import Invitation
+from database.models.activity_log import ActivityLog
 
 __all__ = [
     "User",
@@ -30,4 +31,5 @@ __all__ = [
     "ProjectMember",
     "ProjectTeamAccess",
     "Invitation",
+    "ActivityLog",
 ]
