@@ -56,7 +56,7 @@ export default function AnalysisSummary({
 
             <button
               onClick={onContinue}
-              className="inline-flex items-center gap-2 self-start rounded-lg bg-signal px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              className="btn-primary"
             >
               Open Workspace
               <ArrowRight size={16} />

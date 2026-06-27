@@ -81,7 +81,7 @@ export default function IssueAnalysisTab({ form, onFormChange, onGenerate, isGen
           type="button"
           onClick={onGenerate}
           disabled={isGenerating}
-          className="flex w-fit items-center gap-2 rounded-md bg-signal px-4 py-2 text-[13px] font-medium text-white disabled:opacity-60"
+          className="btn-primary"
         >
           {isGenerating && <Loader2 size={14} className="animate-spin" />}
           {isGenerating ? 'Classifying…' : 'Generate issue analysis'}

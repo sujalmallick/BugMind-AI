@@ -57,7 +57,7 @@ return (
         onOpen(project.id);
       }
     }}
-    className="group w-full cursor-pointer rounded-xl border border-hairline bg-white p-5 text-left shadow-sm transition hover:border-signal hover:shadow-md"
+    className="group w-full cursor-pointer base-card p-5 text-left hover:-translate-y-1"
   >
       {/* Header */}
 
@@ -66,7 +66,7 @@ return (
           <div className="rounded-lg bg-paper p-2">
             <FolderOpen
               size={18}
-              className="text-signal"
+              className="text-signal transition-transform duration-300 ease-out group-hover:scale-110"
             />
           </div>
 
@@ -113,7 +113,7 @@ return (
   {menuOpen && (
     <div
       onClick={(e) => e.stopPropagation()}
-   className="absolute right-0 bottom-full mb-2 z-20 w-40 rounded-xl border border-hairline bg-white py-2 shadow-xl"
+   className="absolute right-0 bottom-full mb-2 z-20 w-40 rounded-xl border border-hairline bg-white py-2 shadow-xl menu-enter"
     >
      <button
   onClick={(e) => {

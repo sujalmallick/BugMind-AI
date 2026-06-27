@@ -14,9 +14,9 @@ import { exportTestCasesCSV } from "../../lib/exportCSV";
 
 function MetricCard({ icon, label, value, tone }) {
   return (
-    <div className="rounded-xl border border-hairline bg-surface p-4 shadow-sm">
+    <div className="group base-card p-4 hover:-translate-y-1">
       <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
-        {icon}
+        <span className="transition-transform duration-300 ease-out group-hover:scale-110">{icon}</span>
         <span>{label}</span>
       </div>
 
@@ -181,7 +181,7 @@ export default function TrackerTab({
   ];
 
   return (
-    <div className="rounded-2xl border border-hairline bg-white p-5 shadow-sm md:p-6">
+    <div className="base-card p-5 md:p-6">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold text-ink">Execution Tracker</h3>
@@ -196,7 +196,7 @@ export default function TrackerTab({
             );
             showToast("Tracker exported successfully!");
           }}
-          className="inline-flex items-center gap-1.5 self-start rounded-lg border border-hairline bg-surface px-3 py-2 text-xs font-semibold text-ink shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-signal hover:bg-paper hover:text-signal"
+          className="btn-secondary"
         >
           <Download size={14} />
           Export CSV
@@ -369,7 +369,7 @@ export default function TrackerTab({
                 <button
                   onClick={applyBulkAction}
                   disabled={!bulkAction}
-                  className="rounded-lg bg-signal px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95 disabled:opacity-50"
+                  className="btn-primary"
                 >
                   Apply
                 </button>
@@ -398,7 +398,7 @@ export default function TrackerTab({
                   setStatusFilter("all");
                   setPriorityFilter("all");
                 }}
-                className="mt-5 rounded-lg bg-signal px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95"
+                className="btn-primary mt-5"
               >
                 Clear Filters
               </button>

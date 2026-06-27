@@ -17,7 +17,7 @@ export default function TestCasesTab({
 
   if (!testCases || testCases.length === 0) {
     return (
-      <div className="rounded-2xl border border-hairline bg-white p-5 shadow-sm md:p-6">
+      <div className="base-card p-5 md:p-6">
         <EmptyState
           icon={<Table2 size={22} />}
           title="No test cases yet"
@@ -28,7 +28,7 @@ export default function TestCasesTab({
   }
 
   return (
-    <div className="rounded-2xl border border-hairline bg-white p-5 shadow-sm md:p-6">
+    <div className="base-card p-5 md:p-6">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold text-ink">Test Cases</h3>
@@ -42,7 +42,7 @@ export default function TestCasesTab({
           onClick={() => {
             exportTestCasesCSV(testCases, "BugMind_TestCases");
           }}
-          className="inline-flex items-center gap-1.5 self-start rounded-lg border border-hairline bg-surface px-3 py-2 text-xs font-semibold text-ink shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-signal hover:bg-paper hover:text-signal"
+          className="btn-secondary"
         >
           <Download size={14} />
           Export CSV

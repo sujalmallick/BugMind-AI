@@ -260,7 +260,7 @@ const filterChips = [
 
       <div className="projects-atmosphere">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8">
-          <section className="hero-glow rounded-2xl border border-hairline bg-white/95 p-6 shadow-sm backdrop-blur md:p-8">
+          <section className="hero-glow base-card bg-white/95 p-6 backdrop-blur md:p-8 section-enter section-enter-1">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <p className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
@@ -268,7 +268,7 @@ const filterChips = [
                   QA Command Center
                 </p>
 
-                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink md:text-4xl">
+                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-shimmer md:text-4xl">
                   Build reliable releases with calmer testing cycles.
                 </h1>
 
@@ -283,7 +283,7 @@ const filterChips = [
                 <button
                   type="button"
                   onClick={() => setShowModal(true)}
-                  className="inline-flex items-center gap-2 rounded-lg bg-signal px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95"
+                  className="btn-primary"
                 >
                   <Plus size={16} />
                   New Project
@@ -331,7 +331,7 @@ const filterChips = [
           </section>
 
           {spotlightProject && (
-            <section className="mt-6 rounded-2xl border border-hairline bg-linear-to-r from-white via-sky-50 to-emerald-50 p-5 shadow-sm">
+            <section className="mt-6 base-card bg-linear-to-r from-white via-sky-50 to-emerald-50 p-5 section-enter section-enter-2">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted">
@@ -362,7 +362,7 @@ const filterChips = [
                   <button
                     type="button"
                     onClick={() => handleOpen(spotlightProject.id)}
-                    className="rounded-lg border border-hairline bg-white px-4 py-2 text-sm font-semibold text-ink transition hover:border-signal hover:text-signal md:ml-2"
+                    className="btn-secondary px-4 py-2 text-sm md:ml-2"
                   >
                     Resume
                   </button>
@@ -371,7 +371,7 @@ const filterChips = [
             </section>
           )}
 
-          <section className="mt-6 rounded-2xl border border-hairline bg-white p-4 shadow-sm md:p-5">
+          <section className="mt-6 base-card p-4 md:p-5 section-enter section-enter-3">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="relative w-full md:max-w-md">
                 <Search
@@ -430,7 +430,7 @@ const filterChips = [
             </div>
           </section>
 
-          <section className="mt-6">
+          <section className="mt-6 section-enter section-enter-4">
             <ProjectGrid
               projects={sortedProjects}
           onOpenProject={handleOpen}

@@ -113,7 +113,7 @@ useEffect(() => {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-hairline px-4 py-2 text-sm transition hover:bg-paper"
+              className="btn-secondary"
             >
               Cancel
             </button>
@@ -121,7 +121,7 @@ useEffect(() => {
             <button
               type="submit"
               disabled={!name.trim()}
-              className="rounded-lg bg-signal px-5 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="btn-primary"
             >
 {mode === "edit"
   ? "Save Changes"

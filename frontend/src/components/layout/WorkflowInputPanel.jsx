@@ -212,7 +212,7 @@ onTestEnvironmentChange,
               <button
                 type="button"
                 onClick={onExpand}
-                className="rounded-lg border border-hairline bg-white px-4 py-2 text-sm font-semibold text-muted transition-all duration-200 hover:border-signal hover:bg-paper hover:text-ink"
+                className="btn-secondary px-4 py-2 text-sm"
               >
                 Cancel
               </button>
@@ -222,7 +222,7 @@ onTestEnvironmentChange,
               type="button"
               onClick={onAnalyze}
               disabled={isAnalyzing}
-              className="flex items-center gap-2 rounded-lg bg-signal px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+              className="btn-primary"
             >
               {isAnalyzing && (
                 <Loader2 size={15} className="animate-spin" />

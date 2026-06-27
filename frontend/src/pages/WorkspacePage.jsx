@@ -568,7 +568,7 @@ testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnviron
               onClick={() =>
                 navigate(`/project/${projectId}`)
               }
-              className="rounded-lg border border-hairline bg-surface px-3 py-1.5 text-[13px] font-semibold text-muted shadow-sm transition hover:border-signal hover:text-ink hover:shadow"
+              className="btn-secondary px-3 py-1.5 text-[13px]"
             >
               ← Back to Summary
             </button>

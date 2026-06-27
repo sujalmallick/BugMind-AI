@@ -30,7 +30,7 @@ export default function TestCaseTable({
           {safeTestCases.map((testCase) => (
             <tr
   key={testCase.id}
-  className="border-b border-hairline last:border-0 hover:bg-paper/70"
+  className="group border-b border-hairline last:border-0 hover:bg-[#f4f7ff] transition-colors duration-200"
 >
 
               <td className="px-3 py-3 font-mono text-[12px] text-muted">

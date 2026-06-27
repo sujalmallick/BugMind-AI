@@ -24,7 +24,7 @@ export default function EmptyProjects({
       <button
         type="button"
         onClick={onCreateProject}
-        className="mt-8 inline-flex items-center gap-2 rounded-lg bg-signal px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
+        className="btn-primary mt-8"
       >
         <Plus size={16} />
         Create Project

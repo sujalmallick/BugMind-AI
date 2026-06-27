@@ -50,14 +50,14 @@ export default function DeleteProjectModal({
         <div className="flex justify-end gap-3 border-t border-hairline px-6 py-5">
           <button
             onClick={onClose}
-            className="rounded-lg border border-hairline px-4 py-2 text-sm transition hover:bg-paper"
+            className="btn-secondary"
           >
             Cancel
           </button>
 
           <button
             onClick={() => onDelete(project.id)}
-            className="flex items-center gap-2 rounded-lg bg-red-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-red-700"
+            className="btn-primary !bg-red-600 hover:!bg-red-700 !border-red-600 !shadow-none"
           >
             <Trash2 size={15} />
             Delete
