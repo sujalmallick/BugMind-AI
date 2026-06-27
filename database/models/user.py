@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, String
+from sqlalchemy import Boolean, DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.base import Base
@@ -13,7 +13,9 @@ class User(Base):
 
     name: Mapped[str] = mapped_column(String(100))
 
-    
+    bio: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    job_title: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    location: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     email: Mapped[str] = mapped_column(
         String(255),
@@ -32,7 +34,31 @@ class User(Base):
     cascade="all, delete-orphan",
 )
 
+    org_memberships = relationship(
+        "OrganizationMember",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    team_memberships = relationship(
+        "TeamMember",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
     password_hash: Mapped[str] = mapped_column(String(255))
+
+    avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+
+    # Bump this on any security event (password change, future: email change,
+    # MFA). Auth middleware rejects any JWT whose iat < credentials_updated_at.
+    credentials_updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
+
+    # Soft-delete fields. Rows are never hard-deleted.
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    deleted_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime,

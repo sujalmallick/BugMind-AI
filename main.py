@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from routes.workspace import router as workspace_router
 from models import WorkflowInput, IssueInput
 from graph import workflow_graph
@@ -9,6 +10,10 @@ from routes.analysis import router as analysis_router
 from routes.test_case import router as test_case_router
 from routes.issue import router as issue_router
 from routes.auth import router as auth_router
+from routes.user import router as user_router
+from routes.notification import router as notification_router
+from routes.organization import router as organization_router
+from routes.invitation import router as invitation_router
 from auth.dependencies import get_current_user
 from database.models.user import User
 from fastapi import Depends, Request
@@ -53,6 +58,13 @@ app.include_router(analysis_router)
 app.include_router(test_case_router)
 app.include_router(issue_router)
 app.include_router(auth_router)
+app.include_router(user_router)
+app.include_router(notification_router)
+app.include_router(organization_router)
+app.include_router(invitation_router, prefix="/api")
+
+# Serve uploaded avatars as static files
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
 @app.get("/health")

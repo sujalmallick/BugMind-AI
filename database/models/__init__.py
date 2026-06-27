@@ -5,6 +5,14 @@ from database.models.analysis import Analysis
 from database.models.test_case import TestCase
 from database.models.issue import Issue
 from database.models.user_ai_settings import UserAISettings
+from database.models.notification import Notification
+from database.models.organization import Organization
+from database.models.organization_member import OrganizationMember
+from database.models.team import Team
+from database.models.team_member import TeamMember
+from database.models.project_member import ProjectMember
+from database.models.project_team_access import ProjectTeamAccess
+from database.models.invitation import Invitation
 
 __all__ = [
     "User",
@@ -14,4 +22,12 @@ __all__ = [
     "TestCase",
     "Issue",
     "UserAISettings",
+    "Notification",
+    "Organization",
+    "OrganizationMember",
+    "Team",
+    "TeamMember",
+    "ProjectMember",
+    "ProjectTeamAccess",
+    "Invitation",
 ]

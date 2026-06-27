@@ -18,6 +18,7 @@ import AppFooter from "../components/layout/AppFooter";
 import ProjectGrid from "../components/projects/ProjectGrid";
 import CreateProjectModal from "../components/projects/CreateProjectModal";
 import DeleteProjectModal from "../components/projects/DeleteProjectModal";
+import ShareProjectModal from "../components/projects/ShareProjectModal";
 
 import ToastStack from "../components/shared/ToastStack";
 import useToasts from "../components/shared/useToasts";
@@ -41,6 +42,7 @@ export default function ProjectsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [deletingProject, setDeletingProject] = useState(null);
+  const [sharingProject, setSharingProject] = useState(null);
   const [sortBy, setSortBy] = useState("updated");
   const [filterBy, setFilterBy] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -94,16 +96,7 @@ export default function ProjectsPage() {
 }
 
 function handleShare(project) {
-  const shareUrl = `${window.location.origin}/project/${project.id}`;
-
-  navigator.clipboard
-    .writeText(shareUrl)
-    .then(() => {
-      showToast("Project link copied!");
-    })
-    .catch(() => {
-      showToast("Failed to copy link.");
-    });
+  setSharingProject(project);
 }
 async function handleOpen(id) {
   console.log("Clicked id:", id);
@@ -467,7 +460,13 @@ const filterChips = [
             onDelete={handleDelete}
           />
 
-        </div>
+      {sharingProject && (
+        <ShareProjectModal
+          project={sharingProject}
+          onClose={() => setSharingProject(null)}
+        />
+      )}
+    </div>
 
         <AppFooter />
       </div>

@@ -12,25 +12,29 @@ It takes a workflow description and observed steps, runs AI-driven analysis, and
 - Generates modules, checklist items, and manual test cases
 - Supports issue classification from tester observations
 - Persists analysis/test cases/issues/workspaces in PostgreSQL
+- **Secure Authentication:** JWT-based user authentication, password hashing, and session management.
+- **Profile Management:** Fully featured user profiles with avatar uploads, personal details (Job Title, Location, Bio), and soft-deletion capability.
+- **Bring Your Own Key (BYOK):** Users can securely store and utilize their own AI provider keys (OpenAI, Anthropic, Gemini, DeepSeek, XAI).
 
 ## Tech Stack
 
-- Frontend: React + Vite
-- Backend: FastAPI + SQLAlchemy
-- Database: PostgreSQL
-- Migrations: Alembic
-- AI orchestration: LangGraph + agent modules
+- **Frontend**: React + Vite + Tailwind CSS
+- **Backend**: FastAPI + SQLAlchemy
+- **Database**: PostgreSQL
+- **Migrations**: Alembic
+- **AI orchestration**: LangGraph + agent modules
+- **Image Processing**: Pillow (Avatar EXIF stripping and validation)
 
 ## High-Level Architecture
 
 ```text
-React Frontend
+React Frontend (Vite)
       |
       v
-FastAPI Routes
+FastAPI Routes (/auth, /api/me, /api/projects)
       |
       v
-Service Layer
+Service Layer + Authentication Guards
       |
       v
 SQLAlchemy Models + PostgreSQL
@@ -48,95 +52,83 @@ BugMind Ai/
 ├── constants.py
 ├── requirements.txt
 ├── alembic.ini
-├── agents/
-├── routes/
-├── services/
-├── schemas/
-├── database/
-├── alembic/
-└── frontend/
+├── agents/            # AI agent modules for graph flow
+├── auth/              # JWT dependencies, hashing, security utilities
+├── routes/            # API endpoints (auth, user, projects, analysis, etc.)
+├── services/          # Business logic domain layer
+├── schemas/           # Pydantic request/response contracts
+├── database/          # Session management & SQLAlchemy ORM models
+├── alembic/           # Database migration history
+├── uploads/           # Static asset storage (e.g., user avatars)
+└── frontend/          # React + Vite application
 ```
-
-## Backend Structure
-
-- `routes/`: API endpoints (`project`, `workspace`, `analysis`, `test_case`, `issue`)
-- `services/`: business logic for each domain
-- `schemas/`: Pydantic request/response contracts
-- `database/models/`: SQLAlchemy ORM models
-- `agents/`: AI agents used by graph flow
-- `alembic/versions/`: DB migration history
-
-## Frontend Structure
-
-- `frontend/src/pages/`: `ProjectsPage`, `WorkspacePage`
-- `frontend/src/components/`: layout, tabs, project cards, shared UI
-- `frontend/src/services/`: API clients for backend routes
-- `frontend/src/hooks/`: project/workspace state hooks
-- `frontend/src/utils/`: shared utilities (time formatting, exports)
 
 ## Core Entities
 
-- `Project`: name, description, status, `created_at`, `updated_at`
+- `User`: Global account handling authentication, avatars, and profile details.
+- `UserAISettings`: Encrypted storage for a user's BYOK provider API keys.
+- `Project`: Scoped to a User. Tracks name, description, status, `created_at`, `updated_at`.
 - `Workspace`: workflow + observed test context
 - `Analysis`: generated AI output
 - `TestCase`: structured manual test cases
 - `Issue`: classified bug/observation outputs
 
-## Project Timestamp Behavior
+## Security Properties
 
-Project timestamps are persisted in PostgreSQL and returned by backend APIs.
-
-- `updated_at` changes whenever a project is updated/touched
-- Frontend maps API fields to camelCase (`updated_at` -> `updatedAt`)
-- Relative time labels in project cards/header are computed in UI
-
-Important:
-- Backend datetime values may arrive as UTC strings without explicit timezone suffix.
-- Frontend timestamp parsing normalizes these values as UTC before computing relative time, preventing fixed offset bugs (for example, always showing `5-6 hours ago`).
+- **Stateless Invalidation**: Password changes instantly invalidate all other active sessions via a `credentials_updated_at` JWT guard.
+- **Soft Deletes**: User accounts are soft-deleted via `deleted_at`, preserving foreign key integrity across historical QA projects.
+- **Safe Avatars**: Avatar uploads strictly validate MIME types and use Pillow to permanently strip potentially sensitive EXIF metadata (e.g. GPS coordinates).
+- **Key Isolation**: AI provider keys belong exclusively to the user and are never logged or exposed in plain text to the client.
 
 ## Local Development
 
-### 1) Backend
+### 1) Database setup
 
-Install Python dependencies:
+Ensure you have a local PostgreSQL instance running. Configure your `.env` file in the root directory:
+
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/bugmind
+JWT_SECRET=your_jwt_secret_key_here
+```
+
+### 2) Backend
+
+Create and activate a virtual environment, then install dependencies:
 
 ```bash
+python -m venv .venv
+.\.venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 ```
 
-Run API server:
+Run database migrations to initialize tables:
+```bash
+alembic upgrade head
+```
 
+Start the API server:
 ```bash
 uvicorn main:app --reload
 ```
 
-### 2) Frontend
+### 3) Frontend
 
+In a new terminal window:
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### 3) Database Migrations
-
-```bash
-alembic upgrade head
-```
-
 ## Expected Workflow
 
-1. Create/open a project
-2. Enter workflow and observed steps
-3. Run analysis
-4. Review modules/checklist/test cases
-5. Classify issues and track progress
-6. Re-open project later with persisted state
-
-## Notes
-
-- AI output quality depends on workflow clarity and detail.
-- Manual validation is still required for final QA sign-off.
+1. Create an account and customize your profile/avatar.
+2. Store your API keys in the Security tab (if BYOK is enabled).
+3. Create/open a project.
+4. Enter workflow and observed steps.
+5. Run analysis and review modules/checklist/test cases.
+6. Classify issues and track progress.
+7. Re-open project later with persisted state.
 
 ## Author
 

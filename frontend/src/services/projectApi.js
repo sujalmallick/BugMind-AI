@@ -10,6 +10,8 @@ export async function getProjects() {
     updatedAt: project.updated_at,
     moduleCount: project.module_count,
     testCaseCount: project.test_case_count,
+    organizationId: project.organization_id,
+    myRole: project.my_role,
   }));
 }
 

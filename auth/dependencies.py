@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+from datetime import datetime, timezone
 
 from auth.jwt import verify_access_token
 from jose import JWTError, ExpiredSignatureError
@@ -55,5 +56,26 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
         )
+
+    # Reject soft-deleted accounts immediately.
+    if user.deleted_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Account is deactivated",
+        )
+
+    # Reject tokens that predate the last security event (e.g. password change).
+    # NOTE: This lookup runs on every authenticated request -- that is the
+    # intentional cost of stateless, immediate session invalidation.
+    if user.credentials_updated_at is not None:
+        iat_raw = payload.get("iat")
+        if iat_raw is not None:
+            iat = datetime.fromtimestamp(iat_raw, tz=timezone.utc)
+            cua = user.credentials_updated_at.replace(tzinfo=timezone.utc)
+            if iat < cua:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Session expired -- please log in again",
+                )
 
     return user

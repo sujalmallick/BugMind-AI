@@ -20,6 +20,9 @@ def create_access_token(data: dict) -> str:
     payload.update(
         {
             "exp": expire,
+            # iat is used by auth middleware to invalidate sessions
+            # that predate a security event (password change, etc.).
+            "iat": datetime.now(timezone.utc),
         }
     )
 

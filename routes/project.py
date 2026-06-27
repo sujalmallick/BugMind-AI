@@ -98,5 +98,82 @@ def touch_existing_project(
     return touch_project(
         db=db,
         project_id=project_id,
-        owner_id=current_user.id,
+        user_id=current_user.id,
     )
+
+from pydantic import BaseModel
+class ProjectMemberAdd(BaseModel):
+    user_id: int
+    role: str = "viewer"
+
+class ProjectTeamAdd(BaseModel):
+    team_id: int
+    role: str = "viewer"
+
+from services.project_sharing_service import (
+    add_project_member,
+    remove_project_member,
+    list_project_members,
+    add_team_to_project,
+    remove_team_from_project,
+    list_project_teams,
+)
+
+@router.get("/{project_id}/members")
+def get_project_members_route(
+    project_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return list_project_members(db, project_id, current_user.id)
+
+
+@router.post("/{project_id}/members")
+def add_project_member_route(
+    project_id: int,
+    body: ProjectMemberAdd,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return add_project_member(db, project_id, body.user_id, body.role, current_user.id)
+
+
+@router.delete("/{project_id}/members/{user_id}")
+def remove_project_member_route(
+    project_id: int,
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    remove_project_member(db, project_id, user_id, current_user.id)
+    return {"message": "Member removed."}
+
+
+@router.get("/{project_id}/teams")
+def get_project_teams_route(
+    project_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return list_project_teams(db, project_id, current_user.id)
+
+
+@router.post("/{project_id}/teams")
+def add_project_team_route(
+    project_id: int,
+    body: ProjectTeamAdd,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return add_team_to_project(db, project_id, body.team_id, body.role, current_user.id)
+
+
+@router.delete("/{project_id}/teams/{team_id}")
+def remove_project_team_route(
+    project_id: int,
+    team_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    remove_team_from_project(db, project_id, team_id, current_user.id)
+    return {"message": "Team removed."}

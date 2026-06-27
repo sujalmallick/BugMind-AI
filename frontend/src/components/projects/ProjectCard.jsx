@@ -10,6 +10,10 @@ import {
   Pencil,
   Share2,
   Trash2,
+  Building2,
+  Shield,
+  Eye,
+  Crown
 } from "lucide-react";
 
 export default function ProjectCard({
@@ -42,8 +46,14 @@ useEffect(() => {
 }, []);
 
 
-console.log(project);
 console.log("ProjectCard:", project);
+
+const canEdit = ["editor", "admin", "owner"].includes(project.myRole);
+const canShare = ["admin", "owner"].includes(project.myRole);
+const canDelete = project.myRole === "owner";
+const hasMenu = canEdit || canShare || canDelete;
+
+const RoleIcon = project.myRole === "owner" ? Crown : project.myRole === "viewer" ? Eye : Shield;
 
 return (
   <div
@@ -84,7 +94,18 @@ return (
           : "bg-amber-100 text-amber-700"
       }`}
     >
-{project.status || "Draft"}    </span>
+      {project.status || "Draft"}
+    </span>
+    {project.organizationId && (
+      <span className="rounded-full bg-paper px-1.5 py-0.5 text-muted flex items-center" title="Organization Project">
+        <Building2 size={12} />
+      </span>
+    )}
+    {project.myRole && project.myRole !== "owner" && (
+      <span className="rounded-full bg-surface border border-hairline px-2 py-0.5 text-[10px] font-semibold text-muted flex items-center gap-1 capitalize">
+        <RoleIcon size={10} /> {project.myRole}
+      </span>
+    )}
 
   </div>
 
@@ -95,69 +116,70 @@ return (
 
         </div>
 
-      <div
-  ref={menuRef}
-  className="relative"
->
-  <button
-    type="button"
-    onClick={(e) => {
-      e.stopPropagation();
-      setMenuOpen((prev) => !prev);
-    }}
-    className="rounded-lg p-1.5 text-muted transition hover:bg-paper hover:text-ink"
-  >
-    <MoreVertical size={18} />
-  </button>
+      {hasMenu && (
+        <div ref={menuRef} className="relative">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen((prev) => !prev);
+            }}
+            className="rounded-lg p-1.5 text-muted transition hover:bg-paper hover:text-ink"
+          >
+            <MoreVertical size={18} />
+          </button>
 
-  {menuOpen && (
-    <div
-      onClick={(e) => e.stopPropagation()}
-   className="absolute right-0 bottom-full mb-2 z-20 w-40 rounded-xl border border-hairline bg-white py-2 shadow-xl menu-enter"
-    >
-     <button
-  onClick={(e) => {
-    e.stopPropagation();
-    onRename(project);
-    setMenuOpen(false);
-  }}
-  className="flex w-full items-center gap-3 px-4 py-2 text-sm hover:bg-paper"
->
-  <Pencil size={15} />
-  Rename
-</button>
+          {menuOpen && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="absolute right-0 bottom-full mb-2 z-20 w-40 rounded-xl border border-hairline bg-white py-2 shadow-xl menu-enter"
+            >
+              {canEdit && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRename(project);
+                    setMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-2 text-sm hover:bg-paper"
+                >
+                  <Pencil size={15} />
+                  Rename
+                </button>
+              )}
 
-    <button
-  onClick={(e) => {
-    e.stopPropagation();
-    setMenuOpen(false);
-    onShare(project);
-  }}
-  className="flex w-full items-center gap-3 px-4 py-2 text-sm hover:bg-paper"
->
-  <Share2 size={15} />
-  Share
-</button>
+              {canShare && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuOpen(false);
+                    onShare(project);
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-2 text-sm hover:bg-paper"
+                >
+                  <Share2 size={15} />
+                  Share
+                </button>
+              )}
 
-      <button
-  onClick={(e) => {
-    e.stopPropagation();
-
-    setMenuOpen(false);
-
-    onDelete(project);
-  }}
-  className="flex w-full items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
->
-  <Trash2 size={15} />
-  Delete
-</button>
-
-      
+              {canDelete && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuOpen(false);
+                    onDelete(project);
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 size={15} />
+                  Delete
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
-  )}
-</div>
-      </div>
 
       {/* Stats */}
 

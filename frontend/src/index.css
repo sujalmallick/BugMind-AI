@@ -216,6 +216,17 @@ body,
   animation: sectionEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+@keyframes profilePanelEnter {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 .section-enter-1 { animation-delay: 100ms; }
 .section-enter-2 { animation-delay: 200ms; }
 .section-enter-3 { animation-delay: 300ms; }

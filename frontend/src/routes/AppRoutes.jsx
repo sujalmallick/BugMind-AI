@@ -12,6 +12,9 @@ import RegisterPage from "../pages/RegisterPage";
 
 import ProjectsPage from "../pages/ProjectsPage";
 import WorkspacePage from "../pages/WorkspacePage";
+import ProfilePage from "../pages/settings/ProfilePage";
+import OrganizationsPage from "../pages/OrganizationsPage";
+import InviteAcceptPage from "../pages/InviteAcceptPage";
 
 export default function AppRoutes() {
   const { authenticated } =
@@ -69,6 +72,39 @@ export default function AppRoutes() {
 
           </ProtectedRoute>
         }
+      />
+
+      <Route
+        path="/settings/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/organizations"
+        element={
+          <ProtectedRoute>
+            <OrganizationsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/organizations/:orgId"
+        element={
+          <ProtectedRoute>
+            <OrganizationsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Public invite accept page — no auth required to view, auth checked on accept */}
+      <Route
+        path="/invite/:token"
+        element={<InviteAcceptPage />}
       />
 
     </Routes>
