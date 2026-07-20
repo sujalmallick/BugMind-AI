@@ -94,3 +94,20 @@ def remove_test_case(
         tc_id=tc_id,
         current_user_id=current_user.id,
     )
+
+
+@router.post("/{project_id}/bulk-import")
+def bulk_import_test_cases(
+    project_id: int,
+    data: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    items = data.get("test_cases", [])
+    created = bulk_create_manual_test_cases(
+        db=db,
+        project_id=project_id,
+        current_user_id=current_user.id,
+        data_list=items,
+    )
+    return {"imported": len(created)}

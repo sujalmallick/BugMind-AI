@@ -5,6 +5,7 @@ import {
   CircleCheckBig,
   Clock3,
   FilePenLine,
+  FileSpreadsheet,
   FolderKanban,
   Plus,
   Search,
@@ -19,6 +20,7 @@ import ProjectGrid from "../components/projects/ProjectGrid";
 import CreateProjectModal from "../components/projects/CreateProjectModal";
 import DeleteProjectModal from "../components/projects/DeleteProjectModal";
 import ShareProjectModal from "../components/projects/ShareProjectModal";
+import ImportCsvModal from "../components/csv/ImportCsvModal";
 
 import ToastStack from "../components/shared/ToastStack";
 import useToasts from "../components/shared/useToasts";
@@ -37,6 +39,7 @@ export default function ProjectsPage() {
     updateProject,
     deleteProject,
     selectProject,
+    refreshProjects,
   } = useProjects();
 
   const [showModal, setShowModal] = useState(false);
@@ -46,6 +49,7 @@ export default function ProjectsPage() {
   const [sortBy, setSortBy] = useState("updated");
   const [filterBy, setFilterBy] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showImportModal, setShowImportModal] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -63,13 +67,15 @@ export default function ProjectsPage() {
   }, [location, navigate, showToast]);
 
   async function handleCreate(data) {
-    const project = createProject(data);
-
-    await addProject(project);
-
-    showToast("Project created successfully!");
-
-    setShowModal(false);
+    try {
+      const project = createProject(data);
+      await addProject(project);
+      showToast("Project created successfully!");
+      setShowModal(false);
+    } catch (err) {
+      showToast(err?.response?.data?.detail || err.message || "Failed to create project.");
+      setShowModal(false);
+    }
   }
 
   async function handleRename(data) {
@@ -284,6 +290,14 @@ const filterChips = [
                   <Plus size={16} />
                   New Project
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setShowImportModal(true)}
+                  className="flex items-center gap-2 rounded-xl border border-hairline bg-white px-4 py-2 text-sm font-semibold text-ink hover:border-signal hover:text-signal transition"
+                >
+                  <FileSpreadsheet size={15} />
+                  Import from CSV
+                </button>
               </div>
             </div>
 
@@ -476,6 +490,15 @@ const filterChips = [
       </div>
 
       <ToastStack toasts={toasts} />
+
+      <ImportCsvModal
+        open={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        showToast={showToast}
+        onImported={async () => {
+          await refreshProjects();
+        }}
+      />
     </>
   );
 }

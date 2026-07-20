@@ -10,6 +10,7 @@ from schemas.issue import IssueCreate
 from services.issue_service import (
     save_issue,
     get_issues,
+    bulk_import_issues,
 )
 
 router = APIRouter(
@@ -44,3 +45,20 @@ def fetch_issues(
         project_id=project_id,
         owner_id=current_user.id,
     )
+
+
+@router.post("/{project_id}/bulk-import")
+def bulk_import_issues_endpoint(
+    project_id: int,
+    data: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    items = data.get("issues", [])
+    created = bulk_import_issues(
+        db=db,
+        project_id=project_id,
+        current_user_id=current_user.id,
+        data_list=items,
+    )
+    return {"imported": len(created)}

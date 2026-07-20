@@ -10,14 +10,14 @@ export function useProjects() {
   const [projects, setProjects] = useState([]);
   const [currentProject, setCurrentProject] = useState(null);
 
-useEffect(() => {
-  async function loadProjects() {
+  const refreshProjects = async () => {
     const data = await getProjects();
     setProjects(data);
-  }
+  };
 
-  loadProjects();
-}, []);
+  useEffect(() => {
+    refreshProjects();
+  }, []);
 
   const createProject = async (project) => {
   const savedProject = await createProjectApi({
@@ -25,15 +25,15 @@ useEffect(() => {
     description: project.description,
     organization_id: project.organizationId ?? null,
     team_id: project.teamId ?? null,
-    import_source_project_id: project.importSourceProjectId ?? null,
   });
 
   setProjects((prev) => [savedProject, ...prev]);
-setCurrentProject({
-  ...savedProject,
-  createdAt: savedProject.created_at,
-  updatedAt: savedProject.updated_at,
-});
+  setCurrentProject({
+    ...savedProject,
+    createdAt: savedProject.created_at,
+    updatedAt: savedProject.updated_at,
+  });
+  return savedProject;
 };
 
 const updateProject = async (updatedProject) => {
@@ -92,5 +92,6 @@ const deleteProject = async (id) => {
     updateProject,
     deleteProject,
     selectProject,
+    refreshProjects,
   };
 }

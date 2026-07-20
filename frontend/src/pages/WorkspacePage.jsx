@@ -23,6 +23,7 @@ import ActivityFeed from "../components/shared/ActivityFeed";
 import ProjectDashboardPage from "./ProjectDashboardPage";
 import { getProjectActivity } from "../services/activityApi";
 
+
 import {
   getProject,
   updateProject,
@@ -178,18 +179,20 @@ useEffect(() => {
 );
 
     try {
-
-      const analysisData =
-        await getAnalysis(projectId);
-
+      const analysisData = await getAnalysis(projectId);
       if (analysisData?.result) {
-
         setAnalysis(analysisData.result);
+      }
+    } catch (error) {
+      console.log("No saved analysis found.");
+    }
 
-        try {
-  const cases =
-  await getTestCases(projectId);
+    let hasContent = false;
+    if (workspace?.workflow) hasContent = true;
 
+    try {
+      const cases = await getTestCases(projectId);
+      if (cases && cases.length > 0) {
         setTestCases(
           cases.map(tc => ({
             id: tc.test_case_id,
@@ -206,32 +209,28 @@ useEffect(() => {
             notes: tc.notes,
           }))
         );
-
-} catch (e) {
-  console.log("No saved test cases.");
-}
-try {
-
-  const issues =
-    await getIssues(projectId);
-
-  setIssueHistory(issues);
-
-} catch (e) {
-
-  console.log("No saved issues.");
-
-}
-
-
-        setAnalysisStatus("success");
-
+        hasContent = true;
+        // If no AI analysis, default to test cases tab
+        if (!workspace?.workflow) setActiveTab("testcases");
       }
+    } catch (e) {
+      console.log("No saved test cases.");
+    }
 
-    } catch (error) {
+    try {
+      const issues = await getIssues(projectId);
+      if (issues && issues.length > 0) {
+        setIssueHistory(issues);
+        hasContent = true;
+        // If no AI analysis and no test cases, default to tracker tab
+        if (!workspace?.workflow && testCases.length === 0) setActiveTab("tracker");
+      }
+    } catch (e) {
+      console.log("No saved issues.");
+    }
 
-      console.log("No saved analysis found.");
-
+    if (hasContent) {
+      setAnalysisStatus("success");
     }
 
 
@@ -589,6 +588,8 @@ testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnviron
             onChange={setActiveTab}
           />
         </div>
+
+
 
         <main key={activeTab} className="animate-tab-enter mt-6 pb-12">
 

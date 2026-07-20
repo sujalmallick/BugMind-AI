@@ -111,29 +111,34 @@ def bulk_create_manual_test_cases(db: Session, project_id: int, current_user_id:
     workspace = _get_workspace(db, project_id)
     
     created = []
-    for data in data_list:
-        tc = TestCase(
-            workspace_id=workspace.id,
-            test_case_id=data.get("test_case_id") or f"MANUAL-{str(data.get('module', 'GEN'))[:3].upper()}",
-            description=data.get("description", ""),
-            module=data.get("module", "General"),
-            category=data.get("category", "Functional"),
-            priority=data.get("priority", "Medium"),
-            status=data.get("status", "Not Executed"),
-            preconditions=data.get("preconditions", ""),
-            steps=data.get("steps", ""),
-            expected_result=data.get("expected_result", ""),
-            actual_result=data.get("actual_result", ""),
-            notes=data.get("notes", ""),
-            is_manual=True
-        )
-        db.add(tc)
-        created.append(tc)
-    
-    db.commit()
-    for tc in created:
-        db.refresh(tc)
+    try:
+        for data in data_list:
+            tc = TestCase(
+                workspace_id=workspace.id,
+                test_case_id=data.get("test_case_id") or f"MANUAL-{str(data.get('module', 'GEN'))[:3].upper()}",
+                description=data.get("description", ""),
+                module=data.get("module", "General"),
+                category=data.get("category", "Functional"),
+                priority=data.get("priority", "Medium"),
+                status="Not Executed",
+                preconditions=data.get("preconditions", ""),
+                steps=data.get("steps", ""),
+                expected_result=data.get("expected_result", ""),
+                actual_result="",
+                notes=data.get("notes", ""),
+                is_manual=True
+            )
+            db.add(tc)
+            created.append(tc)
         
+        db.commit()
+        for tc in created:
+            db.refresh(tc)
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR IN BULK IMPORT: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Database error during import: {str(e)}")
+
     log_activity(
         db=db,
         verb=Verb.CREATED_TEST_CASE,
