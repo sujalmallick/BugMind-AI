@@ -4,6 +4,8 @@ from pydantic import BaseModel
 class ProjectCreate(BaseModel):
     name: str
     description: str
+    organization_id: int | None = None
+    team_id: int | None = None
 
 class ProjectUpdate(BaseModel):
     name: str

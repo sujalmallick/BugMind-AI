@@ -12,6 +12,7 @@ from services.test_case_service import (
     create_manual_test_case,
     update_test_case,
     delete_test_case,
+    bulk_create_manual_test_cases,
 )
 
 router = APIRouter(

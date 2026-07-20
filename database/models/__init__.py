@@ -16,6 +16,7 @@ from database.models.project_team_access import ProjectTeamAccess
 from database.models.invitation import Invitation
 from database.models.activity_log import ActivityLog
 from database.models.comment import Comment, CommentReaction, Mention
+from database.models.ai_assignment_suggestion import AIAssignmentSuggestion
 
 __all__ = [
     "User",
@@ -38,4 +39,5 @@ __all__ = [
     "Comment",
     "CommentReaction",
     "Mention",
+    "AIAssignmentSuggestion",
 ]

@@ -23,6 +23,9 @@ useEffect(() => {
   const savedProject = await createProjectApi({
     name: project.name,
     description: project.description,
+    organization_id: project.organizationId ?? null,
+    team_id: project.teamId ?? null,
+    import_source_project_id: project.importSourceProjectId ?? null,
   });
 
   setProjects((prev) => [savedProject, ...prev]);

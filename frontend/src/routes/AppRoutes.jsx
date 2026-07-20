@@ -15,7 +15,7 @@ import WorkspacePage from "../pages/WorkspacePage";
 import ProfilePage from "../pages/settings/ProfilePage";
 import OrganizationsPage from "../pages/OrganizationsPage";
 import InviteAcceptPage from "../pages/InviteAcceptPage";
-import MyWorkPage from "../pages/MyWorkPage";
+
 import ActivityFeedPage from "../pages/ActivityFeedPage";
 import DashboardPage from "../pages/DashboardPage";
 import ProjectDashboardPage from "../pages/ProjectDashboardPage";
@@ -123,14 +123,7 @@ export default function AppRoutes() {
         element={<InviteAcceptPage />}
       />
 
-      <Route
-        path="/my-work"
-        element={
-          <ProtectedRoute>
-            <MyWorkPage />
-          </ProtectedRoute>
-        }
-      />
+
 
       <Route
         path="/dashboard"

@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { X, ChevronDown } from "lucide-react";
 
 export default function CreateProjectModal({
   open,
   onClose,
   onCreate,
   initialData = null,
-  mode = "create",
+  organizationName = "",
+  teamName = "",
 }) {
 
   const [name, setName] = useState(
@@ -16,6 +17,8 @@ export default function CreateProjectModal({
 const [description, setDescription] = useState(
   initialData?.description || ""
 );
+
+const [isSubmitting, setIsSubmitting] = useState(false);
 
 useEffect(() => {
   if (!open) return;
@@ -27,19 +30,27 @@ useEffect(() => {
 
   if (!open) return null;
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
 
     if (!name.trim()) return;
 
-    onCreate({
-      name: name.trim(),
-      description: description.trim(),
-    });
+    setIsSubmitting(true);
 
-    setName("");
-    setDescription("");
-    onClose();
+    try {
+      await onCreate({
+        name: name.trim(),
+        description: description.trim(),
+        organizationId: initialData?.organizationId ?? null,
+        teamId: initialData?.teamId ?? null,
+      });
+
+      setName("");
+      setDescription("");
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -50,17 +61,20 @@ useEffect(() => {
 
         <div className="flex items-center justify-between border-b border-hairline px-6 py-4">
           <div>
-            <h2 className="text-lg font-semibold text-ink">
-            {mode === "edit"
-  ? "Rename Project"
-  : "Create Project"}
+            <h2 className="text-xl font-bold tracking-tight text-ink">
+              {initialData?.id ? "Edit Project" : "Create a Project"}
             </h2>
-
-            <p className="mt-1 text-sm text-muted">
-             {mode === "edit"
-  ? "Update your project details."
-  : "Start a new testing workspace."}
-            </p>
+            {organizationName && (
+              <div className="mt-1 flex items-center gap-1.5 text-xs text-muted">
+                <span>{organizationName}</span>
+                {teamName && (
+                  <>
+                    <span>/</span>
+                    <span>{teamName}</span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           <button
@@ -107,6 +121,8 @@ useEffect(() => {
             />
           </div>
 
+
+
           {/* Footer */}
 
           <div className="flex justify-end gap-3 border-t border-hairline pt-5">
@@ -120,12 +136,10 @@ useEffect(() => {
 
             <button
               type="submit"
-              disabled={!name.trim()}
+              disabled={isSubmitting || !name.trim()}
               className="btn-primary"
             >
-{mode === "edit"
-  ? "Save Changes"
-  : "Create Project"}
+              {isSubmitting ? "Saving..." : initialData?.id ? "Save Changes" : "Create Project"}
             </button>
           </div>
         </form>

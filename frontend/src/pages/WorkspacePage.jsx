@@ -20,6 +20,7 @@ import TrackerTab from "../components/tabs/TrackerTab";
 import { analyzeWorkflow, classifyIssue, saveAnalysis, getAnalysis } from "../services/analysisApi";
 import { useRef } from "react";
 import ActivityFeed from "../components/shared/ActivityFeed";
+import ProjectDashboardPage from "./ProjectDashboardPage";
 import { getProjectActivity } from "../services/activityApi";
 
 import {
@@ -38,6 +39,7 @@ import {
 
 
 const TABS = [
+  { key: 'dashboard', label: 'Dashboard' },
   { key: 'modules', label: 'Modules' },
   { key: 'checklist', label: 'Checklist' },
   { key: 'testcases', label: 'Test Cases' },
@@ -188,22 +190,22 @@ useEffect(() => {
   const cases =
   await getTestCases(projectId);
 
-setTestCases(
-  cases.map(tc => ({
-    id: tc.test_case_id,
-    db_id: tc.id,           // numeric PK for comments
-    description: tc.description,
-    module: tc.module,
-    category: tc.category,
-    priority: tc.priority,
-    status: tc.status,
-    preconditions: tc.preconditions,
-    steps: tc.steps,
-    expectedResult: tc.expected_result,
-    actualResult: tc.actual_result,
-    notes: tc.notes,
-  }))
-);
+        setTestCases(
+          cases.map(tc => ({
+            id: tc.test_case_id,
+            db_id: tc.id,
+            description: tc.description,
+            module: tc.module,
+            category: tc.category,
+            priority: tc.priority,
+            status: tc.status,
+            preconditions: tc.preconditions,
+            steps: tc.steps,
+            expectedResult: tc.expected_result,
+            actualResult: tc.actual_result,
+            notes: tc.notes,
+          }))
+        );
 
 } catch (e) {
   console.log("No saved test cases.");
@@ -614,9 +616,9 @@ testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnviron
                 isLoading={isAnalyzing}
                 onStatusChange={handleStatusChange}
                 onAssigneeChange={(tcId, assigneeId) => {
-                  setTestCases(prev => prev.map(tc => tc.id === tcId ? { ...tc, assignee_id: assigneeId } : tc))
+                  setTestCases(prev => prev.map(tc => (tc.id === tcId || tc.db_id === tcId) ? { ...tc, assignee_id: assigneeId } : tc))
                 }}
-                onManualCreate={(newTc) => setTestCases(prev => [newTc, ...prev])}
+                onManualCreate={(newTc) => setTestCases(prev => [{ ...newTc, id: newTc.test_case_id ?? newTc.id, db_id: newTc.db_id ?? newTc.id }, ...prev])}
                 onJumpToIssue={handleJumpToIssue}
                 showToast={showToast}
               />
@@ -641,7 +643,7 @@ testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnviron
               project={project}
               onStatusChange={handleStatusChange}
               onAssigneeChange={(tcId, assigneeId) => {
-                setTestCases(prev => prev.map(tc => tc.id === tcId ? { ...tc, assignee_id: assigneeId } : tc))
+                setTestCases(prev => prev.map(tc => (tc.id === tcId || tc.db_id === tcId) ? { ...tc, assignee_id: assigneeId } : tc))
               }}
               onJumpToIssue={handleJumpToIssue}
               showToast={showToast}
@@ -654,6 +656,11 @@ testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnviron
             </div>
           )}
 
+          {activeTab === "dashboard" && (
+            <div className="mx-auto max-w-7xl px-4 py-2">
+              <ProjectDashboardPage projectId={projectId} organizationId={project?.organizationId || project?.organization_id} />
+            </div>
+          )}
         </main>
       </>
     )}

@@ -14,6 +14,7 @@ from services.project_service import (
     update_project,
     delete_project,
     touch_project,
+    transfer_project_to_org,
 )
 router = APIRouter(
     prefix="/projects",
@@ -32,6 +33,8 @@ def create_new_project(
         name=project.name,
         description=project.description,
         owner_id=current_user.id,  # Temporary until authentication is added
+        organization_id=project.organization_id,
+        team_id=project.team_id,
     )
 
 
@@ -117,6 +120,7 @@ from services.project_sharing_service import (
     add_team_to_project,
     remove_team_from_project,
     list_project_teams,
+    list_project_assignees,
 )
 
 @router.get("/{project_id}/members")
@@ -158,6 +162,15 @@ def get_project_teams_route(
     return list_project_teams(db, project_id, current_user.id)
 
 
+@router.get("/{project_id}/assignees")
+def get_project_assignees_route(
+    project_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return list_project_assignees(db, project_id, current_user.id)
+
+
 @router.post("/{project_id}/teams")
 def add_project_team_route(
     project_id: int,
@@ -177,3 +190,24 @@ def remove_project_team_route(
 ):
     remove_team_from_project(db, project_id, team_id, current_user.id)
     return {"message": "Team removed."}
+
+
+class ProjectTransfer(BaseModel):
+    organization_id: int
+
+
+@router.post("/{project_id}/transfer")
+def transfer_project_route(
+    project_id: int,
+    body: ProjectTransfer,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Transfer an existing project into an organization."""
+    return transfer_project_to_org(
+        db=db,
+        project_id=project_id,
+        user_id=current_user.id,
+        org_id=body.organization_id,
+    )
+

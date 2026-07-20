@@ -51,3 +51,18 @@ export async function touchProject(id) {
   const response = await api.put(`/projects/${id}/touch`);
   return response.data;
 }
+
+export async function getProjectMembers(id) {
+  const response = await api.get(`/projects/${id}/members/`);
+  return response.data;
+}
+
+export async function addTeamToProject(projectId, teamId, role = "viewer") {
+  const response = await api.post(`/projects/${projectId}/teams`, { team_id: teamId, role });
+  return response.data;
+}
+
+export async function transferProjectToOrg(projectId, organizationId) {
+  const response = await api.post(`/projects/${projectId}/transfer`, { organization_id: organizationId });
+  return response.data;
+}

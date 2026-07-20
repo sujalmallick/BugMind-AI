@@ -115,7 +115,7 @@ export default function TrackerTable({
                 <td className="px-3 py-3">
                   <AssigneeSelector
                     type="test_case"
-                    itemId={testCase.id}
+                    itemId={testCase.db_id ?? testCase.id}
                     projectId={projectId}
                     currentAssigneeId={testCase.assignee_id}
                     onAssigneeChange={(userId) => onAssigneeChange?.(testCase.id, userId)}

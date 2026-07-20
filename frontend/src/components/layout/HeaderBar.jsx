@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Search, Home, LogOut, User, Users, Bell, Briefcase, KeyRound } from "lucide-react";
+import { Search, Home, LogOut, User, Users, Bell, Briefcase, KeyRound, LayoutDashboard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatRelativeTime } from "../../utils/time";
 import { useAuth } from "../../auth/AuthContext";
@@ -207,12 +207,14 @@ export default function HeaderBar({
 
                     <button
                       type="button"
-                      onClick={() => navigate("/my-work")}
+                      onClick={() => navigate("/dashboard")}
                       className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium text-ink transition hover:bg-paper"
                     >
-                      <Briefcase size={15} className="text-muted" />
-                      My Work
+                      <LayoutDashboard size={15} className="text-muted" />
+                      Dashboard
                     </button>
+
+
 
                     <button
                       type="button"

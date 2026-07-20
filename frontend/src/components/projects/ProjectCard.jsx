@@ -89,15 +89,7 @@ return (
       {project.name}
     </h3>
 
-    <span
-      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-       (project.status || "Draft") === "Analyzed"
-          ? "bg-green-100 text-green-700"
-          : "bg-amber-100 text-amber-700"
-      }`}
-    >
-      {project.status || "Draft"}
-    </span>
+
     {project.organizationId && (
       <span className="rounded-full bg-paper px-1.5 py-0.5 text-muted flex items-center" title="Organization Project">
         <Building2 size={12} />

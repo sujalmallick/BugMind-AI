@@ -32,6 +32,7 @@ from middlewares import (
 from routes.ai_settings import (
     router as ai_settings_router
 )
+from routes.ai_workload import router as ai_workload_router
 
 app = FastAPI()
 
@@ -58,6 +59,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.include_router(project_router)
 app.include_router(workspace_router)
 app.include_router(analysis_router)
+app.include_router(ai_workload_router)
 app.include_router(test_case_router)
 app.include_router(issue_router)
 app.include_router(auth_router)

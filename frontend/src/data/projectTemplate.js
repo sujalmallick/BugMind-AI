@@ -1,6 +1,9 @@
 export function createProject({
   name,
   description = "",
+  organizationId = null,
+  teamId = null,
+  importSourceProjectId = null,
 }) {
   const now = new Date().toISOString();
 
@@ -11,6 +14,9 @@ export function createProject({
 
     description,
     status: "Draft",
+    organizationId,
+    teamId,
+    importSourceProjectId,
 
     workflow: "",
 
