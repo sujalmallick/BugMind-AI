@@ -1,8 +1,12 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { AgGridReact } from "ag-grid-react";
+import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
-import { Plus, Trash2, Download, Search, X, Upload, Edit2, AlertTriangle, Settings2, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Download, Search, X, Upload, Edit2, AlertTriangle, Settings2, ChevronDown, RotateCcw } from "lucide-react";
+
+// Register all AG Grid Community modules (enables editing, tooltips, CSV export, etc.)
+ModuleRegistry.registerModules([AllCommunityModule]);
 
 // Delete button cell renderer — must be a named component for AG Grid v31+
 function DeleteButtonRenderer({ data, context }) {
@@ -15,6 +19,22 @@ function DeleteButtonRenderer({ data, context }) {
     >
       <Trash2 size={13} />
     </button>
+  );
+}
+
+// Professional dark floating tooltip for AG Grid
+function CustomTooltip({ value, valueFormatted, data, colDef }) {
+  let val = valueFormatted ?? value;
+  if (!val && colDef?.field?.startsWith("cf_")) {
+    const rawKey = colDef.field.slice(3);
+    val = data?.custom_fields?.[rawKey];
+  }
+  if (!val || String(val).trim() === "") return null;
+
+  return (
+    <div className="bg-slate-900/95 text-slate-100 text-xs px-3 py-2 rounded-xl shadow-2xl border border-slate-700/80 max-w-md leading-relaxed whitespace-pre-wrap break-words z-[99999] pointer-events-none backdrop-blur-md">
+      {String(val)}
+    </div>
   );
 }
 
@@ -39,6 +59,38 @@ export default function EditableDataGrid({
   // Manage Columns Dropdown
   const [showManageMenu, setShowManageMenu] = useState(false);
   const manageMenuRef = useRef(null);
+
+  // Hidden & Renamed Columns Persistence
+  const storageTitleKey = title.toLowerCase().replace(/[^a-z0-9]/g, "_");
+  const [hiddenColumns, setHiddenColumns] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`bugmind_hidden_cols_${storageTitleKey}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [renamedHeaders, setRenamedHeaders] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`bugmind_renamed_cols_${storageTitleKey}`);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`bugmind_hidden_cols_${storageTitleKey}`, JSON.stringify(hiddenColumns));
+    } catch {}
+  }, [hiddenColumns, storageTitleKey]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`bugmind_renamed_cols_${storageTitleKey}`, JSON.stringify(renamedHeaders));
+    } catch {}
+  }, [renamedHeaders, storageTitleKey]);
 
   // Modals for Column Rename & Remove
   const [renameTargetKey, setRenameTargetKey] = useState(null);
@@ -78,41 +130,71 @@ export default function EditableDataGrid({
     return Array.from(combined);
   }, [detectedCustomKeys, customColumns]);
 
-  // Non-essential custom/imported columns eligible for rename/remove
-  const removableCustomKeys = useMemo(() => {
-    const systemEssential = ["bug_id", "test_case_id", "status", "severity", "priority", "solved", "_delete"];
-    return allCustomKeys.filter((k) => !systemEssential.includes(k));
-  }, [allCustomKeys]);
+  // System ID columns that MUST remain to preserve row identification
+  const nonRemovableKeys = ["bug_id", "test_case_id", "_delete"];
+
+  // All columns list for column manager
+  const allColumnsList = useMemo(() => {
+    const list = [];
+    baseColumns.forEach((col) => {
+      if (!nonRemovableKeys.includes(col.field)) {
+        list.push({ key: col.field, label: col.headerName || col.field, isCustom: false });
+      }
+    });
+    allCustomKeys.forEach((key) => {
+      list.push({ key: key, label: key, isCustom: true });
+    });
+    return list;
+  }, [baseColumns, allCustomKeys]);
+
+  const activeColumnsList = useMemo(() => {
+    return allColumnsList.filter((col) => !hiddenColumns.includes(col.key) && !hiddenColumns.includes(`cf_${col.key}`));
+  }, [allColumnsList, hiddenColumns]);
+
+  const removedColumnsList = useMemo(() => {
+    return allColumnsList.filter((col) => hiddenColumns.includes(col.key) || hiddenColumns.includes(`cf_${col.key}`));
+  }, [allColumnsList, hiddenColumns]);
 
   const columnDefs = useMemo(() => {
-    const cols = baseColumns.map((col) => ({
-      field: col.field,
-      headerName: col.headerName || col.field,
-      editable: col.editable !== false,
-      width: col.width || 180,
-      minWidth: col.minWidth || 100,
-      cellEditor: col.cellEditor || "agTextCellEditor",
-      cellEditorParams: col.cellEditorParams,
-      valueGetter: col.valueGetter,
-      valueSetter: col.valueSetter,
-      cellRenderer: col.cellRenderer ?? undefined,
-      tooltipValueGetter: (params) => params.value,
-      tooltipField: col.field,
-      wrapText: false,
-      autoHeight: false,
-    }));
+    const cols = [];
+
+    baseColumns.forEach((col) => {
+      if (hiddenColumns.includes(col.field)) return;
+      const header = renamedHeaders[col.field] || col.headerName || col.field;
+      cols.push({
+        field: col.field,
+        headerName: header,
+        editable: col.editable !== false,
+        width: col.width || 180,
+        minWidth: col.minWidth || 100,
+        cellEditor: col.cellEditor || "agTextCellEditor",
+        cellEditorParams: col.cellEditorParams,
+        valueGetter: col.valueGetter,
+        valueSetter: col.valueSetter || ((params) => {
+          params.data[col.field] = params.newValue;
+          return true;
+        }),
+        tooltipComponent: "CustomTooltip",
+        tooltipValueGetter: (params) => String(params.valueFormatted ?? params.value ?? ""),
+        wrapText: false,
+        autoHeight: false,
+      });
+    });
 
     // Extra columns from custom_fields JSON
     allCustomKeys.forEach((key) => {
+      const fullFieldKey = `cf_${key}`;
+      if (hiddenColumns.includes(key) || hiddenColumns.includes(fullFieldKey)) return;
+      const header = renamedHeaders[key] || renamedHeaders[fullFieldKey] || key;
       cols.push({
-        field: `cf_${key}`,
-        headerName: key,
+        field: fullFieldKey,
+        headerName: header,
         editable: true,
         width: 180,
         minWidth: 120,
         cellEditor: "agTextCellEditor",
-        tooltipValueGetter: (params) => params.value,
-        tooltipField: `cf_${key}`,
+        tooltipComponent: "CustomTooltip",
+        tooltipValueGetter: (params) => String(params.data?.custom_fields?.[key] ?? params.value ?? ""),
         wrapText: false,
         valueGetter: (params) => params.data?.custom_fields?.[key] ?? "",
         valueSetter: (params) => {
@@ -139,7 +221,7 @@ export default function EditableDataGrid({
     });
 
     return cols;
-  }, [baseColumns, allCustomKeys]);
+  }, [baseColumns, allCustomKeys, hiddenColumns, renamedHeaders]);
 
   const defaultColDef = useMemo(
     () => ({
@@ -147,7 +229,16 @@ export default function EditableDataGrid({
       filter: true,
       resizable: true,
       editable: true,
-      tooltipValueGetter: (params) => params.value,
+      tooltipComponent: "CustomTooltip",
+      tooltipValueGetter: (params) => String(params.valueFormatted ?? params.value ?? ""),
+    }),
+    []
+  );
+
+  const gridComponents = useMemo(
+    () => ({
+      DeleteButtonRenderer,
+      CustomTooltip,
     }),
     []
   );
@@ -173,25 +264,52 @@ export default function EditableDataGrid({
     setShowAddColModal(false);
   };
 
-  const handleRenameSubmit = (e) => {
+  const handleRenameSubmit = async (e) => {
     e.preventDefault();
+    const targetKey = renameTargetKey;
     const trimmedNew = renameNewName.trim();
-    if (!trimmedNew || !renameTargetKey) return;
-    if (onRenameColumn) {
-      onRenameColumn(renameTargetKey, trimmedNew);
-    }
+
+    // Synchronously close modal & unmount backdrop
     setShowRenameModal(false);
     setRenameTargetKey(null);
     setRenameNewName("");
+
+    if (!trimmedNew || !targetKey) return;
+
+    setRenamedHeaders((prev) => ({ ...prev, [targetKey]: trimmedNew }));
+
+    if (onRenameColumn) {
+      try {
+        await onRenameColumn(targetKey, trimmedNew);
+      } catch (err) {
+        console.error("[EditableDataGrid] Error in onRenameColumn:", err);
+      }
+    }
   };
 
-  const handleRemoveConfirm = () => {
-    if (!removeTargetKey) return;
-    if (onRemoveColumn) {
-      onRemoveColumn(removeTargetKey);
-    }
+  const handleRemoveConfirm = async () => {
+    const targetKey = removeTargetKey;
+
+    // Synchronously close modal & unmount backdrop immediately
     setShowRemoveModal(false);
     setRemoveTargetKey(null);
+
+    if (!targetKey) return;
+
+    // Instantly hide column locally
+    setHiddenColumns((prev) => [...prev, targetKey, `cf_${targetKey}`]);
+
+    if (onRemoveColumn) {
+      try {
+        await onRemoveColumn(targetKey);
+      } catch (err) {
+        console.error("[EditableDataGrid] Error in onRemoveColumn:", err);
+      }
+    }
+  };
+
+  const handleRestoreColumn = (key) => {
+    setHiddenColumns((prev) => prev.filter((k) => k !== key && k !== `cf_${key}`));
   };
 
   return (
@@ -229,39 +347,43 @@ export default function EditableDataGrid({
           </div>
 
           {/* Manage Columns Dropdown */}
-          {removableCustomKeys.length > 0 && (
-            <div className="relative" ref={manageMenuRef}>
-              <button
-                onClick={() => setShowManageMenu((prev) => !prev)}
-                className="flex items-center gap-1.5 text-xs font-medium bg-paper hover:bg-hairline px-3 py-1.5 rounded-lg text-ink transition-colors border border-hairline"
-                title="Manage Custom & Imported Columns"
-              >
-                <Settings2 size={13} /> Columns <ChevronDown size={11} />
-              </button>
+          <div className="relative" ref={manageMenuRef}>
+            <button
+              onClick={() => setShowManageMenu((prev) => !prev)}
+              className="flex items-center gap-1.5 text-xs font-medium bg-paper hover:bg-hairline px-3 py-1.5 rounded-lg text-ink transition-colors border border-hairline"
+              title="Manage Spreadsheet Columns"
+            >
+              <Settings2 size={13} /> Columns <ChevronDown size={11} />
+            </button>
 
-              {showManageMenu && (
-                <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-hairline rounded-xl shadow-xl z-50 py-2 flex flex-col gap-1 text-xs">
-                  <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted border-b border-hairline pb-1">
-                    Manage Columns
-                  </div>
-                  <div className="max-h-48 overflow-y-auto flex flex-col py-1">
-                    {removableCustomKeys.map((key) => (
+            {showManageMenu && (
+              <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-hairline rounded-xl shadow-xl z-50 py-2 flex flex-col gap-1 text-xs">
+                <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted border-b border-hairline pb-1">
+                  Spreadsheet Columns ({activeColumnsList.length})
+                </div>
+
+                <div className="max-h-56 overflow-y-auto flex flex-col py-1">
+                  {activeColumnsList.map((col) => {
+                    const currentHeaderName = renamedHeaders[col.key] || col.label;
+                    return (
                       <div
-                        key={key}
+                        key={col.key}
                         className="px-3 py-1.5 flex items-center justify-between hover:bg-paper transition-colors group"
                       >
-                        <span className="truncate font-medium text-ink max-w-[120px]">{key}</span>
-                        <div className="flex items-center gap-1">
+                        <span className="truncate font-medium text-ink max-w-[130px]" title={currentHeaderName}>
+                          {currentHeaderName}
+                        </span>
+                        <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100">
                           <button
                             type="button"
                             onClick={() => {
                               setShowManageMenu(false);
-                              setRenameTargetKey(key);
-                              setRenameNewName(key);
+                              setRenameTargetKey(col.key);
+                              setRenameNewName(currentHeaderName);
                               setShowRenameModal(true);
                             }}
                             className="p-1 rounded hover:bg-hairline text-muted hover:text-signal transition"
-                            title={`Rename ${key}`}
+                            title={`Rename "${currentHeaderName}"`}
                           >
                             <Edit2 size={12} />
                           </button>
@@ -269,22 +391,46 @@ export default function EditableDataGrid({
                             type="button"
                             onClick={() => {
                               setShowManageMenu(false);
-                              setRemoveTargetKey(key);
+                              setRemoveTargetKey(col.key);
                               setShowRemoveModal(true);
                             }}
                             className="p-1 rounded hover:bg-red-50 text-muted hover:text-red-600 transition"
-                            title={`Remove ${key}`}
+                            title={`Remove "${currentHeaderName}"`}
                           >
                             <Trash2 size={12} />
                           </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
+
+                  {removedColumnsList.length > 0 && (
+                    <>
+                      <div className="px-3 py-1 mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted border-t border-hairline pt-1.5">
+                        Removed Columns ({removedColumnsList.length})
+                      </div>
+                      {removedColumnsList.map((col) => (
+                        <div
+                          key={col.key}
+                          className="px-3 py-1 flex items-center justify-between hover:bg-paper transition-colors text-muted"
+                        >
+                          <span className="truncate line-through max-w-[130px]">{col.label}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRestoreColumn(col.key)}
+                            className="p-1 text-signal hover:bg-signal/10 rounded transition flex items-center gap-1 text-[11px] font-medium"
+                            title={`Restore "${col.label}"`}
+                          >
+                            <RotateCcw size={11} /> Restore
+                          </button>
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
 
           <button
             onClick={() => setShowAddColModal(true)}
@@ -332,13 +478,12 @@ export default function EditableDataGrid({
           defaultColDef={defaultColDef}
           onCellValueChanged={onCellValueChanged}
           quickFilterText={quickFilter}
-          rowSelection={{ mode: "singleRow", checkboxes: false, enableClickSelection: false }}
           suppressMovableColumns={false}
           singleClickEdit={true}
           stopEditingWhenCellsLoseFocus={true}
-          enableBrowserTooltips={true}
+          tooltipShowDelay={100}
           context={gridContext}
-          components={{ DeleteButtonRenderer }}
+          components={gridComponents}
           noRowsOverlayComponent={() => (
             <span className="text-muted text-sm">{emptyMessage}</span>
           )}
@@ -348,7 +493,7 @@ export default function EditableDataGrid({
 
       {/* ── Add Column Modal ── */}
       {showAddColModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 sm:pt-32 bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm bg-white rounded-xl border border-hairline p-5 shadow-2xl flex flex-col gap-4">
             <div>
               <h4 className="text-sm font-bold text-ink">Add Custom Column</h4>
@@ -387,7 +532,7 @@ export default function EditableDataGrid({
 
       {/* ── Rename Column Modal ── */}
       {showRenameModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 sm:pt-32 bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm bg-white rounded-xl border border-hairline p-5 shadow-2xl flex flex-col gap-4">
             <div>
               <h4 className="text-sm font-bold text-ink">Rename Column</h4>
@@ -425,7 +570,7 @@ export default function EditableDataGrid({
 
       {/* ── Remove Column Confirmation Dialog ── */}
       {showRemoveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 sm:pt-32 bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm bg-white rounded-xl border border-hairline p-5 shadow-2xl flex flex-col gap-4">
             <div className="flex items-start gap-3">
               <div className="p-2 rounded-lg bg-red-100 text-red-600 shrink-0">
@@ -434,7 +579,7 @@ export default function EditableDataGrid({
               <div>
                 <h4 className="text-sm font-bold text-ink">Remove Column?</h4>
                 <p className="text-xs text-muted mt-1 leading-relaxed">
-                  Are you sure you want to remove the column <strong>"{removeTargetKey}"</strong>? This will remove this field from all rows permanently.
+                  Are you sure you want to remove the column <strong>"{removeTargetKey}"</strong>? This will remove this field from the spreadsheet.
                 </p>
               </div>
             </div>
