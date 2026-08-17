@@ -84,7 +84,7 @@ export default function IssueAnalysisTab({ form, onFormChange, onGenerate, isGen
           className="btn-primary"
         >
           {isGenerating && <Loader2 size={14} className="animate-spin" />}
-          {isGenerating ? 'Classifying…' : 'Generate issue analysis'}
+          {isGenerating ? 'Analyzing…' : 'Analyze Issue'}
         </button>
       </div>
 

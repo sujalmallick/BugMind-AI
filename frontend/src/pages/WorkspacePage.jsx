@@ -47,14 +47,11 @@ const TABS = [
   { key: 'testcases', label: 'Test Cases' },
   { key: 'bug_tracker', label: 'Issues Tracker' },
   { key: 'issues', label: 'AI Bug Reports' },
-  { key: 'tracker', label: 'Tracker' },
-  { key: 'activity', label: 'Activity' },
 ]
 
 const EMPTY_ISSUE_FORM = { observation: '', expected: '', actual: '', mode: 'failed' }
 export default function WorkspacePage() {
   const { projectId } = useParams();
-  console.log("Workspace Route ID:", projectId);
   const location = useLocation();
 const navigate = useNavigate();
 const [analysisMeta, setAnalysisMeta] = useState(null);
@@ -539,12 +536,12 @@ function handleCopyIssueResult() {
   const hasDirectIssues = issueHistory.length > 0 && testCases.length === 0;
   const isImportedProject = testCases.some(tc => tc.is_manual) || (issueHistory.length > 0 && !analysis);
 
-  // For issue-only imports: hide Modules, Checklist, Test Cases, Tracker, and Activity tabs (keeping Dashboard, Issues Tracker, AI Bug Reports)
+  // For issue-only imports: hide Modules, Checklist, Test Cases (keeping Dashboard, Issues Tracker, AI Bug Reports)
   const hiddenTabs = hasDirectIssues
-    ? ['modules', 'checklist', 'testcases', 'tracker', 'activity']
+    ? ['modules', 'checklist', 'testcases']
     : isImportedProject
-    ? ['modules', 'checklist', 'tracker', 'activity']
-    : ['tracker', 'activity'];
+    ? ['modules', 'checklist']
+    : [];
 
   const visibleTabs = TABS.filter(t => !hiddenTabs.includes(t.key));
 

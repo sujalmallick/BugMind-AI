@@ -95,18 +95,13 @@ export default function RegisterPage() {
               <img src={logo} alt="BugMind" className="h-8 w-auto" />
             </div>
 
-            {/* Badge + Headline */}
-            <span className="mb-3 inline-flex w-fit items-center rounded-full bg-signal-soft px-3.5 py-1.5 text-xs font-semibold tracking-wide text-signal">
-              Create your account
-            </span>
-
+            {/* Headline */}
             <h1 className="text-4xl font-bold leading-tight tracking-tight text-ink">
-              Join BugMind AI.
+              Create your account.
             </h1>
 
             <p className="mt-3 max-w-sm text-sm leading-7 text-muted">
-              Build AI-assisted testing workflows, generate test cases,
-              manage issues and ship software with confidence.
+              Start organizing your QA workflow — projects, test cases, and issue tracking in one place.
             </p>
 
             {/* Form */}
@@ -264,9 +259,8 @@ export default function RegisterPage() {
                 </h2>
 
                 <p className="mt-5 max-w-xs text-sm leading-7 text-blue-100/85">
-                  Transform workflows into intelligent test cases, discover
-                  hidden defects, and manage your complete QA lifecycle
-                  from one elegant workspace.
+                  Structure workflows into modules and test cases. Track bugs,
+                  manage execution, and ship with a clear coverage picture.
                 </p>
               </div>
 

@@ -9,7 +9,6 @@ import {
   FolderKanban,
   Plus,
   Search,
-  Sparkles,
 } from "lucide-react";
 
 import { touchProject } from "../services/projectApi";
@@ -253,19 +252,12 @@ const filterChips = [
           <section className="hero-glow base-card bg-white/95 p-6 backdrop-blur md:p-8 section-enter section-enter-1">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <p className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-                  <Sparkles size={14} />
-                  QA Command Center
-                </p>
-
-                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-shimmer md:text-4xl">
-                  Build reliable releases with calmer testing cycles.
+                <h1 className="mt-2 text-3xl font-semibold tracking-tight text-ink md:text-4xl">
+                  Projects
                 </h1>
 
                 <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted md:text-base">
-                  Manage all BugMind projects from one place, resume the most recent
-                  analysis instantly, and focus attention on stale work before it turns
-                  into release risk.
+                  All your QA projects in one place. Resume work, review coverage, and track what needs attention.
                 </p>
               </div>
 
@@ -296,7 +288,7 @@ const filterChips = [
                   Total Projects
                 </p>
                 <p className="dashboard-stat-value">{totalProjects}</p>
-                <p className="dashboard-stat-subtext">Across all testing efforts</p>
+                <p className="dashboard-stat-subtext">All testing projects</p>
               </article>
 
               <article className="dashboard-stat-card dashboard-stat-analyzed dashboard-stat-enter delay-1">
@@ -305,7 +297,7 @@ const filterChips = [
                   Analyzed
                 </p>
                 <p className="dashboard-stat-value text-verified">{analyzedProjects}</p>
-                <p className="dashboard-stat-subtext">Ready for execution and review</p>
+                <p className="dashboard-stat-subtext">Ready to execute</p>
               </article>
 
               <article className="dashboard-stat-card dashboard-stat-draft dashboard-stat-enter delay-2">
@@ -314,7 +306,7 @@ const filterChips = [
                   Draft
                 </p>
                 <p className="dashboard-stat-value text-ochre">{draftProjects}</p>
-                <p className="dashboard-stat-subtext">Need workflow completion</p>
+                <p className="dashboard-stat-subtext">Incomplete workflow</p>
               </article>
 
               <article className="dashboard-stat-card dashboard-stat-stale dashboard-stat-enter delay-3">
@@ -323,7 +315,7 @@ const filterChips = [
                   Stale
                 </p>
                 <p className="dashboard-stat-value text-flagged">{staleProjects}</p>
-                <p className="dashboard-stat-subtext">No updates in 3+ days</p>
+                <p className="dashboard-stat-subtext">Inactive 3+ days</p>
               </article>
             </div>
           </section>

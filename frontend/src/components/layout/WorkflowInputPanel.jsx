@@ -76,8 +76,9 @@ onTestEnvironmentChange,
             <div className="mx-auto mt-3 h-0.5 w-20 rounded-full bg-gradient-to-r from-transparent via-[#3454d1]/40 to-transparent" />
 
             <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
-              Add your application flow and observed behavior. BugMind will intelligently generate
-              structured modules, a rigorous checklist, and comprehensive test cases.
+              Enter your application flow and any observed steps. BugMind will
+              break it into modules, generate a test checklist, and produce
+              ready-to-execute test cases.
             </p>
           </div>
         )}

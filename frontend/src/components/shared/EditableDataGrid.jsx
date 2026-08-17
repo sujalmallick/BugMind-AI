@@ -8,6 +8,8 @@ import { Plus, Trash2, Download, Search, X, Upload, Edit2, AlertTriangle, Settin
 // Register all AG Grid Community modules (enables editing, tooltips, CSV export, etc.)
 ModuleRegistry.registerModules([AllCommunityModule]);
 
+import ConfirmDialog from "./ConfirmDialog";
+
 // Delete button cell renderer — must be a named component for AG Grid v31+
 function DeleteButtonRenderer({ data, context }) {
   return (
@@ -160,6 +162,7 @@ export default function EditableDataGrid({
 
     baseColumns.forEach((col) => {
       if (hiddenColumns.includes(col.field)) return;
+      const isLarge = col.isLargeText === true;
       const header = renamedHeaders[col.field] || col.headerName || col.field;
       cols.push({
         field: col.field,
@@ -167,8 +170,11 @@ export default function EditableDataGrid({
         editable: col.editable !== false,
         width: col.width || 180,
         minWidth: col.minWidth || 100,
-        cellEditor: col.cellEditor || "agTextCellEditor",
-        cellEditorParams: col.cellEditorParams,
+        cellEditor: isLarge ? "agLargeTextCellEditor" : (col.cellEditor || "agTextCellEditor"),
+        cellEditorPopup: isLarge ? true : false,
+        cellEditorParams: isLarge
+          ? { rows: 8, cols: 60, maxLength: 10000 }
+          : col.cellEditorParams,
         valueGetter: col.valueGetter,
         valueSetter: col.valueSetter || ((params) => {
           params.data[col.field] = params.newValue;
@@ -231,6 +237,9 @@ export default function EditableDataGrid({
       editable: true,
       tooltipComponent: "CustomTooltip",
       tooltipValueGetter: (params) => String(params.valueFormatted ?? params.value ?? ""),
+      cellEditorParams: {
+        maxLength: 10000,
+      },
     }),
     []
   );
@@ -479,9 +488,12 @@ export default function EditableDataGrid({
           onCellValueChanged={onCellValueChanged}
           quickFilterText={quickFilter}
           suppressMovableColumns={false}
-          singleClickEdit={true}
+          singleClickEdit={false}
+          enableCellTextSelection={true}
+          suppressClickEdit={false}
           stopEditingWhenCellsLoseFocus={true}
-          tooltipShowDelay={100}
+          tooltipShowDelay={300}
+          tooltipHideDelay={5000}
           context={gridContext}
           components={gridComponents}
           noRowsOverlayComponent={() => (
@@ -569,39 +581,15 @@ export default function EditableDataGrid({
       )}
 
       {/* ── Remove Column Confirmation Dialog ── */}
-      {showRemoveModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 sm:pt-32 bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm bg-white rounded-xl border border-hairline p-5 shadow-2xl flex flex-col gap-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-red-100 text-red-600 shrink-0">
-                <AlertTriangle size={20} />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-ink">Remove Column?</h4>
-                <p className="text-xs text-muted mt-1 leading-relaxed">
-                  Are you sure you want to remove the column <strong>"{removeTargetKey}"</strong>? This will remove this field from the spreadsheet.
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 pt-2 border-t border-hairline">
-              <button
-                type="button"
-                onClick={() => { setShowRemoveModal(false); setRemoveTargetKey(null); }}
-                className="px-4 py-2 text-xs font-medium border border-hairline rounded-lg text-ink hover:bg-paper"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleRemoveConfirm}
-                className="px-4 py-2 text-xs font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Remove Column
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={showRemoveModal}
+        title="Remove Column?"
+        message={`Are you sure you want to remove the column "${removeTargetKey}"? This will remove this field and all its associated data from the spreadsheet.`}
+        confirmText="Remove Column"
+        danger={true}
+        onConfirm={handleRemoveConfirm}
+        onCancel={() => { setShowRemoveModal(false); setRemoveTargetKey(null); }}
+      />
     </div>
   );
 }

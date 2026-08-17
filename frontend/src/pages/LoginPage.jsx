@@ -75,18 +75,13 @@ export default function LoginPage() {
               <img src={logo} alt="BugMind" className="h-8 w-auto" />
             </div>
 
-            {/* Badge + Headline */}
-            <span className="mb-3 inline-flex w-fit items-center rounded-full bg-signal-soft px-3.5 py-1.5 text-xs font-semibold tracking-wide text-signal">
-              AI Testing Workspace
-            </span>
-
+            {/* Headline */}
             <h1 className="text-4xl font-bold leading-tight tracking-tight text-ink">
               Welcome back.
             </h1>
 
             <p className="mt-3 max-w-sm text-sm leading-7 text-muted">
-              Continue your AI-powered QA workflow — generate test cases,
-              track issues, and ship with confidence.
+              Sign in to manage your projects, test cases, and issue reports.
             </p>
 
             {/* Form */}
@@ -203,9 +198,8 @@ export default function LoginPage() {
                 </h2>
 
                 <p className="mt-5 max-w-xs text-sm leading-7 text-blue-100/85">
-                  Transform workflows into intelligent test cases, discover
-                  hidden defects, and manage your complete QA lifecycle
-                  from one elegant workspace.
+                  Structure workflows into modules and test cases. Track bugs,
+                  manage execution, and ship with a clear coverage picture.
                 </p>
               </div>
 

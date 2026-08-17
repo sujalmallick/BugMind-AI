@@ -46,8 +46,22 @@ export default function DashboardPage() {
     return (
       <div className="flex min-h-screen flex-col bg-surface">
         <HeaderBar connected={true} />
-        <div className="flex flex-1 items-center justify-center">
-          <p className="text-flagged">{error}</p>
+        <div className="flex flex-1 items-center justify-center px-4">
+          <div className="flex flex-col items-center gap-4 rounded-xl border border-hairline bg-white p-10 text-center shadow-sm">
+            <div className="rounded-full bg-flagged-soft p-3">
+              <Bell className="h-6 w-6 text-flagged" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-ink">Unable to load dashboard</h2>
+              <p className="mt-1 max-w-xs text-sm text-muted">Something went wrong while fetching your data. Check your connection and try again.</p>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="btn-primary mt-1"
+            >
+              Retry
+            </button>
+          </div>
         </div>
         <AppFooter />
       </div>
@@ -79,7 +93,7 @@ export default function DashboardPage() {
         <StatCard title="Total Projects" value={summary.projects} icon={Folder} colorClass="text-signal" />
         <StatCard title="Organizations" value={summary.organizations} icon={Building} colorClass="text-ochre" bgClass="bg-ochre-soft" />
         <StatCard title="Assigned Tasks" value={summary.assigned_items} icon={Layers} colorClass="text-verified" bgClass="bg-verified-soft" />
-        <StatCard title="Unread Alerts" value={summary.unread_notifications} icon={Bell} colorClass="text-flagged" bgClass="bg-flagged-soft" />
+        <StatCard title="Notifications" value={summary.unread_notifications} icon={Bell} colorClass="text-flagged" bgClass="bg-flagged-soft" />
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 mb-8">
