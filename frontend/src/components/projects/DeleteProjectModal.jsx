@@ -13,8 +13,8 @@ export default function DeleteProjectModal({
   if (!open || !project) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-xl border border-hairline bg-white shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm modal-backdrop-enter">
+      <div className="w-full max-w-md rounded-xl border border-hairline bg-white shadow-xl modal-pop-enter">
 
         {/* Header */}
 

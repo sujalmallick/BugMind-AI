@@ -109,22 +109,10 @@ function handleOpenDashboard(project) {
 }
 async function handleOpen(id) {
   console.log("Clicked id:", id);
-
   await touchProject(id);
-
-  const project = projects.find(
-    (p) => p.id === id
-  );
-
-  console.log(project);
-
   selectProject(id);
-
-  if (project?.analysis) {
-    navigate(`/project/${id}/workspace`);
-  } else {
-    navigate(`/project/${id}`);
-  }
+  // Always open workspace — the workspace page itself decides what to show
+  navigate(`/project/${id}/workspace`);
 }
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;

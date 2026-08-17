@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
-
+from auth.permissions import require_project_role
 from database.models.analysis import Analysis
-from database.models.workspace import Workspace
 from database.models.project import Project
+from database.models.workspace import Workspace
 
 
 def save_analysis(
@@ -11,17 +11,7 @@ def save_analysis(
     owner_id: int,
     result: dict,
 ):
-    project = (
-        db.query(Project)
-        .filter(
-            Project.id == project_id,
-            Project.owner_id == owner_id,
-        )
-        .first()
-    )
-
-    if not project:
-        return None
+    require_project_role(db, owner_id, project_id, "editor")
 
     workspace = (
         db.query(Workspace)
@@ -63,17 +53,7 @@ def get_analysis(
     project_id: int,
     owner_id: int,
 ):
-    project = (
-        db.query(Project)
-        .filter(
-            Project.id == project_id,
-            Project.owner_id == owner_id,
-        )
-        .first()
-    )
-
-    if not project:
-        return None
+    require_project_role(db, owner_id, project_id, "viewer")
 
     workspace = (
         db.query(Workspace)

@@ -14,11 +14,13 @@ import {
   Shield,
   Eye,
   Crown,
-  LayoutDashboard
+  LayoutDashboard,
+  Bug
 } from "lucide-react";
 
 export default function ProjectCard({
   project,
+  index = 0,
   onOpen,
   onDashboard,
   onRename,
@@ -61,7 +63,7 @@ return (
   <div
     role="button"
     tabIndex={0}
-    
+    style={{ animationDelay: `${index * 60}ms` }}
     onClick={() => onOpen(project.id)}
     onKeyDown={(e) => {
       if (e.key === "Enter" || e.key === " ") {
@@ -69,7 +71,7 @@ return (
         onOpen(project.id);
       }
     }}
-    className="group w-full cursor-pointer base-card p-5 text-left hover:-translate-y-1"
+    className="group w-full cursor-pointer base-card card-cascade-enter card-glow-hover p-5 text-left transition-all duration-300"
   >
       {/* Header */}
 
@@ -187,19 +189,35 @@ return (
       )}
     </div>
 
-      {/* Stats */}
-
+    {/* Stats */}
     <div className="mt-5 flex items-center gap-5 text-sm text-muted">
-  <div className="flex items-center gap-1.5">
-    <ClipboardList size={15} />
-    {project.testCaseCount ?? 0} Test Cases
-  </div>
+      {/* If project has issues but no modules (e.g. imported issues project), show Issues count */}
+      {project.moduleCount === 0 && project.issueCount > 0 ? (
+        <div className="flex items-center gap-1.5 text-flagged font-medium">
+          <Bug size={15} />
+          {project.issueCount} Issues
+        </div>
+      ) : (
+        <div className="flex items-center gap-1.5">
+          <ClipboardList size={15} />
+          {project.testCaseCount ?? 0} Test Cases
+        </div>
+      )}
 
-  <div className="flex items-center gap-1.5">
-    <Boxes size={15} />
-    {project.moduleCount ?? 0} Modules
-  </div>
-</div>
+      {project.moduleCount > 0 ? (
+        <div className="flex items-center gap-1.5">
+          <Boxes size={15} />
+          {project.moduleCount} Modules
+        </div>
+      ) : project.moduleCount === 0 && project.issueCount > 0 ? (
+        null
+      ) : (
+        <div className="flex items-center gap-1.5">
+          <Boxes size={15} />
+          0 Modules
+        </div>
+      )}
+    </div>
 
       {/* Footer */}
 

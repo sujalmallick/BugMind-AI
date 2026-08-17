@@ -110,23 +110,32 @@ def bulk_create_manual_test_cases(db: Session, project_id: int, current_user_id:
     require_project_role(db, current_user_id, project_id, "editor")
     workspace = _get_workspace(db, project_id)
     
+    import uuid
     created = []
     try:
         for data in data_list:
+            provided_id = data.get("test_case_id")
+            if provided_id:
+                raw_tc_id = str(provided_id)
+            else:
+                mod_prefix = str(data.get('module', 'GEN'))[:3].upper()
+                raw_tc_id = f"MANUAL-{mod_prefix}-{uuid.uuid4().hex[:4].upper()}"
+            
             tc = TestCase(
                 workspace_id=workspace.id,
-                test_case_id=data.get("test_case_id") or f"MANUAL-{str(data.get('module', 'GEN'))[:3].upper()}",
-                description=data.get("description", ""),
-                module=data.get("module", "General"),
-                category=data.get("category", "Functional"),
-                priority=data.get("priority", "Medium"),
-                status="Not Executed",
-                preconditions=data.get("preconditions", ""),
-                steps=data.get("steps", ""),
-                expected_result=data.get("expected_result", ""),
-                actual_result="",
-                notes=data.get("notes", ""),
-                is_manual=True
+                test_case_id=raw_tc_id[:30],
+                description=str(data.get("description") or ""),
+                module=str(data.get("module") or "General")[:100],
+                category=str(data.get("category") or "Functional")[:50],
+                priority=str(data.get("priority") or "Medium")[:20],
+                status=str(data.get("status") or "Not Executed")[:30],
+                preconditions=str(data.get("preconditions") or ""),
+                steps=str(data.get("steps") or ""),
+                expected_result=str(data.get("expected_result") or ""),
+                actual_result=str(data.get("actual_result") or ""),
+                notes=str(data.get("notes") or ""),
+                is_manual=True,
+                custom_fields=data.get("custom_fields") or {}
             )
             db.add(tc)
             created.append(tc)
@@ -165,7 +174,11 @@ def update_test_case(db: Session, project_id: int, tc_id: int, current_user_id: 
         raise HTTPException(status_code=403, detail="Test case does not belong to this project.")
         
     for key, value in data.items():
-        if hasattr(tc, key) and key not in ("id", "workspace_id", "created_at", "updated_at", "assignee_id", "assigned_at"):
+        if key == "custom_fields" and isinstance(value, dict):
+            existing_custom = dict(tc.custom_fields or {})
+            existing_custom.update(value)
+            tc.custom_fields = existing_custom
+        elif hasattr(tc, key) and key not in ("id", "workspace_id", "created_at", "updated_at", "assignee_id", "assigned_at"):
             setattr(tc, key, value)
             
     db.commit()

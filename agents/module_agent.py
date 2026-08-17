@@ -43,8 +43,7 @@ Rules:
 - Do not make unsupported assumptions.
 """
 
-    logger.info("Running Module Agent")
-    print("MODULE USER:", user_id)
+    logger.debug(f"MODULE USER: {user_id}")
 
     response = call_llm(prompt, user_id=user_id)
     

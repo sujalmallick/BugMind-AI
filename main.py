@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -17,6 +18,7 @@ from routes.invitation import router as invitation_router
 from routes.assignment import router as assignment_router
 from routes.comment import router as comment_router
 from routes.dashboard import router as dashboard_router
+from routes.activity import router as activity_router
 from auth.dependencies import get_current_user
 from database.models.user import User
 from fastapi import Depends, Request
@@ -39,11 +41,12 @@ app = FastAPI()
 app.include_router(
     ai_settings_router
 )
+cors_origins_env = os.getenv("CORS_ORIGINS", "http://localhost:5173")
+allowed_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173"
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -70,6 +73,7 @@ app.include_router(invitation_router, prefix="/api")
 app.include_router(assignment_router, prefix="/api")
 app.include_router(comment_router, prefix="/api")
 app.include_router(dashboard_router)
+app.include_router(activity_router)
 
 # Serve uploaded avatars as static files
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -138,7 +142,11 @@ def analyze_workflow(request: Request, data: WorkflowInput,  current_user: User 
     }
 @app.post("/analyze-issue")
 @limiter.limit("10/minute")
-def analyze_issue(request: Request, data: IssueInput):
+def analyze_issue(
+    request: Request,
+    data: IssueInput,
+    current_user: User = Depends(get_current_user),
+):
 
     return analyze_issue_agent(
 
@@ -152,4 +160,4 @@ def analyze_issue(request: Request, data: IssueInput):
 
         failed_test_case=data.failed_test_case
 
-    )
+    )

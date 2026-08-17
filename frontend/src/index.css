@@ -693,6 +693,8 @@ body,
 }
 
 .btn-primary {
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -708,13 +710,33 @@ body,
   transition: opacity 180ms ease, transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 180ms ease, background 180ms ease;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    60deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  transform: rotate(25deg);
+  transition: transform 0.6s ease;
+  pointer-events: none;
+}
+.btn-primary:hover:not(:disabled)::after {
+  transform: translate(340%, 0) rotate(25deg);
+}
 .btn-primary:hover:not(:disabled) {
   opacity: 0.98;
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.01);
   box-shadow: 0 6px 20px rgba(52, 84, 209, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 .btn-primary:active:not(:disabled) {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.97);
   box-shadow: 0 2px 8px rgba(52, 84, 209, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 .btn-primary:disabled {
@@ -775,3 +797,226 @@ body,
   box-shadow: 0 32px 90px rgba(20, 23, 31, 0.11);
   overflow: hidden;
 }
+
+/* ── Notification Drawer Animations ─────────────────────────────────── */
+
+/* Drawer slides in from right with spring overshoot */
+@keyframes notifDrawerIn {
+  0%   { transform: translateX(100%); opacity: 0; }
+  60%  { transform: translateX(-6px); opacity: 1; }
+  80%  { transform: translateX(3px); }
+  100% { transform: translateX(0); }
+}
+.notif-drawer-enter {
+  animation: notifDrawerIn 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Backdrop fades in */
+@keyframes notifBackdropIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.notif-backdrop-enter {
+  animation: notifBackdropIn 280ms ease forwards;
+}
+
+/* Staggered card pop-in */
+@keyframes notifCardIn {
+  0%   { opacity: 0; transform: translateY(14px) scale(0.97); }
+  70%  { transform: translateY(-2px) scale(1.005); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.notif-card-enter {
+  animation: notifCardIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Badge count pop */
+@keyframes badgePop {
+  0%   { transform: scale(0.4); opacity: 0; }
+  60%  { transform: scale(1.25); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.badge-pop {
+  animation: badgePop 350ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Card dismisses by sliding right + fading */
+@keyframes notifCardOut {
+  0%   { opacity: 1; transform: translateX(0) scale(1); max-height: 200px; margin-bottom: 8px; }
+  40%  { opacity: 0; transform: translateX(60px) scale(0.95); }
+  100% { opacity: 0; transform: translateX(80px); max-height: 0; margin-bottom: 0; padding: 0; }
+}
+.notif-card-exit {
+  animation: notifCardOut 380ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Mark-read ripple glow */
+@keyframes readRipple {
+  0%   { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+  70%  { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+}
+.notif-read-ripple {
+  animation: readRipple 600ms ease-out forwards;
+}
+
+/* Floating bell in empty state */
+@keyframes bellFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  20%       { transform: translateY(-6px) rotate(-8deg); }
+  40%       { transform: translateY(-8px) rotate(8deg); }
+  60%       { transform: translateY(-5px) rotate(-4deg); }
+  80%       { transform: translateY(-3px) rotate(3deg); }
+}
+.bell-float {
+  animation: bellFloat 3.2s ease-in-out infinite;
+}
+
+/* Skeleton shimmer */
+@keyframes notifShimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.notif-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 800px 100%;
+  animation: notifShimmer 1.5s infinite linear;
+  border-radius: 12px;
+}
+
+/* Gradient header bar animate in */
+@keyframes gradientBarIn {
+  from { opacity: 0; transform: scaleX(0); transform-origin: left; }
+  to   { opacity: 1; transform: scaleX(1); }
+}
+.gradient-bar-enter {
+  animation: gradientBarIn 500ms cubic-bezier(0.22, 1, 0.36, 1) 100ms both;
+}
+
+/* Section label fade-slide */
+@keyframes sectionLabelIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.section-label-enter {
+  animation: sectionLabelIn 300ms ease both;
+}
+
+/* Unread pulse ring */
+@keyframes unreadPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.3); }
+  50%      { box-shadow: 0 0 0 4px rgba(99, 102, 241, 0); }
+}
+/* ── Global Micro-interactions & Unique Component Animations ────────────── */
+
+/* Staggered card entrance cascade */
+@keyframes cardCascadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.card-cascade-enter {
+  animation: cardCascadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Modal pop-in with backdrop blur spring */
+@keyframes modalPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.94) translateY(10px);
+  }
+  70% {
+    transform: scale(1.01) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-pop-enter {
+  animation: modalPopIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes backdropFadeIn {
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to { opacity: 1; backdrop-filter: blur(4px); }
+}
+
+.modal-backdrop-enter {
+  animation: backdropFadeIn 0.25s ease-out forwards;
+}
+
+/* Button hover shine streak effect */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    60deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 100%
+  );
+  transform: rotate(25deg);
+  transition: transform 0.65s ease;
+}
+
+.btn-shine:hover::after {
+  transform: translate(320%, 0) rotate(25deg);
+}
+
+/* Card hover glow accent */
+.card-glow-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-glow-hover:hover {
+  transform: translateY(-4px) scale(1.008);
+  box-shadow: 0 12px 30px -6px rgba(52, 84, 209, 0.12), 0 4px 10px -2px rgba(20, 23, 31, 0.04);
+}
+
+/* Smooth tab switcher highlight slide */
+.tab-active-glow {
+  position: relative;
+}
+
+.tab-active-glow::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 15%;
+  width: 70%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-signal), transparent);
+  border-radius: 999px;
+  animation: badgePop 0.3s ease forwards;
+}
+
+/* Pulse ring for active action items */
+@keyframes ringBreathe {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(52, 84, 209, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(52, 84, 209, 0); }
+}
+
+.pulse-ring {
+  animation: ringBreathe 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+

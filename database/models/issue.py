@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, Integer
+from sqlalchemy import DateTime, ForeignKey, String, Text, Integer, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.base import Base
@@ -98,3 +98,5 @@ class Issue(Base):
         "TestCase",
         back_populates="issues",
     )
+
+    custom_fields: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)

@@ -51,7 +51,10 @@ def create_project(
 
     existing = existing_query.first()
     if existing:
-        raise HTTPException(status_code=409, detail="Project with this name already exists")
+        raise HTTPException(
+            status_code=400,
+            detail=f"A project named '{name.strip()}' already exists. Please use a unique name."
+        )
 
     project = Project(
         name=name,
@@ -114,9 +117,19 @@ def get_all_projects(
         workspace = project.workspace
         module_count = 0
         test_case_count = 0
+        issue_count = 0
 
         if workspace:
-            test_case_count = len(workspace.test_cases)
+            test_cases = workspace.test_cases or []
+            # Exclude system test case used for CSV imports
+            user_test_cases = [tc for tc in test_cases if tc.test_case_id != "IMPORT-DEFAULT"]
+            test_case_count = len(user_test_cases)
+            
+            # Count issues: direct Issue records linked through test cases
+            for tc in test_cases:
+                if tc.issues:
+                    issue_count += len(tc.issues)
+
             if workspace.analysis and workspace.analysis.result:
                 module_count = len(workspace.analysis.result.get("confirmedModules", []))
 
@@ -136,6 +149,7 @@ def get_all_projects(
                 "updated_at": project.updated_at,
                 "module_count": module_count,
                 "test_case_count": test_case_count,
+                "issue_count": issue_count,
                 "my_role": role,
                 "assigned_team_ids": assigned_team_ids,
             }
@@ -169,6 +183,22 @@ def update_project(
         raise HTTPException(status_code=404, detail="Project not found")
 
     require_project_role(db, user_id, project_id, "editor")
+
+    # Check for duplicate project name
+    dup_query = db.query(Project).filter(
+        Project.id != project_id,
+        func.lower(func.trim(Project.name)) == name.strip().lower()
+    )
+    if project.organization_id is not None:
+        dup_query = dup_query.filter(Project.organization_id == project.organization_id)
+    else:
+        dup_query = dup_query.filter(Project.owner_id == project.owner_id)
+
+    if dup_query.first():
+        raise HTTPException(
+            status_code=400,
+            detail=f"A project named '{name.strip()}' already exists. Please use a unique name."
+        )
 
     project.name = name
     project.description = description

@@ -28,14 +28,25 @@ def create_new_project(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return create_project(
+    p = create_project(
         db=db,
         name=project.name,
         description=project.description,
-        owner_id=current_user.id,  # Temporary until authentication is added
+        owner_id=current_user.id,
         organization_id=project.organization_id,
         team_id=project.team_id,
     )
+    # Return an explicit dict so SQLAlchemy lazy-loading never strips the id field
+    return {
+        "id": p.id,
+        "name": p.name,
+        "description": p.description,
+        "status": p.status,
+        "owner_id": p.owner_id,
+        "organization_id": p.organization_id,
+        "created_at": p.created_at.isoformat() if p.created_at else None,
+        "updated_at": p.updated_at.isoformat() if p.updated_at else None,
+    }
 
 
 @router.get("/")

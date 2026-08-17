@@ -94,8 +94,8 @@ def call_llm(
             logger.error("AI Provider offline or timed out.")
             return {"success": False, "error": "AI Provider is currently offline or timed out. Please try again."}
 
-        logger.error(f"LLM call failed: {e}")
-        return {"success": False, "error": f"LLM call failed: {e}"}
+        logger.error(f"LLM call failed with unhandled exception: {e}", exc_info=True)
+        return {"success": False, "error": "An unexpected error occurred while processing your request. Please try again."}
 
 
 def parse_json_response(response, prompt=None):

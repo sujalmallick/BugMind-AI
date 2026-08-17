@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, Boolean, Integer
+from sqlalchemy import DateTime, ForeignKey, String, Text, Boolean, Integer, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.base import Base
@@ -105,13 +105,15 @@ class TestCase(Base):
         nullable=True,
     )
 
-    workspace = relationship(
-        "Workspace",
-        back_populates="test_cases",
-    )
-
     issues = relationship(
         "Issue",
         back_populates="test_case",
         cascade="all, delete-orphan",
+    )
+
+    custom_fields: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)  # Stores any extra columns added by the user
+
+    workspace = relationship(
+        "Workspace",
+        back_populates="test_cases",
     )

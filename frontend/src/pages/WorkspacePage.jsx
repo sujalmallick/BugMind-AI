@@ -16,6 +16,7 @@ import ModulesTab from "../components/tabs/ModulesTab";
 import ChecklistTab from "../components/tabs/ChecklistTab";
 import TestCasesTab from "../components/tabs/TestCasesTab";
 import IssueAnalysisTab from "../components/tabs/IssueAnalysisTab";
+import IssuesTrackerTab from "../components/tabs/IssuesTrackerTab";
 import TrackerTab from "../components/tabs/TrackerTab";
 import { analyzeWorkflow, classifyIssue, saveAnalysis, getAnalysis } from "../services/analysisApi";
 import { useRef } from "react";
@@ -44,7 +45,8 @@ const TABS = [
   { key: 'modules', label: 'Modules' },
   { key: 'checklist', label: 'Checklist' },
   { key: 'testcases', label: 'Test Cases' },
-  { key: 'issues', label: 'Issue Analysis' },
+  { key: 'bug_tracker', label: 'Issues Tracker' },
+  { key: 'issues', label: 'AI Bug Reports' },
   { key: 'tracker', label: 'Tracker' },
   { key: 'activity', label: 'Activity' },
 ]
@@ -190,12 +192,21 @@ useEffect(() => {
     let hasContent = false;
     if (workspace?.workflow) hasContent = true;
 
+    let loadedCases = [];
+    let loadedIssues = [];
+
     try {
       const cases = await getTestCases(projectId);
-      if (cases && cases.length > 0) {
-        setTestCases(
-          cases.map(tc => ({
-            id: tc.test_case_id,
+      const userCases = (cases || []).filter(tc => tc.test_case_id !== "IMPORT-DEFAULT");
+      if (userCases.length > 0) {
+        loadedCases = userCases.map(tc => {
+          let tcCode = tc.test_case_id;
+          if (!tcCode || tcCode === String(tc.id) || tcCode === tc.id) {
+            tcCode = `TC-${String(tc.id).padStart(3, '0')}`;
+          }
+          return {
+            id: tc.id,
+            test_case_id: tcCode,
             db_id: tc.id,
             description: tc.description,
             module: tc.module,
@@ -204,14 +215,15 @@ useEffect(() => {
             status: tc.status,
             preconditions: tc.preconditions,
             steps: tc.steps,
-            expectedResult: tc.expected_result,
-            actualResult: tc.actual_result,
+            expected_result: tc.expected_result,
+            actual_result: tc.actual_result,
             notes: tc.notes,
-          }))
-        );
+            is_manual: tc.is_manual,
+            custom_fields: tc.custom_fields || {},
+          };
+        });
+        setTestCases(loadedCases);
         hasContent = true;
-        // If no AI analysis, default to test cases tab
-        if (!workspace?.workflow) setActiveTab("testcases");
       }
     } catch (e) {
       console.log("No saved test cases.");
@@ -220,17 +232,39 @@ useEffect(() => {
     try {
       const issues = await getIssues(projectId);
       if (issues && issues.length > 0) {
+        loadedIssues = issues;
         setIssueHistory(issues);
         hasContent = true;
-        // If no AI analysis and no test cases, default to tracker tab
-        if (!workspace?.workflow && testCases.length === 0) setActiveTab("tracker");
       }
     } catch (e) {
       console.log("No saved issues.");
     }
 
+    // Determine initial active tab based on project content
+    if (loadedIssues.length > 0 && loadedCases.length === 0) {
+      setActiveTab("bug_tracker");
+    } else if (loadedCases.length > 0) {
+      setActiveTab("testcases");
+    }
+
     if (hasContent) {
       setAnalysisStatus("success");
+      setPanelCollapsed(true);
+      // For imported projects (no AI analysis), jump straight to the /workspace route
+      // so the tabs render immediately without needing to click "Continue"
+      const currentPath = window.location.pathname;
+      if (!currentPath.endsWith("/workspace")) {
+        const hasAiAnalysis = !!workspace?.analysis?.result || (await (async () => { try { const a = await import('../services/analysisApi').then(m => m.getAnalysis(projectId)); return a?.result; } catch { return null; } })());
+        if (!hasAiAnalysis) {
+          window.history.replaceState(null, '', `/project/${projectId}/workspace`);
+        }
+      }
+    } else if (window.location.pathname.endsWith("/workspace")) {
+      // Empty project accessed via /workspace URL (e.g. created via import but import failed)
+      // Still show the workspace so the user can access the Issues Tracker → Import button
+      setAnalysisStatus("success");
+      setActiveTab("bug_tracker");
+      setPanelCollapsed(true);
     }
 
 
@@ -501,7 +535,20 @@ function handleCopyIssueResult() {
     .then(() => showToast("Markdown copied successfully!"))
 }
 
-  const tabsWithCounts = TABS.map((tab) =>
+  // Detect if this is an imported project (has manual test cases or direct issues without workflow analysis) to hide AI-only tabs
+  const hasDirectIssues = issueHistory.length > 0 && testCases.length === 0;
+  const isImportedProject = testCases.some(tc => tc.is_manual) || (issueHistory.length > 0 && !analysis);
+
+  // For issue-only imports: hide Modules, Checklist, Test Cases, Tracker, and Activity tabs (keeping Dashboard, Issues Tracker, AI Bug Reports)
+  const hiddenTabs = hasDirectIssues
+    ? ['modules', 'checklist', 'testcases', 'tracker', 'activity']
+    : isImportedProject
+    ? ['modules', 'checklist', 'tracker', 'activity']
+    : ['tracker', 'activity'];
+
+  const visibleTabs = TABS.filter(t => !hiddenTabs.includes(t.key));
+
+  const tabsWithCounts = visibleTabs.map((tab) =>
     tab.key === 'testcases' ? { ...tab, count: testCases.length } : tab,
   )
 
@@ -553,8 +600,8 @@ testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnviron
 )}
 {analysisStatus === "success" && (
   <>
-    {/* ---------------- ANALYZE PAGE ---------------- */}
-    {!isWorkspaceRoute ? (
+    {/* ---------------- ANALYZE PAGE or straight to WORKSPACE ---------------- */}
+    {!isWorkspaceRoute && analysis ? (
     <AnalysisSummary
   analysis={analysis}
   testCases={testCases}
@@ -570,16 +617,11 @@ testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnviron
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() =>
-                navigate(`/project/${projectId}`)
-              }
+              onClick={() => navigate("/")}
               className="btn-secondary px-3 py-1.5 text-[13px]"
             >
-              ← Back to Summary
+              ← Back to Projects
             </button>
-            <span className="hidden text-xs font-bold uppercase tracking-wide text-muted sm:inline-block">
-              Workspace
-            </span>
           </div>
 
           <TabBar
@@ -624,6 +666,19 @@ testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnviron
                 showToast={showToast}
               />
             )}
+
+          {activeTab === "bug_tracker" && (
+            <IssuesTrackerTab
+              issues={issueHistory}
+              testCases={testCases}
+              projectId={projectId}
+              showToast={showToast}
+              onRefresh={async () => {
+                const refreshed = await getIssues(projectId);
+                setIssueHistory(refreshed);
+              }}
+            />
+          )}
 
           {activeTab === "issues" && (
             <IssueAnalysisTab
