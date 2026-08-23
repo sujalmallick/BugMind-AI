@@ -1,9 +1,14 @@
+import os
 from logging.config import fileConfig
 
+from dotenv import load_dotenv
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
+
+# Load .env so local dev works without exporting vars manually
+load_dotenv()
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -14,10 +19,26 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+# ── DB URL from environment ───────────────────────────────────────────────────
+# Priority 1: single DATABASE_URL (used in Azure App Service)
+# Priority 2: individual DB_* vars (used in local .env)
+_db_url = os.getenv("DATABASE_URL")
+if not _db_url:
+    _host = os.getenv("DATABASE_HOST", "localhost")
+    _port = os.getenv("DATABASE_PORT", "5432")
+    _name = os.getenv("DATABASE_NAME", "bugmind")
+    _user = os.getenv("DATABASE_USER", "postgres")
+    _pass = os.getenv("DATABASE_PASSWORD", "")
+    _db_url = f"postgresql+psycopg2://{_user}:{_pass}@{_host}:{_port}/{_name}"
+elif _db_url.startswith("postgresql://"):
+    # Azure PostgreSQL sometimes gives postgres:// — SQLAlchemy needs psycopg2 dialect
+    _db_url = _db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+config.set_main_option("sqlalchemy.url", _db_url)
+# ─────────────────────────────────────────────────────────────────────────────
+
 # add your model's MetaData object here
 # for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
 from database.base import Base
 from database import models
 

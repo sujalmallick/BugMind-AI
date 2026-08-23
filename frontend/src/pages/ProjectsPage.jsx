@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 
 import { touchProject } from "../services/projectApi";
+import PageHeading from "../components/shared/PageHeading";
+
 
 import ProjectsHeader from "../components/projects/ProjectsHeader";
 import AppFooter from "../components/layout/AppFooter";
@@ -252,14 +254,11 @@ const filterChips = [
           <section className="hero-glow base-card bg-white/95 p-6 backdrop-blur md:p-8 section-enter section-enter-1">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <h1 className="mt-2 text-3xl font-semibold tracking-tight text-ink md:text-4xl">
+                <PageHeading meta="All your QA projects in one place. Resume work, review coverage, and track what needs attention.">
                   Projects
-                </h1>
-
-                <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted md:text-base">
-                  All your QA projects in one place. Resume work, review coverage, and track what needs attention.
-                </p>
+                </PageHeading>
               </div>
+
 
               <div className="flex gap-3 self-start lg:self-auto">
                 <button

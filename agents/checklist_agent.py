@@ -75,13 +75,14 @@ Rules:
 
     # Validate and normalize checklist structure
     if isinstance(response, dict):
-     checklist = response
+        checklist = response
     else:
-     checklist = parse_json_response(response, prompt)
+        checklist = parse_json_response(response, prompt)
 
-     if isinstance(checklist, dict) and checklist.get("success") is False:
-         return checklist
-     if not isinstance(checklist, list):checklist = []
+    if isinstance(checklist, dict) and checklist.get("success") is False:
+        return checklist
+    if not isinstance(checklist, list):
+        checklist = []
     
 
     normalized_checklist = []

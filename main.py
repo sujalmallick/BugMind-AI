@@ -41,8 +41,11 @@ app = FastAPI()
 app.include_router(
     ai_settings_router
 )
-cors_origins_env = os.getenv("CORS_ORIGINS", "http://localhost:5173")
-allowed_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+    if origin.strip()
+]
 
 app.add_middleware(
     CORSMiddleware,
@@ -81,11 +84,22 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.get("/health")
 def health_check():
-    return {
-        "database": "ok",
-        "llm": "ok",
-        "redis": "ok"
-    }
+    from sqlalchemy import text
+    from database.session import SessionLocal
+    db_status = "ok"
+    try:
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        db.close()
+    except Exception as e:
+        db_status = f"error: {e}"
+
+    all_ok = db_status == "ok"
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=200 if all_ok else 503,
+        content={"database": db_status}
+    )
 
 @app.post("/analyze-workflow")
 @limiter.limit("10/minute")

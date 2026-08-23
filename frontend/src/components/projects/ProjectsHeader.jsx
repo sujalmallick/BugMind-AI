@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Plus, LogOut, User, Users, Bell, LayoutDashboard, Sparkles, Layers } from "lucide-react";
+import { Plus, LogOut, User, Users, Bell, LayoutDashboard, Layers } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { getAvatarUrl } from "../../utils/avatarUrl";
@@ -8,9 +8,29 @@ import favicon from "../../assets/favicon.png";
 import NotificationsDrawer from "../layout/NotificationsDrawer";
 import { fetchNotifications } from "../../services/notificationService";
 
-export default function ProjectsHeader({
-  onCreateProject,
-}) {
+// ── Shared icon-only button ──────────────────────────────────────────────────
+function IconBtn({ onClick, label, children, className = "" }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={`
+        relative flex h-[34px] w-[34px] items-center justify-center
+        rounded-md border border-hairline bg-surface
+        text-muted transition-colors duration-150
+        hover:border-ink/30 hover:bg-paper hover:text-ink
+        active:scale-[0.98]
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/40
+        ${className}
+      `}
+    >
+      {children}
+    </button>
+  );
+}
+
+export default function ProjectsHeader({ onCreateProject }) {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -18,6 +38,7 @@ export default function ProjectsHeader({
   const [unreadCount, setUnreadCount] = useState(0);
   const profileRef = useRef(null);
 
+  // ── Click-outside ──────────────────────────────────────────────────────────
   useEffect(() => {
     function handleClickOutside(event) {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
@@ -28,15 +49,15 @@ export default function ProjectsHeader({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // ── Unread count ───────────────────────────────────────────────────────────
   useEffect(() => {
-    if (user) {
-      fetchNotifications()
-        .then(data => {
-          const list = Array.isArray(data) ? data : (data?.items ?? []);
-          setUnreadCount(list.filter(n => !n.is_read).length);
-        })
-        .catch(() => {});
-    }
+    if (!user) return;
+    fetchNotifications()
+      .then((data) => {
+        const list = Array.isArray(data) ? data : (data?.items ?? []);
+        setUnreadCount(list.filter((n) => !n.is_read).length);
+      })
+      .catch(() => {});
   }, [user, profileOpen]);
 
   function handleLogout() {
@@ -44,196 +65,208 @@ export default function ProjectsHeader({
     navigate("/login");
   }
 
-  const currentDate = new Intl.DateTimeFormat(
-    undefined,
-    {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }
-  ).format(new Date());
+  const initials = (user?.name || user?.email || "?").charAt(0).toUpperCase();
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200/80 shadow-xs">
-        {/* Top accent gradient bar */}
-        <div className="h-0.5 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 w-full" />
+      <header className="sticky top-0 z-50 border-b border-hairline bg-surface">
+        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6">
 
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6 lg:px-8">
-
-          {/* Logo & Hub Branding */}
-          <div className="flex items-center gap-3.5">
-            <div
-              title="Go to Projects"
+          {/* ── Left: Logo & Project Hub ────────────────────────────────── */}
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
               onClick={() => navigate("/")}
-              className="group flex cursor-pointer items-center gap-3 transition-transform duration-200 active:scale-95"
+              className="flex shrink-0 items-center gap-2.5 transition-opacity duration-150 hover:opacity-85 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/40 rounded-sm py-1"
+              aria-label="BugMind AI — home"
             >
-              <img
-                src={favicon}
-                alt="BugMind"
-                className="h-10 w-10 object-contain transition-transform duration-300 group-hover:scale-105"
-              />
-              <img
-                src={logo}
-                alt="BugMind AI"
-                className="h-9 w-auto object-contain transition-opacity duration-200 group-hover:opacity-85"
-              />
-            </div>
+              <img src={favicon} alt="" aria-hidden="true" className="h-9 w-9 object-contain" />
+              <img src={logo} alt="BugMind AI" className="h-[32px] w-auto object-contain" />
+            </button>
 
-            <div className="hidden border-l border-gray-200 pl-4 sm:flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <Layers size={13} className="text-blue-600" />
-                <span className="text-xs font-bold uppercase tracking-wider text-gray-800">
-                  Project Hub
-                </span>
-              </div>
-              <span className="text-[11px] font-medium text-gray-400">
-                {currentDate}
-              </span>
+            {/* Vertical divider */}
+            <div className="h-6 w-px shrink-0 bg-hairline" aria-hidden="true" />
+
+            {/* Project Hub indicator */}
+            <div className="flex items-center gap-1.5 text-[13px] font-semibold text-ink">
+              <Layers size={14} aria-hidden="true" className="text-signal" />
+              <span>Project Hub</span>
             </div>
           </div>
 
-          {/* Actions & Profile */}
-          <div className="flex items-center gap-2.5 sm:gap-3.5">
-            <span className="hidden rounded-full border border-emerald-200 bg-emerald-50/80 px-3.5 py-1.5 text-xs font-semibold text-emerald-800 lg:inline-flex items-center gap-2 shadow-2xs">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              Workspace Ready
-            </span>
+          {/* ── Right cluster ────────────────────────────────────────────── */}
+          <div className="flex items-center gap-2.5">
 
-            {/* Create Project Button */}
+            {/* New Project — Blue primary button */}
             <button
               type="button"
               onClick={onCreateProject}
-              className="btn-primary btn-shine flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-semibold shadow-md transition-all duration-200 active:scale-95"
+              className="
+                inline-flex items-center gap-1.5
+                rounded-md border border-signal/20 bg-signal px-3.5 py-1.5
+                text-[13px] font-semibold text-white shadow-sm
+                transition-all duration-150
+                hover:bg-signal/90 hover:shadow
+                active:scale-[0.98]
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/40
+              "
             >
-              <Plus size={17} />
+              <Plus size={15} aria-hidden="true" className="shrink-0" />
               <span>New Project</span>
             </button>
 
-            {/* Bell Notification Button */}
-            <button
-              type="button"
-              onClick={() => setNotificationsOpen(true)}
-              className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200/80 bg-gray-50/70 text-gray-600 transition-all duration-200 hover:border-blue-300 hover:bg-white hover:text-blue-600 active:scale-90"
-              title="Notifications"
-            >
-              <Bell size={18} />
+            {/* Notifications */}
+            <IconBtn onClick={() => setNotificationsOpen(true)} label="Notifications">
+              <Bell size={14} aria-hidden="true" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-extrabold text-white shadow-xs ring-2 ring-white">
-                  {unreadCount > 99 ? '99+' : unreadCount}
+                <span
+                  aria-label={`${unreadCount} unread`}
+                  className="
+                    pointer-events-none absolute -right-1 -top-1
+                    flex h-[14px] min-w-[14px] items-center justify-center
+                    rounded-full bg-flagged px-[3px]
+                    font-mono text-[9px] font-bold text-white
+                    ring-1 ring-surface
+                  "
+                >
+                  {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
-            </button>
+            </IconBtn>
 
-            {/* Profile Dropdown */}
+            {/* Avatar + Profile dropdown */}
             {user && (
               <div className="relative" ref={profileRef}>
                 <button
                   type="button"
                   onClick={() => setProfileOpen(!profileOpen)}
-                  className="flex items-center gap-2 rounded-full p-0.5 transition-all duration-200 hover:ring-2 hover:ring-blue-500/30 focus:outline-none"
+                  aria-label="Open profile menu"
+                  aria-haspopup="true"
+                  aria-expanded={profileOpen}
+                  className="
+                    flex h-7 w-7 items-center justify-center
+                    rounded-full overflow-hidden
+                    bg-signal-soft text-signal text-[12px] font-semibold
+                    ring-1 ring-hairline
+                    transition-shadow duration-150
+                    hover:ring-2 hover:ring-signal/30
+                    active:scale-[0.98]
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/40
+                  "
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-sm font-bold text-white shadow-xs ring-2 ring-white">
-                    {user.avatar_url ? (
-                      <img
-                        src={getAvatarUrl(user.avatar_url)}
-                        alt="Profile"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      (user.name || user.email || "?").charAt(0).toUpperCase()
-                    )}
-                  </div>
+                  {user.avatar_url ? (
+                    <img
+                      src={getAvatarUrl(user.avatar_url)}
+                      alt=""
+                      aria-hidden="true"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span aria-hidden="true">{initials}</span>
+                  )}
                 </button>
 
-                {/* Dropdown Menu */}
+                {/* Dropdown */}
                 {profileOpen && (
-                  <div className="absolute right-0 top-full mt-2.5 w-64 origin-top-right rounded-2xl border border-gray-200/90 bg-white/95 p-2 shadow-xl backdrop-blur-lg menu-enter z-50">
-                    <div className="px-3.5 py-3 rounded-xl bg-gray-50/80 border border-gray-100">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="truncate text-sm font-bold text-gray-900">
-                          {user.name || "User"}
-                        </p>
-                        <span className="shrink-0 rounded-md bg-white px-2 py-0.5 font-mono text-[10px] font-bold text-gray-500 border border-gray-200 shadow-2xs">
-                          ID: {user.id}
-                        </span>
-                      </div>
-                      <p className="truncate text-xs text-gray-400 mt-0.5 font-medium">
+                  <div className="
+                    absolute right-0 top-full z-50 mt-2
+                    w-60 rounded-lg border border-hairline bg-surface
+                    py-1 shadow-md
+                  ">
+                    {/* User info */}
+                    <div className="px-3 py-2.5">
+                      <p className="truncate text-[13px] font-semibold text-ink">
+                        {user.name || "User"}
+                      </p>
+                      <p className="truncate font-mono text-[11px] text-muted">
                         {user.email}
                       </p>
                     </div>
 
-                    <div className="my-2 h-px w-full bg-gray-100" />
+                    <div className="my-1 h-px bg-hairline" />
 
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col">
+                      {[
+                        {
+                          icon: User,
+                          label: "Profile Settings",
+                          action: () => { setProfileOpen(false); navigate("/settings/profile?tab=account"); },
+                        },
+                        {
+                          icon: LayoutDashboard,
+                          label: "Dashboard",
+                          action: () => { setProfileOpen(false); navigate("/dashboard"); },
+                        },
+                        {
+                          icon: Users,
+                          label: "Organizations",
+                          action: () => { setProfileOpen(false); navigate("/organizations"); },
+                        },
+                      ].map(({ icon: Icon, label, action }) => (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={action}
+                          className="
+                            flex w-full items-center gap-2.5 px-3 py-2
+                            text-[13px] font-medium text-ink text-left
+                            hover:bg-paper
+                            transition-colors duration-100
+                          "
+                        >
+                          <Icon size={14} aria-hidden="true" className="shrink-0 text-muted" />
+                          {label}
+                        </button>
+                      ))}
+
+                      {/* Notifications with badge */}
                       <button
                         type="button"
-                        onClick={() => { setProfileOpen(false); navigate("/settings/profile?tab=account"); }}
-                        className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                        onClick={() => { setProfileOpen(false); setNotificationsOpen(true); }}
+                        className="
+                          flex w-full items-center justify-between px-3 py-2
+                          text-[13px] font-medium text-ink text-left
+                          hover:bg-paper
+                          transition-colors duration-100
+                        "
                       >
-                        <User size={16} className="text-gray-400 group-hover:text-blue-600" />
-                        Profile Settings
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => { setProfileOpen(false); navigate("/dashboard"); }}
-                        className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
-                      >
-                        <LayoutDashboard size={16} className="text-gray-400" />
-                        Dashboard
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => { setProfileOpen(false); navigate("/organizations"); }}
-                        className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
-                      >
-                        <Users size={16} className="text-gray-400" />
-                        Organizations
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProfileOpen(false);
-                          setNotificationsOpen(true);
-                        }}
-                        className="flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Bell size={16} className="text-gray-400" />
+                        <span className="flex items-center gap-2.5">
+                          <Bell size={14} aria-hidden="true" className="shrink-0 text-muted" />
                           Notifications
-                        </div>
+                        </span>
                         {unreadCount > 0 && (
-                          <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white leading-none">
-                            {unreadCount > 99 ? '99+' : unreadCount}
+                          <span className="font-mono text-[11px] font-semibold text-flagged">
+                            {unreadCount > 99 ? "99+" : unreadCount}
                           </span>
                         )}
                       </button>
-
-                      <div className="my-2 h-px w-full bg-gray-100" />
-
-                      <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
-                      >
-                        <LogOut size={16} />
-                        Logout
-                      </button>
                     </div>
+
+                    <div className="my-1 h-px bg-hairline" />
+
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="
+                        flex w-full items-center gap-2.5 px-3 py-2
+                        text-[13px] font-medium text-flagged text-left
+                        hover:bg-flagged-soft
+                        transition-colors duration-100
+                      "
+                    >
+                      <LogOut size={14} aria-hidden="true" className="shrink-0" />
+                      Logout
+                    </button>
                   </div>
                 )}
               </div>
             )}
           </div>
-
         </div>
       </header>
 
-      <NotificationsDrawer 
-        open={notificationsOpen} 
+      <NotificationsDrawer
+        open={notificationsOpen}
         onClose={() => setNotificationsOpen(false)}
         onCountChange={setUnreadCount}
       />

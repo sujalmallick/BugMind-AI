@@ -6,6 +6,7 @@ import ProjectsHeader from "../components/projects/ProjectsHeader";
 import AppFooter from "../components/layout/AppFooter";
 import ActivityFeed from "../components/shared/ActivityFeed";
 import { getMyActivity } from "../services/activityApi";
+import PageHeading from "../components/shared/PageHeading";
 
 export default function MyWorkPage() {
   const [loading, setLoading] = useState(true);
@@ -45,23 +46,18 @@ export default function MyWorkPage() {
       <ProjectsHeader />
       
       <main className="flex-1">
-        <header className="border-b border-hairline bg-white px-8 py-5 flex items-center gap-3 sticky top-0 z-10 shadow-sm">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
-            <Briefcase size={20} />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-ink">My Work</h1>
-            <p className="text-sm text-muted">Tasks and bugs assigned to you across all projects.</p>
-          </div>
+        <header className="border-b border-hairline bg-white px-8 py-5 sticky top-0 z-10">
+          <PageHeading icon={Briefcase} meta="Tasks and bugs assigned to you across all projects.">
+            My work
+          </PageHeading>
         </header>
 
         <div className="p-8 max-w-6xl mx-auto space-y-8">
           
           <section>
-            <div className="flex items-center gap-2 mb-4 border-b border-hairline pb-2">
-              <Bug size={18} className="text-flagged" />
-              <h2 className="text-lg font-bold text-ink">Assigned Bugs ({issues.length})</h2>
-            </div>
+            <PageHeading as="h2" icon={Bug} className="mb-4 border-b border-hairline pb-2">
+              Assigned bugs ({issues.length})
+            </PageHeading>
             {issues.length === 0 ? (
               <p className="text-sm text-muted bg-white p-4 rounded-xl border border-dashed border-hairline text-center">
                 No bugs assigned to you.

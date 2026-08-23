@@ -1,9 +1,22 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Search, LogOut, User, Users, Bell, KeyRound, LayoutDashboard, Sparkles, Folder } from "lucide-react";
+import logo from "../../assets/bugmind2.png";
+import {
+  Search,
+  LogOut,
+  User,
+  Users,
+  Bell,
+  KeyRound,
+  LayoutDashboard,
+  Folder,
+  ChevronDown,
+  CloudCheck,
+  Check,
+  Settings,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatRelativeTime } from "../../utils/time";
 import { useAuth } from "../../auth/AuthContext";
-import logo from "../../assets/bugmind2.png";
 import favicon from "../../assets/favicon.png";
 import AISettingsModal from "../common/AISettingsModal";
 import { getAvatarUrl } from "../../utils/avatarUrl";
@@ -13,11 +26,36 @@ import NotificationsDrawer from "../layout/NotificationsDrawer";
 import { getUnreadCount } from "../../services/notificationService";
 import { useSSENotifications } from "../../hooks/useSSENotifications";
 import { getAISettings } from "../../services/aiSettingsApi";
+import { getProjects } from "../../services/projectApi";
+
+// ── Shared button anatomy ────────────────────────────────────────────────────
+// icon-only square button (34×34)
+function IconBtn({ onClick, label, children, className = "" }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={`
+        relative flex h-[34px] w-[34px] items-center justify-center
+        rounded-md border border-hairline bg-surface
+        text-muted transition-colors duration-150
+        hover:border-ink/30 hover:bg-paper hover:text-ink
+        active:scale-[0.98]
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/40
+        ${className}
+      `}
+    >
+      {children}
+    </button>
+  );
+}
 
 export default function HeaderBar({
   connected = true,
   onOpenCommandPalette,
   projectName,
+  projectId,
   updatedAt,
 }) {
   const navigate = useNavigate();
@@ -28,8 +66,14 @@ export default function HeaderBar({
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const profileRef = useRef(null);
+  const [projectSelectorOpen, setProjectSelectorOpen] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
 
+  const profileRef = useRef(null);
+  const projectSelectorRef = useRef(null);
+
+  // ── AI key check ────────────────────────────────────────────────────────────
   const checkKey = useCallback(async () => {
     try {
       const settings = await getAISettings();
@@ -43,21 +87,27 @@ export default function HeaderBar({
   }, []);
 
   useEffect(() => {
-    if (user) {
-      checkKey();
-    }
+    if (user) checkKey();
   }, [user, checkKey]);
 
+  // ── Click-outside ────────────────────────────────────────────────────────────
   useEffect(() => {
     function handleClickOutside(event) {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setProfileOpen(false);
+      }
+      if (
+        projectSelectorRef.current &&
+        !projectSelectorRef.current.contains(event.target)
+      ) {
+        setProjectSelectorOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // ── Unread count ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!user) return;
     getUnreadCount().then(setUnreadCount).catch(() => {});
@@ -66,252 +116,449 @@ export default function HeaderBar({
   useSSENotifications({
     enabled: !!user,
     onSignal: useCallback((signal) => {
-      if (signal.event === "new_notification" && typeof signal.unread_count === "number") {
+      if (
+        signal.event === "new_notification" &&
+        typeof signal.unread_count === "number"
+      ) {
         setUnreadCount(signal.unread_count);
       }
     }, []),
   });
+
+  // ── Project selector ─────────────────────────────────────────────────────────
+  const openProjectSelector = async () => {
+    if (projectSelectorOpen) {
+      setProjectSelectorOpen(false);
+      return;
+    }
+    setProjectSelectorOpen(true);
+    if (projects.length === 0) {
+      setProjectsLoading(true);
+      try {
+        const list = await getProjects();
+        setProjects(list);
+      } catch {
+        /* ignore */
+      } finally {
+        setProjectsLoading(false);
+      }
+    }
+  };
+
+  // ── Keyboard shortcut ────────────────────────────────────────────────────────
+  useEffect(() => {
+    function handleKeyDown(e) {
+      const isMac = navigator.platform.toUpperCase().includes("MAC");
+      const shortcutPressed = isMac
+        ? e.metaKey && e.key === "k"
+        : e.ctrlKey && e.key === "k";
+      if (shortcutPressed) {
+        e.preventDefault();
+        onOpenCommandPalette?.();
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onOpenCommandPalette]);
 
   function handleLogout() {
     logout();
     navigate("/login");
   }
 
-  const shortcut =
-    navigator.platform.toUpperCase().includes("MAC")
-      ? "⌘K"
-      : "Ctrl+K";
+  // ── Avatar initials ──────────────────────────────────────────────────────────
+  const initials = (user?.name || user?.email || "?").charAt(0).toUpperCase();
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200/80 shadow-xs">
-        {/* Top accent gradient bar */}
-        <div className="h-0.5 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 w-full" />
+      <header className="sticky top-0 z-50 border-b border-hairline bg-surface">
+        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6">
 
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6 lg:px-8">
+          {/* ── Left cluster ─────────────────────────────────────────────── */}
+          <div className="flex min-w-0 items-center gap-4">
 
-          {/* Left section: Logo & Project context */}
-          <div className="flex min-w-0 items-center gap-3.5 sm:gap-5">
-            <div
-              title="Go to Projects"
+            {/* Logo — favicon + wordmark image */}
+            <button
+              type="button"
               onClick={() => navigate("/")}
-              className="group flex cursor-pointer items-center gap-3 transition-transform duration-200 active:scale-95"
+              className="flex shrink-0 items-center gap-2.5 transition-opacity duration-150 hover:opacity-85 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/40 rounded-sm py-1"
+              aria-label="BugMind AI — go to projects"
             >
-              <img
-                src={favicon}
-                alt="BugMind"
-                className="h-10 w-10 object-contain transition-transform duration-300 group-hover:scale-105"
-              />
-              <img
-                src={logo}
-                alt="BugMind AI"
-                className="h-9 w-auto object-contain transition-opacity duration-200 group-hover:opacity-85"
-              />
-            </div>
+              <img src={favicon} alt="" aria-hidden="true" className="h-9 w-9 object-contain" />
+              <img src={logo} alt="BugMind AI" className="h-[32px] w-auto object-contain" />
+            </button>
 
+            {/* Vertical divider */}
             {projectName && (
-              <>
-                <div className="h-6 w-px bg-gray-200" />
-
-                <div className="flex items-center gap-2.5 min-w-0 max-w-[45vw] sm:max-w-none">
-                  <div className="flex items-center gap-2 rounded-xl bg-blue-50/80 border border-blue-100/90 px-3 py-1.5 text-xs sm:text-sm font-semibold text-blue-900 truncate shadow-2xs">
-                    <Folder size={15} className="text-blue-600 shrink-0" />
-                    <span className="truncate">{projectName}</span>
-                  </div>
-
-                  {updatedAt && (
-                    <div className="hidden items-center gap-2 text-xs text-gray-500 sm:flex">
-                      <span className="relative flex h-2.5 w-2.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-                      </span>
-                      <span className="text-xs font-medium text-gray-400">
-                        {formatRelativeTime(updatedAt)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </>
+              <div className="h-6 w-px shrink-0 bg-hairline" aria-hidden="true" />
             )}
-          </div>
 
-          {/* Right section: Global Actions */}
-          <div className="flex items-center gap-2.5 text-sm sm:gap-3.5">
-
-            {/* BYOK API Key Button */}
-            <button
-              type="button"
-              onClick={() => setAiModalOpen(true)}
-              title={hasApiKey ? "AI Model API Key Active" : "No API Key Set! Click to configure"}
-              className={`
-                hidden sm:inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs sm:text-sm font-semibold
-                shadow-2xs transition-all duration-200 active:scale-95 group relative overflow-hidden
-                ${
-                  hasApiKey
-                    ? "border-emerald-200 bg-emerald-50/80 text-emerald-800 hover:bg-emerald-100/80 hover:border-emerald-300"
-                    : "border-amber-200 bg-amber-50/90 text-amber-800 hover:bg-amber-100/90 hover:border-amber-300 animate-pulse"
-                }
-              `}
-            >
-              <span className="relative flex h-2.5 w-2.5">
-                <span
-                  className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${
-                    hasApiKey ? "bg-emerald-400" : "bg-amber-400"
-                  }`}
-                />
-                <span
-                  className={`relative inline-flex h-2.5 w-2.5 rounded-full ${
-                    hasApiKey ? "bg-emerald-500" : "bg-amber-500"
-                  }`}
-                />
-              </span>
-
-              <KeyRound
-                size={16}
-                className={`transition-transform duration-300 group-hover:rotate-12 ${
-                  hasApiKey ? "text-emerald-600" : "text-amber-600"
-                }`}
-              />
-              <span>{hasApiKey ? "BYOK Active" : "Set AI Key"}</span>
-            </button>
-
-            {/* Quick Command Palette Button */}
-            <button
-              type="button"
-              onClick={onOpenCommandPalette}
-              className="flex items-center gap-2.5 rounded-xl border border-gray-200/90 bg-gray-50/70 px-3.5 py-2 text-xs sm:text-sm font-semibold text-gray-700 shadow-2xs transition-all duration-200 hover:border-blue-300 hover:bg-white hover:shadow-xs active:scale-95"
-            >
-              <Search size={16} className="text-gray-400" />
-              <span className="hidden md:inline font-medium text-gray-600">Search</span>
-              <kbd className="hidden rounded-md border border-gray-200 bg-white px-2 py-0.5 font-mono text-[11px] font-bold text-gray-400 md:inline shadow-2xs">
-                {shortcut}
-              </kbd>
-            </button>
-
-            {/* Bell Notification Direct Trigger */}
-            <button
-              type="button"
-              onClick={() => setNotificationsOpen(true)}
-              className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200/80 bg-gray-50/70 text-gray-600 transition-all duration-200 hover:border-blue-300 hover:bg-white hover:text-blue-600 active:scale-90"
-              title="Notifications"
-            >
-              <Bell size={18} />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-extrabold text-white shadow-xs ring-2 ring-white">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
-              )}
-            </button>
-
-            {/* Profile Avatar & Dropdown */}
-            {user && (
-              <div className="relative" ref={profileRef}>
+            {/* Project selector — dropdown trigger */}
+            {projectName && (
+              <div className="relative min-w-0" ref={projectSelectorRef}>
                 <button
                   type="button"
-                  onClick={() => setProfileOpen(!profileOpen)}
-                  className="flex items-center gap-2 rounded-full p-0.5 transition-all duration-200 hover:ring-2 hover:ring-blue-500/30 focus:outline-none"
+                  onClick={openProjectSelector}
+                  aria-haspopup="listbox"
+                  aria-expanded={projectSelectorOpen}
+                  className="
+                    flex min-w-0 items-center gap-1.5
+                    rounded-md px-1.5 py-1
+                    text-[13px] font-medium text-ink
+                    transition-colors duration-150
+                    hover:bg-paper
+                    active:scale-[0.98]
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/40
+                  "
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-sm font-bold text-white shadow-xs ring-2 ring-white">
-                    {user.avatar_url ? (
-                      <img
-                        src={getAvatarUrl(user.avatar_url)}
-                        alt="Profile"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      (user.name || user.email || "?").charAt(0).toUpperCase()
-                    )}
-                  </div>
+                  <Folder size={13} aria-hidden="true" className="shrink-0 text-muted" />
+                  <span className="max-w-[160px] truncate sm:max-w-[220px]">
+                    {projectName}
+                  </span>
+                  <ChevronDown
+                    size={12}
+                    aria-hidden="true"
+                    className={`shrink-0 text-muted transition-transform duration-150 ${
+                      projectSelectorOpen ? "rotate-180" : ""
+                    }`}
+                  />
                 </button>
 
-                {/* Dropdown Menu */}
-                {profileOpen && (
-                  <div className="absolute right-0 top-full mt-2.5 w-64 origin-top-right rounded-2xl border border-gray-200/90 bg-white/95 p-2 shadow-xl backdrop-blur-lg menu-enter z-50">
-                    <div className="px-3.5 py-3 rounded-xl bg-gray-50/80 border border-gray-100">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="truncate text-sm font-bold text-gray-900">
-                          {user.name || "User"}
-                        </p>
-                        <span className="shrink-0 rounded-md bg-white px-2 py-0.5 font-mono text-[10px] font-bold text-gray-500 border border-gray-200 shadow-2xs">
-                          ID: {user.id}
-                        </span>
-                      </div>
-                      <p className="truncate text-xs text-gray-400 mt-0.5 font-medium">
-                        {user.email}
+                {/* Dropdown */}
+                {projectSelectorOpen && (
+                  <div
+                    role="listbox"
+                    aria-label="Switch project"
+                    className="
+                      absolute left-0 top-full z-50 mt-1.5
+                      w-64 rounded-lg border border-hairline bg-surface
+                      py-1 shadow-md
+                    "
+                  >
+                    <p className="px-3 pb-1.5 pt-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                      Switch project
+                    </p>
+
+                    {projectsLoading && (
+                      <p className="px-3 py-2 text-[12px] text-muted">
+                        Loading…
                       </p>
-                    </div>
+                    )}
 
-                    <div className="my-2 h-px w-full bg-gray-100" />
+                    {!projectsLoading && projects.length === 0 && (
+                      <p className="px-3 py-2 text-[12px] text-muted">
+                        No projects found.
+                      </p>
+                    )}
 
-                    <div className="flex flex-col gap-1">
-                      <button
-                        type="button"
-                        onClick={() => { setProfileOpen(false); navigate("/settings/profile?tab=account"); }}
-                        className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
-                      >
-                        <User size={16} className="text-gray-400 group-hover:text-blue-600" />
-                        Profile Settings
-                      </button>
+                    {!projectsLoading &&
+                      projects.map((proj) => {
+                        const isCurrent = proj.id === projectId;
+                        return (
+                          <button
+                            key={proj.id}
+                            role="option"
+                            aria-selected={isCurrent}
+                            type="button"
+                            onClick={() => {
+                              setProjectSelectorOpen(false);
+                              navigate(`/project/${proj.id}/workspace`);
+                            }}
+                            className={`
+                              flex w-full items-center gap-2.5 px-3 py-2
+                              text-[13px] font-medium text-left
+                              transition-colors duration-100
+                              hover:bg-paper
+                              ${isCurrent ? "text-signal" : "text-ink"}
+                            `}
+                          >
+                            <Folder
+                              size={13}
+                              aria-hidden="true"
+                              className={isCurrent ? "text-signal" : "text-muted"}
+                            />
+                            <span className="min-w-0 flex-1 truncate">
+                              {proj.name}
+                            </span>
+                            {isCurrent && (
+                              <Check
+                                size={12}
+                                aria-hidden="true"
+                                className="shrink-0 text-signal"
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
 
-                      <button
-                        type="button"
-                        onClick={() => { setProfileOpen(false); navigate("/dashboard"); }}
-                        className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
-                      >
-                        <LayoutDashboard size={16} className="text-gray-400" />
-                        Dashboard
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => { setProfileOpen(false); navigate("/organizations"); }}
-                        className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
-                      >
-                        <Users size={16} className="text-gray-400" />
-                        Organizations
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProfileOpen(false);
-                          setNotificationsOpen(true);
-                        }}
-                        className="flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Bell size={16} className="text-gray-400" />
-                          Notifications
-                        </div>
-                        {unreadCount > 0 && (
-                          <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white leading-none">
-                            {unreadCount > 99 ? '99+' : unreadCount}
-                          </span>
-                        )}
-                      </button>
-
-                      <div className="my-2 h-px w-full bg-gray-100" />
-
-                      <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
-                      >
-                        <LogOut size={16} />
-                        Logout
-                      </button>
-                    </div>
+                    <div className="my-1 h-px bg-hairline" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProjectSelectorOpen(false);
+                        navigate("/");
+                      }}
+                      className="
+                        flex w-full items-center gap-2.5 px-3 py-2
+                        text-[13px] font-medium text-muted text-left
+                        hover:bg-paper hover:text-ink
+                        transition-colors duration-100
+                      "
+                    >
+                      All projects →
+                    </button>
                   </div>
                 )}
               </div>
             )}
 
+            {/* Sync status — non-interactive, mono font */}
+            {updatedAt && (
+              <div
+                className="hidden items-center gap-1.5 sm:flex"
+                title={new Date(updatedAt).toLocaleString()}
+              >
+                <CloudCheck
+                  size={13}
+                  aria-hidden="true"
+                  className="shrink-0 text-muted"
+                />
+                <span className="font-mono text-[11px] text-muted hidden lg:block">
+                  {formatRelativeTime(updatedAt)}
+                </span>
+              </div>
+            )}
           </div>
 
+          {/* ── Right cluster ────────────────────────────────────────────── */}
+          <div className="flex items-center gap-2.5">
+
+            {/* Add AI key — only when no key, warning-tinted, not gradient */}
+            {!hasApiKey && (
+              <button
+                type="button"
+                onClick={() => setAiModalOpen(true)}
+                title="No AI key configured — click to add"
+                className="
+                  hidden sm:inline-flex items-center gap-1.5
+                  rounded-md border border-ochre/50 bg-ochre-soft px-2.5 py-1.5
+                  text-[13px] font-medium text-ochre
+                  transition-colors duration-150
+                  hover:border-ochre/70 hover:bg-ochre/10
+                  active:scale-[0.98]
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ochre/40
+                "
+              >
+                <KeyRound size={13} aria-hidden="true" className="shrink-0" />
+                <span>Add AI key</span>
+                {/* Mobile: icon-only */}
+              </button>
+            )}
+
+            {/* Add AI key — mobile icon-only */}
+            {!hasApiKey && (
+              <button
+                type="button"
+                onClick={() => setAiModalOpen(true)}
+                aria-label="Add AI key"
+                title="No AI key configured — click to add"
+                className="
+                  sm:hidden relative flex h-[30px] w-[30px] items-center justify-center
+                  rounded-md border border-ochre/50 bg-ochre-soft
+                  text-ochre transition-colors duration-150
+                  hover:border-ochre/70 hover:bg-ochre/10
+                  active:scale-[0.98]
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ochre/40
+                "
+              >
+                <KeyRound size={14} aria-hidden="true" />
+              </button>
+            )}
+
+            {/* Key configured — subtle settings entry point in profile dropdown only; no visible pill here */}
+
+            {/* Search — icon-only, Ctrl+K wired in useEffect above */}
+            <IconBtn
+              onClick={onOpenCommandPalette}
+              label="Search (Ctrl+K)"
+            >
+              <Search size={14} aria-hidden="true" />
+            </IconBtn>
+
+            {/* Notifications */}
+            <IconBtn
+              onClick={() => setNotificationsOpen(true)}
+              label="Notifications"
+            >
+              <Bell size={14} aria-hidden="true" />
+              {unreadCount > 0 && (
+                <span
+                  aria-label={`${unreadCount} unread notifications`}
+                  className="
+                    pointer-events-none absolute -right-1 -top-1
+                    flex h-[14px] min-w-[14px] items-center justify-center
+                    rounded-full bg-flagged px-[3px]
+                    font-mono text-[9px] font-bold text-white
+                    ring-1 ring-surface
+                  "
+                >
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </IconBtn>
+
+            {/* Avatar + Profile dropdown */}
+            {user && (
+              <div className="relative" ref={profileRef}>
+                <button
+                  type="button"
+                  onClick={() => setProfileOpen(!profileOpen)}
+                  aria-label="Open profile menu"
+                  aria-haspopup="true"
+                  aria-expanded={profileOpen}
+                  className="
+                    flex h-7 w-7 items-center justify-center
+                    rounded-full overflow-hidden
+                    bg-signal-soft text-signal text-[12px] font-semibold
+                    ring-1 ring-hairline
+                    transition-shadow duration-150
+                    hover:ring-2 hover:ring-signal/30
+                    active:scale-[0.98]
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/40
+                  "
+                >
+                  {user.avatar_url ? (
+                    <img
+                      src={getAvatarUrl(user.avatar_url)}
+                      alt=""
+                      aria-hidden="true"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span aria-hidden="true">{initials}</span>
+                  )}
+                </button>
+
+                {/* Profile dropdown */}
+                {profileOpen && (
+                  <div className="
+                    absolute right-0 top-full z-50 mt-2
+                    w-60 rounded-lg border border-hairline bg-surface
+                    py-1 shadow-md
+                  ">
+                    {/* User info header */}
+                    <div className="px-3 py-2.5">
+                      <p className="truncate text-[13px] font-semibold text-ink">
+                        {user.name || "User"}
+                      </p>
+                      <p className="truncate font-mono text-[11px] text-muted">
+                        {user.email}
+                      </p>
+                    </div>
+
+                    <div className="my-1 h-px bg-hairline" />
+
+                    <div className="flex flex-col">
+                      {[
+                        {
+                          icon: User,
+                          label: "Profile Settings",
+                          action: () => { setProfileOpen(false); navigate("/settings/profile?tab=account"); },
+                        },
+                        {
+                          icon: LayoutDashboard,
+                          label: "Dashboard",
+                          action: () => { setProfileOpen(false); navigate("/dashboard"); },
+                        },
+                        {
+                          icon: Users,
+                          label: "Organizations",
+                          action: () => { setProfileOpen(false); navigate("/organizations"); },
+                        },
+                      ].map(({ icon: Icon, label, action }) => (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={action}
+                          className="
+                            flex w-full items-center gap-2.5 px-3 py-2
+                            text-[13px] font-medium text-ink text-left
+                            hover:bg-paper
+                            transition-colors duration-100
+                          "
+                        >
+                          <Icon size={14} aria-hidden="true" className="shrink-0 text-muted" />
+                          {label}
+                        </button>
+                      ))}
+
+                      {/* Notifications with badge */}
+                      <button
+                        type="button"
+                        onClick={() => { setProfileOpen(false); setNotificationsOpen(true); }}
+                        className="
+                          flex w-full items-center justify-between px-3 py-2
+                          text-[13px] font-medium text-ink text-left
+                          hover:bg-paper
+                          transition-colors duration-100
+                        "
+                      >
+                        <span className="flex items-center gap-2.5">
+                          <Bell size={14} aria-hidden="true" className="shrink-0 text-muted" />
+                          Notifications
+                        </span>
+                        {unreadCount > 0 && (
+                          <span className="font-mono text-[11px] font-semibold text-flagged">
+                            {unreadCount > 99 ? "99+" : unreadCount}
+                          </span>
+                        )}
+                      </button>
+
+                      {/* AI Key settings */}
+                      <button
+                        type="button"
+                        onClick={() => { setProfileOpen(false); setAiModalOpen(true); }}
+                        className="
+                          flex w-full items-center gap-2.5 px-3 py-2
+                          text-[13px] font-medium text-ink text-left
+                          hover:bg-paper
+                          transition-colors duration-100
+                        "
+                      >
+                        <KeyRound size={14} aria-hidden="true" className="shrink-0 text-muted" />
+                        <span className="flex-1">AI Key</span>
+                        {hasApiKey ? (
+                          <span className="font-mono text-[11px] text-verified">configured</span>
+                        ) : (
+                          <span className="font-mono text-[11px] text-ochre">not set</span>
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="my-1 h-px bg-hairline" />
+
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="
+                        flex w-full items-center gap-2.5 px-3 py-2
+                        text-[13px] font-medium text-flagged text-left
+                        hover:bg-flagged-soft
+                        transition-colors duration-100
+                      "
+                    >
+                      <LogOut size={14} aria-hidden="true" className="shrink-0" />
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* BYOK AI Settings Modal */}
+      {/* AI Settings Modal */}
       <AISettingsModal
         open={aiModalOpen}
         onClose={() => setAiModalOpen(false)}
@@ -327,12 +574,10 @@ export default function HeaderBar({
         }}
       />
 
-      {/* Toast Notifications */}
       <ToastStack toasts={toasts} />
 
-      {/* Notifications Drawer */}
-      <NotificationsDrawer 
-        open={notificationsOpen} 
+      <NotificationsDrawer
+        open={notificationsOpen}
         onClose={() => setNotificationsOpen(false)}
         onCountChange={setUnreadCount}
       />

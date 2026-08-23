@@ -12,6 +12,8 @@ import DangerZone      from "../../components/profile/DangerZone";
 import ToastStack      from "../../components/shared/ToastStack";
 import useToasts       from "../../components/shared/useToasts";
 import NotificationPreferences from "../../components/notifications/NotificationPreferences";
+import PageHeading     from "../../components/shared/PageHeading";
+
 
 import logo    from "../../assets/bugmind2.png";
 import favicon from "../../assets/favicon.png";
@@ -293,9 +295,11 @@ function PanelContent({ tab, profile, setProfile, showToast }) {
     <div className="flex flex-col gap-1">
       {/* Section heading */}
       <div className="mb-5">
-        <h1 className="text-2xl font-bold text-ink">{heading?.label}</h1>
-        <p className="text-sm text-muted mt-0.5">{heading?.desc}</p>
+        <PageHeading meta={heading?.desc}>
+          {heading?.label}
+        </PageHeading>
       </div>
+
 
       {tab === "account" && (
         <AccountInfo

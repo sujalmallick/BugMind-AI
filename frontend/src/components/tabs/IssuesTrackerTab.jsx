@@ -265,6 +265,7 @@ export default function IssuesTrackerTab({
   return (
     <div className="base-card p-4 md:p-5">
       <EditableDataGrid
+        projectId={projectId}
         rowData={displayRows}
         baseColumns={baseColumns}
         onCellValueChanged={handleCellValueChanged}

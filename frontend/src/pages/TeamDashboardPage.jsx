@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { getTeamDashboard } from "../services/dashboardApi";
 import AssigneeLoadBar from "../components/dashboard/AssigneeLoadBar";
 import ActivityItem from "../components/shared/ActivityItem";
+import PageHeading from "../components/shared/PageHeading";
 import HeaderBar from "../components/layout/HeaderBar";
 import AppFooter from "../components/layout/AppFooter";
 import { Users, Folder, LayoutGrid, ArrowLeft, Loader2 } from "lucide-react";
@@ -76,8 +77,10 @@ export default function TeamDashboardPage() {
           <Link to={`/organizations/${orgId}`} className="text-sm text-muted hover:text-ink flex items-center gap-1 mb-2 w-max">
             <ArrowLeft size={14} /> Back to Teams
           </Link>
-          <h1 className="text-2xl font-bold text-ink">{team.name} Dashboard</h1>
-          <p className="mt-1 text-sm text-muted">{organization.name} • {team.description || "No description provided."}</p>
+          <PageHeading meta={`${organization.name} • ${team.description || "No description provided."}`}>
+            {team.name} dashboard
+          </PageHeading>
+
         </div>
       </div>
 

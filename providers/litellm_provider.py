@@ -1,7 +1,10 @@
 import os
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 from litellm import completion
+
+logger = logging.getLogger("BugMind")
 
 # Ensure .env is loaded from the workspace root regardless of working directory.
 _env_path = Path(__file__).resolve().parent.parent / ".env"

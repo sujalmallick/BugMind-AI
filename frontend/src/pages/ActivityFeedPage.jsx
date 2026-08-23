@@ -2,6 +2,7 @@ import React, { useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { getProjectActivity } from "../services/activityApi";
 import ActivityFeed from "../components/shared/ActivityFeed";
+import PageHeading from "../components/shared/PageHeading";
 
 export default function ActivityFeedPage() {
   const { projectId } = useParams();
@@ -13,10 +14,9 @@ export default function ActivityFeedPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-ink">Project Activity Log</h1>
-        <p className="text-sm text-muted">A full history of all updates and edits within this project.</p>
-      </div>
+      <PageHeading meta="A full history of all updates and edits within this project.">
+        Project activity log
+      </PageHeading>
       <ActivityFeed fetchFn={fetchProjectActivity} />
     </div>
   );

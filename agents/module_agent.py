@@ -60,6 +60,8 @@ Rules:
     else:
         modules = parse_json_response(response, prompt)
 
+    if isinstance(modules, dict) and modules.get("success") is False:
+        return modules
 
     # Validation safety
     if not isinstance(modules, dict):

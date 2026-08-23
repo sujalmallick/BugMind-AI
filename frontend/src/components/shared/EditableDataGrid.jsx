@@ -49,6 +49,7 @@ export default function EditableDataGrid({
   onImport,
   onRenameColumn,
   onRemoveColumn,
+  projectId = null,
   title = "Tracker",
   emptyMessage = "No data yet. Click + Add Row to get started.",
 }) {
@@ -62,8 +63,11 @@ export default function EditableDataGrid({
   const [showManageMenu, setShowManageMenu] = useState(false);
   const manageMenuRef = useRef(null);
 
-  // Hidden & Renamed Columns Persistence
-  const storageTitleKey = title.toLowerCase().replace(/[^a-z0-9]/g, "_");
+  // Hidden & Renamed Columns Persistence scoped strictly per Project
+  const storageTitleKey = useMemo(() => {
+    return `${projectId ? `proj_${projectId}_` : ""}${title.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
+  }, [projectId, title]);
+
   const [hiddenColumns, setHiddenColumns] = useState(() => {
     try {
       const saved = localStorage.getItem(`bugmind_hidden_cols_${storageTitleKey}`);
@@ -81,6 +85,17 @@ export default function EditableDataGrid({
       return {};
     }
   });
+
+  // Re-sync column settings whenever the project changes
+  useEffect(() => {
+    try {
+      const savedHidden = localStorage.getItem(`bugmind_hidden_cols_${storageTitleKey}`);
+      setHiddenColumns(savedHidden ? JSON.parse(savedHidden) : []);
+      const savedRenamed = localStorage.getItem(`bugmind_renamed_cols_${storageTitleKey}`);
+      setRenamedHeaders(savedRenamed ? JSON.parse(savedRenamed) : {});
+      setCustomColumns([]);
+    } catch {}
+  }, [storageTitleKey]);
 
   useEffect(() => {
     try {

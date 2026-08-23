@@ -80,6 +80,17 @@ export default function AppRoutes() {
       />
 
       <Route
+        path="/workspace/:projectId"
+        element={
+          <ProtectedRoute>
+
+            <WorkspacePage />
+
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/project/:projectId/activity"
         element={
           <ProtectedRoute>

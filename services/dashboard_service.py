@@ -15,6 +15,7 @@ from database.models.organization import Organization
 from database.models.organization_member import OrganizationMember
 from database.models.project import Project
 from database.models.project_member import ProjectMember
+from database.models.project_team_access import ProjectTeamAccess
 from database.models.team import Team
 from database.models.team_member import TeamMember
 from database.models.test_case import TestCase
@@ -292,44 +293,71 @@ def _project_summary_counts(db: Session, project_id: int) -> dict:
 
 
 def _project_top_assignees(db: Session, project_id: int) -> list[dict]:
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        return []
+
+    # Get all users with access to this project
+    user_ids: set[int] = {project.owner_id}
+    user_ids.update(
+        m.user_id for m in db.query(ProjectMember.user_id).filter(ProjectMember.project_id == project_id).all()
+    )
+    team_ids = [
+        a.team_id for a in db.query(ProjectTeamAccess.team_id).filter(ProjectTeamAccess.project_id == project_id).all()
+    ]
+    if team_ids:
+        user_ids.update(
+            m.user_id for m in db.query(TeamMember.user_id).filter(TeamMember.team_id.in_(team_ids)).all()
+        )
+
     workspace = (
         db.query(Workspace)
         .filter(Workspace.project_id == project_id)
         .first()
     )
-    if not workspace:
-        return []
 
-    test_case_rows = (
-        db.query(TestCase.assignee_id, func.count(TestCase.id))
-        .filter(
-            TestCase.workspace_id == workspace.id,
-            TestCase.assignee_id.isnot(None),
+    totals: dict[int, dict] = {
+        uid: {"test_cases": 0, "issues": 0, "total": 0}
+        for uid in user_ids
+    }
+
+    if workspace:
+        test_case_rows = (
+            db.query(TestCase.assignee_id, func.count(TestCase.id))
+            .filter(
+                TestCase.workspace_id == workspace.id,
+                TestCase.assignee_id.isnot(None),
+            )
+            .group_by(TestCase.assignee_id)
+            .all()
         )
-        .group_by(TestCase.assignee_id)
-        .all()
-    )
 
-    issue_rows = (
-        db.query(Issue.assignee_id, func.count(Issue.id))
-        .join(TestCase, TestCase.id == Issue.test_case_id)
-        .filter(
-            TestCase.workspace_id == workspace.id,
-            Issue.assignee_id.isnot(None),
+        issue_rows = (
+            db.query(Issue.assignee_id, func.count(Issue.id))
+            .join(TestCase, TestCase.id == Issue.test_case_id)
+            .filter(
+                TestCase.workspace_id == workspace.id,
+                Issue.assignee_id.isnot(None),
+            )
+            .group_by(Issue.assignee_id)
+            .all()
         )
-        .group_by(Issue.assignee_id)
-        .all()
-    )
 
-    totals: dict[int, dict] = defaultdict(lambda: {"test_cases": 0, "issues": 0, "total": 0})
+        for assignee_id, count in test_case_rows:
+            if assignee_id:
+                aid = int(assignee_id)
+                if aid not in totals:
+                    totals[aid] = {"test_cases": 0, "issues": 0, "total": 0}
+                totals[aid]["test_cases"] += int(count or 0)
+                totals[aid]["total"] += int(count or 0)
 
-    for assignee_id, count in test_case_rows:
-        totals[int(assignee_id)]["test_cases"] += int(count or 0)
-        totals[int(assignee_id)]["total"] += int(count or 0)
-
-    for assignee_id, count in issue_rows:
-        totals[int(assignee_id)]["issues"] += int(count or 0)
-        totals[int(assignee_id)]["total"] += int(count or 0)
+        for assignee_id, count in issue_rows:
+            if assignee_id:
+                aid = int(assignee_id)
+                if aid not in totals:
+                    totals[aid] = {"test_cases": 0, "issues": 0, "total": 0}
+                totals[aid]["issues"] += int(count or 0)
+                totals[aid]["total"] += int(count or 0)
 
     users = {
         user.id: user
@@ -342,14 +370,14 @@ def _project_top_assignees(db: Session, project_id: int) -> list[dict]:
         items.append(
             {
                 "user_id": user_id,
-                "name": user.name if user else "Unknown",
+                "name": (user.name if user and user.name else (user.email if user else f"User {user_id}")),
                 "email": user.email if user else None,
                 "avatar_url": user.avatar_url if user else None,
                 **counts,
             }
         )
 
-    items.sort(key=lambda item: (-item["total"], item["name"].lower()))
+    items.sort(key=lambda item: (-item["total"], item["name"].lower() if item["name"] else ""))
     return items
 
 

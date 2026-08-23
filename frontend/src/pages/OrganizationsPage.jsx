@@ -9,6 +9,9 @@ import useOrgStore from "../store/useOrgStore";
 import OrgCard from "../components/organization/OrgCard";
 import OrgCreateModal from "../components/organization/OrgCreateModal";
 import OrgMemberList from "../components/organization/OrgMemberList";
+import useToasts         from "../components/shared/useToasts";
+import ToastStack        from "../components/shared/ToastStack";
+import PageHeading       from "../components/shared/PageHeading";
 import TeamCard from "../components/organization/TeamCard";
 import TeamCreateModal from "../components/organization/TeamCreateModal";
 import TeamMemberList from "../components/organization/TeamMemberList";
@@ -185,12 +188,10 @@ export default function OrganizationsPage() {
         {!orgId ? (
           <>
             <div className="mb-6 flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-bold text-ink">Organizations</h1>
-                <p className="text-sm text-muted mt-0.5">
-                  Manage your teams and collaborative workspaces.
-                </p>
-              </div>
+              <PageHeading meta="Manage your teams and collaborative workspaces.">
+                Organizations
+              </PageHeading>
+
               {store.orgs.length > 0 && (
                 <button
                   onClick={() => setShowCreateOrg(true)}

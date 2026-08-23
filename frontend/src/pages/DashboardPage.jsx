@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import PageHeading from "../components/shared/PageHeading";
 import { Link } from "react-router-dom";
 import { getMyDashboard } from "../services/dashboardApi";
 import StatCard from "../components/dashboard/StatCard";
@@ -84,9 +85,8 @@ export default function DashboardPage() {
       <HeaderBar connected={true} />
       <main className="mx-auto max-w-7xl p-6 lg:p-8 flex-1 w-full">
         <div className="mb-8">
-        <h1 className="text-2xl font-bold text-ink">My Dashboard</h1>
-        <p className="mt-1 text-sm text-muted">Overview of your work, teams, and recent activity.</p>
-      </div>
+          <PageHeading meta="Overview of your work, teams, and recent activity.">My Dashboard</PageHeading>
+        </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mb-8">
@@ -99,7 +99,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 mb-8">
         {/* Test Case Status Breakdown */}
         <section className="signal-card p-6 flex flex-col">
-          <h2 className="text-base font-semibold text-ink mb-4">Assigned Test Cases</h2>
+          <PageHeading as="h2" className="mb-4">Assigned Test Cases</PageHeading>
           <div className="flex-1 min-h-[250px]">
             <DonutChart data={test_case_status_breakdown} emptyMessage="No test cases assigned" />
           </div>
@@ -107,7 +107,7 @@ export default function DashboardPage() {
 
         {/* Issue Severity Breakdown */}
         <section className="signal-card p-6 flex flex-col">
-          <h2 className="text-base font-semibold text-ink mb-4">Assigned Bugs</h2>
+          <PageHeading as="h2" className="mb-4">Assigned Bugs</PageHeading>
           <div className="flex-1 min-h-[250px]">
             <BarChart data={issue_severity_breakdown} emptyMessage="No bugs assigned" />
           </div>
@@ -193,7 +193,7 @@ export default function DashboardPage() {
 
         {/* Activity Feed Sidebar */}
         <section className="signal-card p-6">
-          <h2 className="text-base font-semibold text-ink mb-4">Recent Activity</h2>
+          <PageHeading as="h2" className="mb-4">Recent Activity</PageHeading>
           {recent_activity.length > 0 ? (
             <div className="space-y-4">
               {(showAllActivity ? recent_activity : recent_activity.slice(0, 3)).map(activity => (
