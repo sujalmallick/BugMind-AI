@@ -2,13 +2,16 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
+import { useEffect } from "react";
 
 import { useAuth } from "../auth/AuthContext";
 import ProtectedRoute from "../auth/ProtectedRoute";
 
 import LoginPage from "../pages/LoginPage";
 import RegisterPage from "../pages/RegisterPage";
+import LandingPage from "../pages/LandingPage";
 
 import ProjectsPage from "../pages/ProjectsPage";
 import WorkspacePage from "../pages/WorkspacePage";
@@ -21,12 +24,29 @@ import DashboardPage from "../pages/DashboardPage";
 import ProjectDashboardPage from "../pages/ProjectDashboardPage";
 import TeamDashboardPage from "../pages/TeamDashboardPage";
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+  }, [pathname]);
+
+  return null;
+}
+
 export default function AppRoutes() {
-  const { authenticated } =
-    useAuth();
+  const { authenticated } = useAuth();
+  const location = useLocation();
 
   return (
-    <Routes>
+    <div key={location.pathname} className="page-fade-in min-h-screen">
+      <ScrollToTop />
+      <Routes>
+
+      {/* Public Marketing Landing Pages */}
+      <Route path="/landing" element={<LandingPage />} />
+      <Route path="/details" element={<LandingPage />} />
+      <Route path="/about" element={<LandingPage />} />
 
       <Route
         path="/login"
@@ -49,13 +69,16 @@ export default function AppRoutes() {
       <Route
         path="/"
         element={
-          <ProtectedRoute>
-
-            <ProjectsPage />
-
-          </ProtectedRoute>
+          authenticated ? (
+            <ProtectedRoute>
+              <ProjectsPage />
+            </ProtectedRoute>
+          ) : (
+            <LandingPage />
+          )
         }
       />
+
 
       <Route
         path="/project/:projectId"
@@ -102,6 +125,33 @@ export default function AppRoutes() {
       />
 
       <Route
+        path="/projects"
+        element={
+          <ProtectedRoute>
+            <ProjectsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/activity"
+        element={
+          <ProtectedRoute>
+            <ActivityFeedPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/settings/profile"
         element={
           <ProtectedRoute>
@@ -134,8 +184,6 @@ export default function AppRoutes() {
         element={<InviteAcceptPage />}
       />
 
-
-
       <Route
         path="/dashboard"
         element={
@@ -163,6 +211,20 @@ export default function AppRoutes() {
         }
       />
 
-    </Routes>
+      {/* Catch-all: Unauthenticated users are redirected to login */}
+      <Route
+        path="*"
+        element={
+          authenticated ? (
+            <Navigate to="/" replace />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+
+      </Routes>
+    </div>
   );
 }
+

@@ -69,9 +69,36 @@ export default function HeaderBar({
   const [projectSelectorOpen, setProjectSelectorOpen] = useState(false);
   const [projects, setProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [showHeader, setShowHeader] = useState(true);
+  const lastScrollY = useRef(0);
 
   const profileRef = useRef(null);
   const projectSelectorRef = useRef(null);
+
+  // ── Scroll Listener for Header Effects & Instant Reveal on Scroll UP ────────
+  useEffect(() => {
+    function handleScroll() {
+      const currentY = window.scrollY;
+      setScrolled(currentY > 10);
+
+      if (currentY <= 10) {
+        setShowHeader(true);
+      } else if (currentY < lastScrollY.current) {
+        // Scrolling UP -> Reveal instantly
+        setShowHeader(true);
+      } else if (currentY > lastScrollY.current && currentY > 60) {
+        // Scrolling DOWN -> Hide
+        setShowHeader(false);
+      }
+
+      lastScrollY.current = currentY;
+    }
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
 
   // ── AI key check ────────────────────────────────────────────────────────────
   const checkKey = useCallback(async () => {
@@ -171,7 +198,18 @@ export default function HeaderBar({
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-hairline bg-surface">
+      <header
+        className={`
+          sticky top-0 z-50 transition-all duration-200 ease-out
+          ${showHeader ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"}
+          ${
+            scrolled
+              ? "border-b border-hairline/80 bg-surface/90 backdrop-blur-md shadow-xs"
+              : "border-b border-hairline bg-surface"
+          }
+        `}
+      >
+
         <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6">
 
           {/* ── Left cluster ─────────────────────────────────────────────── */}
@@ -180,13 +218,14 @@ export default function HeaderBar({
             {/* Logo — favicon + wordmark image */}
             <button
               type="button"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/landing")}
               className="flex shrink-0 items-center gap-2.5 transition-opacity duration-150 hover:opacity-85 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/40 rounded-sm py-1"
-              aria-label="BugMind AI — go to projects"
+              aria-label="BugMind AI — go to landing page"
             >
               <img src={favicon} alt="" aria-hidden="true" className="h-9 w-9 object-contain" />
               <img src={logo} alt="BugMind AI" className="h-[32px] w-auto object-contain" />
             </button>
+
 
             {/* Vertical divider */}
             {projectName && (

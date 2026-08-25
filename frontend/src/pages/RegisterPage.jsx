@@ -89,10 +89,15 @@ export default function RegisterPage() {
           {/* ─────────── LEFT: FORM ─────────── */}
           <div className="flex flex-col justify-center px-8 py-12 sm:px-12 lg:px-16 lg:py-16">
 
-            {/* Logo */}
-            <div className="mb-8 flex items-center gap-3">
-              <img src={favicon} alt="BugMind icon" className="h-10 w-10 rounded-xl object-contain" />
-              <img src={logo} alt="BugMind" className="h-8 w-auto" />
+            {/* Logo & Product Details Link */}
+            <div className="mb-8 flex items-center justify-between">
+              <Link to="/details" className="flex items-center gap-3 transition-opacity hover:opacity-85" title="Learn more about BugMind AI">
+                <img src={favicon} alt="BugMind icon" className="h-10 w-10 rounded-xl object-contain" />
+                <img src={logo} alt="BugMind" className="h-8 w-auto" />
+              </Link>
+              <Link to="/details" className="text-xs font-medium text-muted hover:text-signal transition-colors">
+                Product details →
+              </Link>
             </div>
 
             {/* Headline */}

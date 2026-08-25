@@ -23,18 +23,69 @@
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 html,
 body,
 #root {
   background-color: var(--color-paper);
   color: var(--color-ink);
   width: 100%;
-  overflow-x: hidden;
+  min-height: 100%;
 }
+
+/* Smooth page entrance opacity animation on reload/navigation */
+@keyframes pageFadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.page-fade-in {
+  animation: pageFadeIn 0.25s ease-out forwards;
+}
+
+
+/* Staggered slow text reveal on page reload */
+@keyframes textRevealUp {
+  0% {
+    opacity: 0;
+    transform: translateY(18px);
+    filter: blur(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.text-reveal-1 {
+  animation: textRevealUp 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.12s backwards;
+}
+.text-reveal-2 {
+  animation: textRevealUp 0.95s cubic-bezier(0.16, 1, 0.3, 1) 0.28s backwards;
+}
+.text-reveal-3 {
+  animation: textRevealUp 1.05s cubic-bezier(0.16, 1, 0.3, 1) 0.45s backwards;
+}
+.text-reveal-4 {
+  animation: textRevealUp 1.15s cubic-bezier(0.16, 1, 0.3, 1) 0.62s backwards;
+}
+.text-reveal-5 {
+  animation: textRevealUp 1.25s cubic-bezier(0.16, 1, 0.3, 1) 0.8s backwards;
+}
+
 
 * {
   -webkit-font-smoothing: antialiased;
 }
+
 
 :focus-visible {
   outline: 2px solid transparent;
