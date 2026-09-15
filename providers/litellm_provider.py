@@ -45,12 +45,12 @@ class LiteLLMProvider:
         3. None  →  caller receives an error from LiteLLM.
         """
         if self._explicit_api_key:
-            return self._explicit_api_key
+            return self._explicit_api_key.strip().strip("'\"")
 
         env_var = _PROVIDER_KEY_MAP.get(self.provider.lower())
         if env_var:
             key = os.getenv(env_var)
-            return key if key else None
+            return key.strip().strip("'\"") if key else None
 
         return None
 
@@ -70,15 +70,32 @@ class LiteLLMProvider:
                 f"in your .env file."
             )
 
-        response = completion(
-            model=self.model,
-            api_key=api_key,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt,
-                }
-            ],
-        )
+        try:
+            response = completion(
+                model=self.model,
+                api_key=api_key,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    }
+                ],
+            )
+        except Exception as err:
+            err_str = str(err).lower()
+            if self.provider.lower() == "gemini" and self.model != "gemini/gemini-1.5-flash" and any(k in err_str for k in ["not found", "404", "does not exist", "unsupported"]):
+                logger.warning(f"Model {self.model} failed with '{err}'. Falling back to gemini/gemini-1.5-flash...")
+                response = completion(
+                    model="gemini/gemini-1.5-flash",
+                    api_key=api_key,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": prompt,
+                        }
+                    ],
+                )
+            else:
+                raise err
 
         return response.choices[0].message.content

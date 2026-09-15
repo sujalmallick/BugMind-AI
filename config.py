@@ -1,4 +1,3 @@
 DEFAULT_PROVIDER = "gemini"
 
-# LiteLLM requires provider-prefixed model names: "<provider>/<model-name>"
-DEFAULT_MODEL = "gemini/gemini-2.5-flash"
+DEFAULT_MODEL = "gemini/gemini-1.5-flash"

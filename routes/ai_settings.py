@@ -41,7 +41,7 @@ def get_ai_settings(
     if not settings:
         return {
             "provider": "gemini",
-            "model": "gemini/gemini-2.5-flash",
+            "model": "gemini/gemini-1.5-flash",
             "providers": providers_status,
         }
 

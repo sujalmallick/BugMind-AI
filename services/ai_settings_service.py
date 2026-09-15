@@ -43,7 +43,7 @@ class AISettingsService:
 
         if not settings:
             # LiteLLM requires provider-prefixed model names.
-            return "gemini/gemini-2.5-flash"
+            return "gemini/gemini-1.5-flash"
 
         return settings.model
 

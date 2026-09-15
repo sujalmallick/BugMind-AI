@@ -627,7 +627,7 @@ export default function LandingPage() {
                 )}
               </div>
 
-              <p className="text-reveal-5 mt-4 font-mono text-[11px] text-muted">
+              <p className="text-reveal-5 mt-3 sm:mt-4 font-mono text-[10px] sm:text-[11px] text-muted max-w-xs sm:max-w-none mx-auto leading-relaxed">
                 {authenticated && user ? (
                   <span>Signed in as <strong className="text-ink">{user.email}</strong> • Active workspace ready</span>
                 ) : (
@@ -643,30 +643,30 @@ export default function LandingPage() {
                 transform: `translate3d(0, ${heroRise}px, 0) scale(${heroScale})`,
                 transition: "transform 0.08s cubic-bezier(0.16, 1, 0.3, 1)",
               }}
-              className="relative z-20 mt-8 sm:mt-14 mx-auto max-w-5xl rounded-2xl border border-hairline/90 bg-surface/95 backdrop-blur-2xl p-3.5 sm:p-6 shadow-2xl"
+              className="relative z-20 mt-6 sm:mt-14 mx-auto max-w-5xl rounded-2xl border border-hairline/90 bg-surface/95 backdrop-blur-2xl p-3 sm:p-6 shadow-2xl"
             >
               {/* Window Header */}
-              <div className="flex items-center justify-between border-b border-hairline pb-3 sm:pb-4 mb-3 sm:mb-4">
+              <div className="flex items-center justify-between border-b border-hairline pb-2.5 sm:pb-4 mb-3 sm:mb-4">
                 <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                   <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-red-400/80 shrink-0" />
                   <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-amber-400/80 shrink-0" />
                   <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-emerald-400/80 shrink-0" />
-                  <span className="font-mono text-[11px] sm:text-xs font-semibold text-muted ml-1.5 truncate max-w-[130px] xs:max-w-[200px] sm:max-w-none">
+                  <span className="font-mono text-[10px] xs:text-[11px] sm:text-xs font-semibold text-muted ml-1.5 truncate max-w-[130px] xs:max-w-[200px] sm:max-w-none">
                     bugmind_workflow_pipeline.py
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-muted font-mono shrink-0 ml-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] xs:text-[11px] sm:text-xs text-muted font-mono shrink-0 ml-2">
                   <span className="inline-block h-2 w-2 rounded-full bg-verified animate-pulse" />
                   <span>AI Agents Synced</span>
                 </div>
               </div>
 
               {/* Interactive Split Grid */}
-              <div className="grid gap-6 lg:grid-cols-12">
+              <div className="grid gap-3.5 sm:gap-6 lg:grid-cols-12">
 
                 {/* Left: Interactive Input Flow */}
                 <div className="lg:col-span-5 flex flex-col">
-                  <label className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted flex items-center justify-between">
+                  <label className="mb-1.5 sm:mb-2 text-xs font-semibold uppercase tracking-wider text-muted flex items-center justify-between">
                     <span>1. Describe User Flow</span>
                     <span className="font-mono text-[10px] text-signal font-normal">Plain Text Input</span>
                   </label>
@@ -674,14 +674,17 @@ export default function LandingPage() {
                   <textarea
                     value={demoWorkflow}
                     onChange={(e) => setDemoWorkflow(e.target.value)}
-                    rows={5}
-                    className="w-full resize-none rounded-lg border border-hairline bg-paper/80 backdrop-blur-sm p-3 text-xs font-mono text-ink placeholder:text-muted focus:border-signal focus:outline-none transition-colors"
+                    rows={3}
+                    className="w-full resize-none rounded-lg border border-hairline bg-paper/80 backdrop-blur-sm p-2.5 sm:p-3 text-[11px] sm:text-xs font-mono text-ink placeholder:text-muted focus:border-signal focus:outline-none transition-colors lg:rows-5"
                     placeholder="Describe user flow..."
                   />
 
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="text-[11px] text-muted">Switch tabs on right to inspect agent outputs</span>
-                    <div className="inline-flex items-center gap-1.5 rounded border border-hairline bg-surface px-2.5 py-1 text-xs font-mono font-medium text-signal shadow-2xs">
+                  <div className="mt-2 sm:mt-3 flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-muted truncate">
+                      <span className="hidden sm:inline">Switch tabs on right to inspect agent outputs</span>
+                      <span className="sm:hidden">Inspect agent outputs below:</span>
+                    </span>
+                    <div className="inline-flex items-center gap-1.5 rounded border border-hairline bg-surface px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-xs font-mono font-medium text-signal shadow-2xs shrink-0">
                       <span className="h-1.5 w-1.5 rounded-full bg-signal animate-pulse" />
                       <span>Pipeline Active</span>
                     </div>
@@ -689,8 +692,8 @@ export default function LandingPage() {
                 </div>
 
                 {/* Right: Translucent Agent Output Simulator */}
-                <div className="lg:col-span-7 flex flex-col rounded-lg border border-hairline bg-paper/60 backdrop-blur-md p-3 sm:p-4">
-                  <div className="flex items-center gap-1 border-b border-hairline pb-3 mb-3 overflow-x-auto scrollbar-none">
+                <div className="lg:col-span-7 flex flex-col rounded-xl border border-hairline/80 bg-paper/50 sm:bg-paper/60 backdrop-blur-md p-2.5 sm:p-4">
+                  <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 border-b border-hairline pb-2.5 sm:pb-3 mb-2.5 sm:mb-3">
                     {[
                       { id: "modules", label: "01 Modules", icon: Layers },
                       { id: "checklist", label: "02 Checklist", icon: ListChecks },
@@ -704,14 +707,14 @@ export default function LandingPage() {
                           key={tab.id}
                           type="button"
                           onClick={() => setDemoActiveTab(tab.id)}
-                          className={`shrink-0 flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-mono transition-all duration-150 ${
+                          className={`flex items-center justify-center sm:justify-start gap-1.5 rounded-md px-2 sm:px-2.5 py-1.5 text-[11px] sm:text-xs font-mono transition-all duration-150 ${
                             active
-                              ? "bg-surface text-signal shadow-xs border border-hairline font-semibold scale-[1.02]"
-                              : "text-muted hover:text-ink hover:bg-surface/50"
+                              ? "bg-surface text-signal shadow-xs border border-hairline font-semibold scale-[1.01]"
+                              : "text-muted hover:text-ink hover:bg-surface/50 border border-transparent"
                           }`}
                         >
-                          <Icon size={13} />
-                          <span>{tab.label}</span>
+                          <Icon size={12} className="shrink-0" />
+                          <span className="truncate">{tab.label}</span>
                         </button>
                       );
                     })}
@@ -721,27 +724,27 @@ export default function LandingPage() {
                   <div className="flex-1 text-xs space-y-2">
                     {demoActiveTab === "modules" && (
                       <div className="space-y-2 animate-in fade-in duration-200">
-                        <p className="font-mono text-[11px] text-muted mb-2">Module Agent decomposed 3 core application modules:</p>
-                        <div className="rounded-lg border border-hairline bg-surface/90 p-2.5 shadow-2xs hover:border-signal/30 transition-colors">
-                          <div className="flex justify-between font-semibold text-ink mb-1">
-                            <span>Authentication & Session</span>
-                            <span className="font-mono text-[10px] font-semibold text-verified border border-hairline bg-surface px-1.5 py-0.5 rounded shadow-2xs">Protected</span>
+                        <p className="font-mono text-[10px] sm:text-[11px] text-muted mb-1.5 sm:mb-2">Module Agent decomposed 3 core application modules:</p>
+                        <div className="rounded-lg border border-hairline bg-surface/90 p-2 sm:p-2.5 shadow-2xs hover:border-signal/30 transition-colors">
+                          <div className="flex items-center justify-between gap-2 font-semibold text-ink mb-1">
+                            <span className="text-xs truncate">Authentication & Session</span>
+                            <span className="shrink-0 font-mono text-[9px] sm:text-[10px] font-semibold text-verified border border-hairline bg-surface px-1.5 py-0.5 rounded shadow-2xs">Protected</span>
                           </div>
-                          <p className="text-muted text-[11px]">Validates user login, credentials, token persistence, and route guards.</p>
+                          <p className="text-muted text-[11px] leading-relaxed">Validates user login, credentials, token persistence, and route guards.</p>
                         </div>
-                        <div className="rounded-lg border border-hairline bg-surface/90 p-2.5 shadow-2xs hover:border-signal/30 transition-colors">
-                          <div className="flex justify-between font-semibold text-ink mb-1">
-                            <span>Invoice & Billing Engine</span>
-                            <span className="font-mono text-[10px] font-semibold text-signal border border-hairline bg-surface px-1.5 py-0.5 rounded shadow-2xs">Critical Path</span>
+                        <div className="rounded-lg border border-hairline bg-surface/90 p-2 sm:p-2.5 shadow-2xs hover:border-signal/30 transition-colors">
+                          <div className="flex items-center justify-between gap-2 font-semibold text-ink mb-1">
+                            <span className="text-xs truncate">Invoice & Billing Engine</span>
+                            <span className="shrink-0 font-mono text-[9px] sm:text-[10px] font-semibold text-signal border border-hairline bg-surface px-1.5 py-0.5 rounded shadow-2xs">Critical Path</span>
                           </div>
-                          <p className="text-muted text-[11px]">Calculates line item sums, promo discounts, subtotal recalculation, and payment gateway trigger.</p>
+                          <p className="text-muted text-[11px] leading-relaxed">Calculates line item sums, promo discounts, subtotal recalculation, and payment gateway trigger.</p>
                         </div>
                       </div>
                     )}
 
                     {demoActiveTab === "checklist" && (
                       <div className="space-y-2 animate-in fade-in duration-200">
-                        <p className="font-mono text-[11px] text-muted mb-2">Checklist Agent generated exploratory test points:</p>
+                        <p className="font-mono text-[10px] sm:text-[11px] text-muted mb-1.5 sm:mb-2">Checklist Agent generated exploratory test points:</p>
                         {[
                           "Verify subtotal recalculates instantly when discount code is applied",
                           "Attempt submitting invoice with negative or non-numeric line item quantity",
@@ -749,8 +752,8 @@ export default function LandingPage() {
                           "Confirm payment gateway timeout handles fallback state gracefully",
                         ].map((item, idx) => (
                           <div key={idx} className="flex items-start gap-2 rounded-lg border border-hairline bg-surface/90 p-2 text-ink shadow-2xs">
-                            <CheckCircle2 size={14} className="text-verified shrink-0 mt-0.5" />
-                            <span>{item}</span>
+                            <CheckCircle2 size={13} className="text-verified shrink-0 mt-0.5" />
+                            <span className="text-[11px] sm:text-xs leading-relaxed">{item}</span>
                           </div>
                         ))}
                       </div>
@@ -758,28 +761,28 @@ export default function LandingPage() {
 
                     {demoActiveTab === "testcases" && (
                       <div className="space-y-2 animate-in fade-in duration-200">
-                        <p className="font-mono text-[11px] text-muted mb-2">Test Case Agent generated execution-ready steps:</p>
+                        <p className="font-mono text-[10px] sm:text-[11px] text-muted mb-1.5 sm:mb-2">Test Case Agent generated execution-ready steps:</p>
                         <div className="rounded-lg border border-hairline bg-surface/90 p-2.5 space-y-1.5 shadow-2xs">
-                          <div className="flex items-center justify-between font-mono text-[11px]">
-                            <span className="font-semibold text-signal">TC-0102: Apply Promo Code to Line Items</span>
-                            <span className="rounded border border-hairline bg-surface px-1.5 py-0.5 text-verified font-mono text-[10px] font-semibold shadow-2xs">Passed</span>
+                          <div className="flex flex-wrap xs:flex-nowrap items-center justify-between gap-1.5 font-mono text-[11px]">
+                            <span className="font-semibold text-signal truncate">TC-0102: Apply Promo Code</span>
+                            <span className="shrink-0 rounded border border-hairline bg-surface px-1.5 py-0.5 text-verified font-mono text-[9px] sm:text-[10px] font-semibold shadow-2xs">Passed</span>
                           </div>
-                          <p className="text-muted text-[11px]"><strong>Steps:</strong> 1. Open Invoice modal → 2. Enter $100 line item → 3. Type 'SAVE20' in discount field → 4. Click Apply</p>
-                          <p className="text-muted text-[11px]"><strong>Expected:</strong> Subtotal updates to $80.00 without page refresh.</p>
+                          <p className="text-muted text-[11px] leading-relaxed"><strong>Steps:</strong> 1. Open Invoice → 2. Enter $100 → 3. Type 'SAVE20' in promo field → 4. Click Apply</p>
+                          <p className="text-muted text-[11px] leading-relaxed"><strong>Expected:</strong> Subtotal updates to $80.00 without page refresh.</p>
                         </div>
                       </div>
                     )}
 
                     {demoActiveTab === "issues" && (
                       <div className="space-y-2 animate-in fade-in duration-200">
-                        <p className="font-mono text-[11px] text-muted mb-2">Issue Agent triaged defect analysis:</p>
+                        <p className="font-mono text-[10px] sm:text-[11px] text-muted mb-1.5 sm:mb-2">Issue Agent triaged defect analysis:</p>
                         <div className="rounded-lg border border-hairline bg-surface/90 p-2.5 shadow-2xs">
-                          <div className="flex items-center justify-between font-semibold text-flagged mb-1">
-                            <span>BUG-402: Invalid Promo Code Freezes Payment Button</span>
-                            <span className="font-mono text-[10px] font-semibold text-flagged border border-hairline bg-surface px-1.5 py-0.5 rounded shadow-2xs">High Severity</span>
+                          <div className="flex flex-wrap xs:flex-nowrap items-center justify-between gap-1.5 font-semibold text-flagged mb-1">
+                            <span className="text-xs truncate">BUG-402: Invalid Promo Freezes Payment</span>
+                            <span className="shrink-0 font-mono text-[9px] sm:text-[10px] font-semibold text-flagged border border-hairline bg-surface px-1.5 py-0.5 rounded shadow-2xs">High Severity</span>
                           </div>
-                          <p className="text-muted text-[11px]"><strong>Actual:</strong> Unhandled Promise rejection when promo API returns 404 status.</p>
-                          <p className="text-muted text-[11px]"><strong>Fix:</strong> Wrap discount endpoint in try/catch and dispatch notification toast.</p>
+                          <p className="text-muted text-[11px] leading-relaxed"><strong>Actual:</strong> Unhandled Promise rejection when promo API returns 404 status.</p>
+                          <p className="text-muted text-[11px] leading-relaxed"><strong>Fix:</strong> Wrap discount endpoint in try/catch and dispatch notification toast.</p>
                         </div>
                       </div>
                     )}
