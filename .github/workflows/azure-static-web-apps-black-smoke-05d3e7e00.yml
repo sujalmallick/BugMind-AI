@@ -32,6 +32,7 @@ jobs:
         run: |
           npm ci
           npm run build
+          rm -rf node_modules
         env:
           VITE_API_URL: https://bugmind-backend-ahcpf7euhjcsebdu.eastasia-01.azurewebsites.net
 
