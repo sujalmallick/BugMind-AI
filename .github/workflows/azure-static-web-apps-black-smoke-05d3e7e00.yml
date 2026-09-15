@@ -33,7 +33,7 @@ jobs:
           output_location: "dist" # Built app content directory - optional
           ###### End of Repository/Build Configurations ######
         env:
-          VITE_API_URL: https://bugmind-backend.azurewebsites.net
+          VITE_API_URL: https://bugmind-backend-ahcpf7euhjcsebdu.eastasia-01.azurewebsites.net
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
