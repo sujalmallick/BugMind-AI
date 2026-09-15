@@ -264,25 +264,29 @@ export default function NotificationsDrawer({ open, onClose, onCountChange }) {
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-3 bg-white border-t border-gray-100 flex gap-2">
-          {notifications.length > 0 && (
-            <button
-              onClick={handleClearAll}
-              disabled={clearing}
-              className="flex items-center justify-center gap-1.5 flex-1 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 active:scale-95 text-red-500 text-[12px] font-semibold transition-all border border-red-100 disabled:opacity-50"
-            >
-              {clearing ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-              Clear all
-            </button>
-          )}
-          <button
-            onClick={handleTest}
-            className="flex items-center justify-center gap-1.5 flex-1 py-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 active:scale-95 text-gray-600 text-[12px] font-semibold transition-all border border-gray-200"
-          >
-            <Zap size={12} className="text-yellow-500" />
-            Test notification
-          </button>
-        </div>
+        {(notifications.length > 0 || import.meta.env.DEV) && (
+          <div className="px-4 py-3 bg-white border-t border-gray-100 flex gap-2">
+            {notifications.length > 0 && (
+              <button
+                onClick={handleClearAll}
+                disabled={clearing}
+                className="flex items-center justify-center gap-1.5 flex-1 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 active:scale-95 text-red-500 text-[12px] font-semibold transition-all border border-red-100 disabled:opacity-50"
+              >
+                {clearing ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                Clear all
+              </button>
+            )}
+            {import.meta.env.DEV && (
+              <button
+                onClick={handleTest}
+                className="flex items-center justify-center gap-1.5 flex-1 py-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 active:scale-95 text-gray-600 text-[12px] font-semibold transition-all border border-gray-200"
+              >
+                <Zap size={12} className="text-yellow-500" />
+                Test notification
+              </button>
+            )}
+          </div>
+        )}
 
       </div>
     </>

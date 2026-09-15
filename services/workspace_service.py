@@ -11,11 +11,21 @@ def get_workspace(
 ):
     require_project_role(db, owner_id, project_id, "viewer")
 
-    return (
+    workspace = (
         db.query(Workspace)
         .filter(Workspace.project_id == project_id)
         .first()
     )
+
+    if not workspace:
+        workspace = Workspace(
+            project_id=project_id,
+        )
+        db.add(workspace)
+        db.commit()
+        db.refresh(workspace)
+
+    return workspace
 
 
 def update_workspace(
@@ -41,7 +51,12 @@ def update_workspace(
     )
 
     if not workspace:
-        return None
+        workspace = Workspace(
+            project_id=project_id,
+        )
+        db.add(workspace)
+        db.commit()
+        db.refresh(workspace)
 
     workspace.workflow = workflow
     workspace.observed_steps = observed_steps

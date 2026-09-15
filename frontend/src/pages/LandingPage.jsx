@@ -32,7 +32,10 @@ import {
   LogOut,
   Folder,
   LayoutDashboard,
+  Menu,
+  X,
 } from "lucide-react";
+
 
 import { useAuth } from "../auth/AuthContext";
 import { getAvatarUrl } from "../utils/avatarUrl";
@@ -202,6 +205,12 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const { authenticated, user, logout } = useAuth();
 
+  // Mobile Menu & Screen Width State
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
+
   // Profile Menu Dropdown State
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const profileDropdownRef = useRef(null);
@@ -218,6 +227,17 @@ export default function LandingPage() {
   const [activeStackIndex, setActiveStackIndex] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
   const [swipeDir, setSwipeDir] = useState("right");
+
+  // Track window resizing for responsive behavior
+  useEffect(() => {
+    function handleResize() {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) setMobileMenuOpen(false);
+    }
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const triggerCardSwipe = (targetStatus) => {
     if (isSwiping) return;
@@ -272,25 +292,20 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-
-
   // Parallax offsets calculation for ambient orbs and hero card
-  const orb1Translate = scrollY * 0.12;
-  const orb2Translate = scrollY * -0.08;
-  const orb3Translate = scrollY * 0.06;
+  const orb1Translate = isMobile ? 0 : scrollY * 0.12;
+  const orb2Translate = isMobile ? 0 : scrollY * -0.08;
+  const orb3Translate = isMobile ? 0 : scrollY * 0.06;
 
-  // First Hero Card Upward Glide (only the first card glides up over the text)
-  const heroRise = Math.max(-200, -scrollY * 0.35);
-  const heroScale = Math.min(1.02, 0.985 + scrollY * 0.0001);
-  const textFade = Math.max(0.15, 1 - scrollY * 0.002);
-  const textParallax = scrollY * 0.1;
-
-
-
-
+  // First Hero Card Upward Glide (only enabled on desktop to avoid blocking touch targets on mobile)
+  const heroRise = isMobile ? 0 : Math.max(-200, -scrollY * 0.35);
+  const heroScale = isMobile ? 1 : Math.min(1.02, 0.985 + scrollY * 0.0001);
+  const textFade = isMobile ? 1 : Math.max(0.15, 1 - scrollY * 0.002);
+  const textParallax = isMobile ? 0 : scrollY * 0.1;
 
   return (
-    <div className="relative min-h-screen bg-surface font-sans text-ink hero-glow projects-atmosphere">
+    <div className="relative min-h-screen bg-surface font-sans text-ink hero-glow projects-atmosphere overflow-x-clip max-w-full">
+
 
       
       {/* ── Parallax Floating Background Ambient Orbs ──────────────────────── */}
@@ -329,14 +344,13 @@ export default function LandingPage() {
               window.scrollTo({ top: 0, behavior: "smooth" });
               navigate("/landing");
             }}
-            className="flex cursor-pointer items-center gap-2.5 transition-opacity hover:opacity-85"
+            className="flex cursor-pointer items-center gap-2 transition-opacity hover:opacity-85 shrink-0"
           >
-            <img src={favicon} alt="" className="h-9 w-9 object-contain" />
-            <img src={logo} alt="BugMind AI" className="h-[32px] w-auto object-contain" />
+            <img src={favicon} alt="" className="h-8 w-8 sm:h-9 sm:w-9 object-contain" />
+            <img src={logo} alt="BugMind AI" className="h-[26px] sm:h-[32px] w-auto object-contain" />
           </div>
 
-
-          {/* Nav Links */}
+          {/* Desktop Nav Links */}
           <nav className="hidden items-center gap-6 md:flex text-[13px] font-medium text-muted">
             <a href="#pipeline" className="transition-colors hover:text-ink">AI Pipeline</a>
             <a href="#workspace" className="transition-colors hover:text-ink">Workspace & Grid</a>
@@ -345,118 +359,197 @@ export default function LandingPage() {
           </nav>
 
           {/* Auth Actions / Profile Menu */}
-          {authenticated && user ? (
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => navigate("/")}
-                className="btn-shine inline-flex items-center gap-1.5 rounded-md border border-signal/20 bg-signal px-3.5 py-1.5 text-[13px] font-semibold text-white shadow-sm transition-all hover:bg-signal/90 active:scale-[0.98]"
-              >
-                <span>Open Workspace</span>
-                <ArrowRight size={14} />
-              </button>
-
-              {/* Profile Avatar / Dropdown */}
-              <div className="relative" ref={profileDropdownRef}>
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            {authenticated && user ? (
+              <div className="flex items-center gap-2 sm:gap-3">
                 <button
                   type="button"
-                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                  aria-label="Open user menu"
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-hairline bg-signal-soft font-mono text-xs font-bold text-signal transition-opacity hover:opacity-85 active:scale-95 overflow-hidden"
+                  onClick={() => navigate("/")}
+                  className="btn-shine inline-flex items-center gap-1 sm:gap-1.5 rounded-md border border-signal/20 bg-signal px-2.5 sm:px-3.5 py-1.5 text-xs sm:text-[13px] font-semibold text-white shadow-sm transition-all hover:bg-signal/90 active:scale-[0.98]"
                 >
-                  {user?.avatar_url ? (
-                    <img
-                      src={getAvatarUrl(user.avatar_url)}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    initials
-                  )}
+                  <span className="hidden xs:inline">Open </span><span>Workspace</span>
+                  <ArrowRight size={13} />
                 </button>
 
-                {profileDropdownOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-hairline bg-surface p-1.5 shadow-xl z-50 animate-in fade-in zoom-in-95">
-                    <div className="border-b border-hairline px-3 py-2">
-                      <p className="text-xs font-semibold text-ink truncate">{user.name || "User Profile"}</p>
-                      <p className="font-mono text-[11px] text-muted truncate">{user.email}</p>
+                {/* Profile Avatar / Dropdown */}
+                <div className="relative" ref={profileDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                    aria-label="Open user menu"
+                    className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-hairline bg-signal-soft font-mono text-xs font-bold text-signal transition-opacity hover:opacity-85 active:scale-95 overflow-hidden"
+                  >
+                    {user?.avatar_url ? (
+                      <img
+                        src={getAvatarUrl(user.avatar_url)}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      initials
+                    )}
+                  </button>
+
+                  {profileDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-hairline bg-surface p-1.5 shadow-xl z-50 animate-in fade-in zoom-in-95">
+                      <div className="border-b border-hairline px-3 py-2">
+                        <p className="text-xs font-semibold text-ink truncate">{user.name || "User Profile"}</p>
+                        <p className="font-mono text-[11px] text-muted truncate">{user.email}</p>
+                      </div>
+
+                      <div className="mt-1 space-y-0.5 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfileDropdownOpen(false);
+                            navigate("/");
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-ink hover:bg-paper transition-colors text-left"
+                        >
+                          <Folder size={14} className="text-muted" />
+                          <span>Projects Hub</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfileDropdownOpen(false);
+                            navigate("/dashboard");
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-ink hover:bg-paper transition-colors text-left"
+                        >
+                          <LayoutDashboard size={14} className="text-muted" />
+                          <span>Execution Dashboard</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfileDropdownOpen(false);
+                            navigate("/profile");
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-ink hover:bg-paper transition-colors text-left"
+                        >
+                          <User size={14} className="text-muted" />
+                          <span>Profile & AI Settings</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfileDropdownOpen(false);
+                            logout();
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-flagged hover:bg-flagged-soft transition-colors text-left"
+                        >
+                          <LogOut size={14} />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
                     </div>
-
-                    <div className="mt-1 space-y-0.5 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProfileDropdownOpen(false);
-                          navigate("/");
-                        }}
-                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-ink hover:bg-paper transition-colors text-left"
-                      >
-                        <Folder size={14} className="text-muted" />
-                        <span>Projects Hub</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProfileDropdownOpen(false);
-                          navigate("/dashboard");
-                        }}
-                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-ink hover:bg-paper transition-colors text-left"
-                      >
-                        <LayoutDashboard size={14} className="text-muted" />
-                        <span>Execution Dashboard</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProfileDropdownOpen(false);
-                          navigate("/profile");
-                        }}
-                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-ink hover:bg-paper transition-colors text-left"
-                      >
-                        <User size={14} className="text-muted" />
-                        <span>Profile & AI Settings</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProfileDropdownOpen(false);
-                          logout();
-                        }}
-                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-flagged hover:bg-flagged-soft transition-colors text-left"
-                      >
-                        <LogOut size={14} />
-                        <span>Sign Out</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={() => navigate("/login")}
-                className="rounded-md border border-hairline bg-surface px-3.5 py-1.5 text-[13px] font-medium text-ink transition-colors hover:bg-paper active:scale-[0.98]"
-              >
-                Sign in
-              </button>
+            ) : (
+              <div className="flex items-center gap-1.5 sm:gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => navigate("/login")}
+                  className="rounded-md border border-hairline bg-surface px-2.5 sm:px-3.5 py-1.5 text-xs sm:text-[13px] font-medium text-ink transition-colors hover:bg-paper active:scale-[0.98]"
+                >
+                  Sign in
+                </button>
 
-              <button
-                type="button"
-                onClick={() => navigate("/register")}
-                className="btn-shine inline-flex items-center gap-1.5 rounded-md border border-signal/20 bg-signal px-3.5 py-1.5 text-[13px] font-semibold text-white shadow-sm transition-all hover:bg-signal/90 active:scale-[0.98]"
-              >
-                <span>Get Started Free</span>
-                <ArrowRight size={14} />
-              </button>
-            </div>
-          )}
+                <button
+                  type="button"
+                  onClick={() => navigate("/register")}
+                  className="btn-shine inline-flex items-center gap-1 sm:gap-1.5 rounded-md border border-signal/20 bg-signal px-2.5 sm:px-3.5 py-1.5 text-xs sm:text-[13px] font-semibold text-white shadow-sm transition-all hover:bg-signal/90 active:scale-[0.98]"
+                >
+                  <span className="hidden xs:inline">Get Started </span><span>Free</span>
+                  <ArrowRight size={13} />
+                </button>
+              </div>
+            )}
+
+            {/* Mobile Navigation Hamburger Toggle */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              className="flex md:hidden items-center justify-center h-8 w-8 rounded-md border border-hairline bg-surface text-ink hover:bg-paper transition-colors active:scale-95 ml-1"
+            >
+              {mobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Navigation Drawer */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-hairline bg-surface/98 backdrop-blur-xl px-4 py-4 space-y-3 shadow-lg animate-in slide-in-from-top-2 duration-150">
+            <nav className="flex flex-col space-y-2 text-sm font-medium text-ink">
+              <a
+                href="#pipeline"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-paper transition-colors"
+              >
+                <span>AI Pipeline</span>
+                <ChevronRight size={14} className="text-muted" />
+              </a>
+              <a
+                href="#workspace"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-paper transition-colors"
+              >
+                <span>Workspace & Spreadsheet</span>
+                <ChevronRight size={14} className="text-muted" />
+              </a>
+              <a
+                href="#collaboration"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-paper transition-colors"
+              >
+                <span>Collaboration & RBAC</span>
+                <ChevronRight size={14} className="text-muted" />
+              </a>
+              <a
+                href="#faq"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-paper transition-colors"
+              >
+                <span>FAQ</span>
+                <ChevronRight size={14} className="text-muted" />
+              </a>
+            </nav>
+
+            {!authenticated && (
+              <div className="pt-2 border-t border-hairline flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    navigate("/register");
+                  }}
+                  className="w-full justify-center btn-shine inline-flex items-center gap-1.5 rounded-md border border-signal/20 bg-signal py-2 text-sm font-semibold text-white shadow-sm"
+                >
+                  <span>Get Started Free</span>
+                  <ArrowRight size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    navigate("/login");
+                  }}
+                  className="w-full justify-center rounded-md border border-hairline bg-paper py-2 text-sm font-medium text-ink"
+                >
+                  Sign In to Existing Account
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </header>
+
 
       <main className="relative z-10">
 
