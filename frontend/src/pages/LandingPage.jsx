@@ -574,23 +574,23 @@ export default function LandingPage() {
 
 
               {/* Main Headline with Shimmer */}
-              <h1 className="text-reveal-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl lg:text-5xl leading-tight sm:leading-tight">
+              <h1 className="text-reveal-2 text-2xl xs:text-3xl font-bold tracking-tight text-ink sm:text-4xl lg:text-5xl leading-tight sm:leading-tight">
                 Turn Plain Text Workflows into <span className="text-shimmer">Execution-Ready QA</span>
               </h1>
 
               {/* Subtitle */}
-              <p className="text-reveal-3 mt-4 text-base sm:text-lg text-muted leading-relaxed max-w-2xl mx-auto">
+              <p className="text-reveal-3 mt-4 text-sm sm:text-lg text-muted leading-relaxed max-w-2xl mx-auto px-1">
                 Describe how your application works. BugMind's 4-agent AI pipeline automatically decomposes modules, generates exploratory checklists, writes manual test cases, and classifies bug reports.
               </p>
 
               {/* Action Buttons (Auth Aware) */}
-              <div className="text-reveal-4 mt-8 flex flex-wrap items-center justify-center gap-3">
+              <div className="text-reveal-4 mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5 sm:gap-3 w-full max-w-xs sm:max-w-none mx-auto">
                 {authenticated && user ? (
                   <>
                     <button
                       type="button"
                       onClick={() => navigate("/")}
-                      className="btn-shine inline-flex items-center gap-2 rounded-md border border-signal/20 bg-signal px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-signal/90 hover:shadow-lg active:scale-[0.98]"
+                      className="btn-shine inline-flex items-center justify-center gap-2 rounded-md border border-signal/20 bg-signal px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-signal/90 hover:shadow-lg active:scale-[0.98] w-full sm:w-auto"
                     >
                       <span>Go to Projects Workspace</span>
                       <ArrowRight size={16} />
@@ -599,7 +599,7 @@ export default function LandingPage() {
                     <button
                       type="button"
                       onClick={() => navigate("/profile")}
-                      className="inline-flex items-center gap-2 rounded-md border border-hairline bg-surface/90 backdrop-blur-md px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-paper active:scale-[0.98]"
+                      className="inline-flex items-center justify-center gap-2 rounded-md border border-hairline bg-surface/90 backdrop-blur-md px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-paper active:scale-[0.98] w-full sm:w-auto"
                     >
                       <User size={15} />
                       <span>Account & Settings</span>
@@ -610,7 +610,7 @@ export default function LandingPage() {
                     <button
                       type="button"
                       onClick={() => navigate("/register")}
-                      className="btn-shine inline-flex items-center gap-2 rounded-md border border-signal/20 bg-signal px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-signal/90 hover:shadow-lg active:scale-[0.98]"
+                      className="btn-shine inline-flex items-center justify-center gap-2 rounded-md border border-signal/20 bg-signal px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-signal/90 hover:shadow-lg active:scale-[0.98] w-full sm:w-auto"
                     >
                       <span>Start Testing Free</span>
                       <ArrowRight size={16} />
@@ -619,7 +619,7 @@ export default function LandingPage() {
                     <button
                       type="button"
                       onClick={() => navigate("/login")}
-                      className="inline-flex items-center gap-2 rounded-md border border-hairline bg-surface/90 backdrop-blur-md px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-paper active:scale-[0.98]"
+                      className="inline-flex items-center justify-center gap-2 rounded-md border border-hairline bg-surface/90 backdrop-blur-md px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-paper active:scale-[0.98] w-full sm:w-auto"
                     >
                       <span>Sign In to Workspace</span>
                     </button>
@@ -643,17 +643,19 @@ export default function LandingPage() {
                 transform: `translate3d(0, ${heroRise}px, 0) scale(${heroScale})`,
                 transition: "transform 0.08s cubic-bezier(0.16, 1, 0.3, 1)",
               }}
-              className="relative z-20 mt-10 sm:mt-14 mx-auto max-w-5xl rounded-2xl border border-hairline/90 bg-surface/95 backdrop-blur-2xl p-4 sm:p-6 shadow-2xl"
+              className="relative z-20 mt-8 sm:mt-14 mx-auto max-w-5xl rounded-2xl border border-hairline/90 bg-surface/95 backdrop-blur-2xl p-3.5 sm:p-6 shadow-2xl"
             >
               {/* Window Header */}
-              <div className="flex items-center justify-between border-b border-hairline pb-4 mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-red-400/80" />
-                  <div className="h-3 w-3 rounded-full bg-amber-400/80" />
-                  <div className="h-3 w-3 rounded-full bg-emerald-400/80" />
-                  <span className="font-mono text-xs font-semibold text-muted ml-2">bugmind_workflow_pipeline.py</span>
+              <div className="flex items-center justify-between border-b border-hairline pb-3 sm:pb-4 mb-3 sm:mb-4">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                  <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-red-400/80 shrink-0" />
+                  <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-amber-400/80 shrink-0" />
+                  <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-emerald-400/80 shrink-0" />
+                  <span className="font-mono text-[11px] sm:text-xs font-semibold text-muted ml-1.5 truncate max-w-[130px] xs:max-w-[200px] sm:max-w-none">
+                    bugmind_workflow_pipeline.py
+                  </span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted font-mono">
+                <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-muted font-mono shrink-0 ml-2">
                   <span className="inline-block h-2 w-2 rounded-full bg-verified animate-pulse" />
                   <span>AI Agents Synced</span>
                 </div>
@@ -687,8 +689,8 @@ export default function LandingPage() {
                 </div>
 
                 {/* Right: Translucent Agent Output Simulator */}
-                <div className="lg:col-span-7 flex flex-col rounded-lg border border-hairline bg-paper/60 backdrop-blur-md p-4">
-                  <div className="flex items-center gap-1 border-b border-hairline pb-3 mb-3 overflow-x-auto">
+                <div className="lg:col-span-7 flex flex-col rounded-lg border border-hairline bg-paper/60 backdrop-blur-md p-3 sm:p-4">
+                  <div className="flex items-center gap-1 border-b border-hairline pb-3 mb-3 overflow-x-auto scrollbar-none">
                     {[
                       { id: "modules", label: "01 Modules", icon: Layers },
                       { id: "checklist", label: "02 Checklist", icon: ListChecks },
@@ -702,7 +704,7 @@ export default function LandingPage() {
                           key={tab.id}
                           type="button"
                           onClick={() => setDemoActiveTab(tab.id)}
-                          className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-mono transition-all duration-150 ${
+                          className={`shrink-0 flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-mono transition-all duration-150 ${
                             active
                               ? "bg-surface text-signal shadow-xs border border-hairline font-semibold scale-[1.02]"
                               : "text-muted hover:text-ink hover:bg-surface/50"
@@ -862,19 +864,19 @@ export default function LandingPage() {
                   return (
                     <div
                       key={step.id}
-                      className="rounded-2xl border border-hairline/90 bg-surface/95 backdrop-blur-xl p-6 sm:p-7 shadow-xl transition-all duration-300 animate-in fade-in zoom-in-95"
+                      className="rounded-2xl border border-hairline/90 bg-surface/95 backdrop-blur-xl p-4 sm:p-7 shadow-xl transition-all duration-300 animate-in fade-in zoom-in-95"
                     >
-                      <div className="flex items-center justify-between border-b border-hairline pb-3.5 mb-4">
-                        <div className="flex items-center gap-3">
-                          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-signal font-mono text-xs font-bold text-white shadow-2xs">
+                      <div className="flex flex-wrap xs:flex-nowrap items-center justify-between gap-2 border-b border-hairline pb-3.5 mb-4">
+                        <div className="flex items-center gap-2.5 sm:gap-3">
+                          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-signal font-mono text-xs font-bold text-white shadow-2xs shrink-0">
                             0{step.id}
                           </span>
                           <div>
-                            <h3 className="text-base font-bold text-ink">{step.agent}</h3>
-                            <p className="font-mono text-xs text-muted">{step.role}</p>
+                            <h3 className="text-sm sm:text-base font-bold text-ink">{step.agent}</h3>
+                            <p className="font-mono text-[11px] sm:text-xs text-muted">{step.role}</p>
                           </div>
                         </div>
-                        <span className="font-mono text-xs font-semibold text-muted bg-paper border border-hairline px-2.5 py-1 rounded-md">
+                        <span className="font-mono text-[11px] sm:text-xs font-semibold text-muted bg-paper border border-hairline px-2 sm:px-2.5 py-1 rounded-md shrink-0">
                           Phase 0{step.id} of 04
                         </span>
                       </div>
@@ -883,7 +885,7 @@ export default function LandingPage() {
                       <p className="text-xs sm:text-sm text-muted leading-relaxed mb-4">{step.desc}</p>
 
                       {/* Live Output Preview Items */}
-                      <div className="rounded-xl border border-hairline bg-paper/80 p-3.5">
+                      <div className="rounded-xl border border-hairline bg-paper/80 p-3 sm:p-3.5">
                         <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-2.5 flex items-center justify-between">
                           <span>{step.codePreview.type}</span>
                           <span className="font-mono text-[10px] text-verified">Live Pipeline Stream</span>
@@ -893,20 +895,20 @@ export default function LandingPage() {
                           {step.codePreview.items.map((item, i) => (
                             <div
                               key={i}
-                              className="flex items-center justify-between rounded-lg border border-hairline bg-surface p-2.5 shadow-2xs hover:border-signal/40 transition-all hover:scale-[1.01]"
+                              className="flex items-center justify-between gap-2 rounded-lg border border-hairline bg-surface p-2 sm:p-2.5 shadow-2xs hover:border-signal/40 transition-all hover:scale-[1.01]"
                             >
-                              <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
                                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-hairline bg-paper font-mono text-[10px] font-bold text-ink">
                                   0{i + 1}
                                 </span>
                                 <span className="text-xs font-medium text-ink truncate">{item.name}</span>
                               </div>
 
-                              <div className="flex items-center gap-2 shrink-0 ml-3">
-                                <span className="rounded bg-paper border border-hairline px-2 py-0.5 font-mono text-[10px] font-medium text-muted">
+                              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-1.5 sm:ml-3">
+                                <span className="rounded bg-paper border border-hairline px-1.5 sm:px-2 py-0.5 font-mono text-[9px] sm:text-[10px] font-medium text-muted">
                                   {item.badge}
                                 </span>
-                                <span className="rounded border border-hairline bg-surface px-2 py-0.5 font-mono text-[10px] font-semibold text-verified shadow-2xs">
+                                <span className="rounded border border-hairline bg-surface px-1.5 sm:px-2 py-0.5 font-mono text-[9px] sm:text-[10px] font-semibold text-verified shadow-2xs">
                                   {item.status}
                                 </span>
                               </div>
@@ -963,10 +965,10 @@ export default function LandingPage() {
                       opacity: isSwiping ? 0 : 1,
                       transition: "transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease-out",
                     }}
-                    className="relative z-10 rounded-2xl border border-hairline bg-surface/95 backdrop-blur-xl p-5 sm:p-7 shadow-xl"
+                    className="relative z-10 rounded-2xl border border-hairline bg-surface/95 backdrop-blur-xl p-4 sm:p-7 shadow-xl"
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline pb-4 mb-4">
-                      <div className="flex items-center gap-2.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-hairline pb-3 sm:pb-4 mb-3 sm:mb-4">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5">
                         <span className="font-mono text-xs font-bold text-ink bg-paper border border-hairline px-2 py-0.5 rounded shadow-2xs">
                           {currentTest.id}
                         </span>
@@ -979,12 +981,12 @@ export default function LandingPage() {
                       </div>
 
                       {/* Interactive Swiping Status Triggers with Sharp Badges */}
-                      <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                      <div className="flex items-center gap-1.5 font-mono text-[11px] w-full sm:w-auto justify-between sm:justify-start">
                         <span className="text-muted text-[10px] mr-1 hidden sm:inline">Click to swipe:</span>
                         <button
                           type="button"
                           onClick={() => triggerCardSwipe("Passed")}
-                          className="flex items-center gap-1.5 rounded-md border border-hairline bg-surface px-2.5 py-1 text-xs font-mono font-medium text-verified transition-colors hover:bg-verified hover:text-white active:scale-95 shadow-2xs"
+                          className="flex-1 sm:flex-initial justify-center flex items-center gap-1.5 rounded-md border border-hairline bg-surface px-2.5 py-1 text-xs font-mono font-medium text-verified transition-colors hover:bg-verified hover:text-white active:scale-95 shadow-2xs"
                         >
                           <Check size={12} />
                           <span>Passed</span>
@@ -992,7 +994,7 @@ export default function LandingPage() {
                         <button
                           type="button"
                           onClick={() => triggerCardSwipe("Failed")}
-                          className="flex items-center gap-1.5 rounded-md border border-hairline bg-surface px-2.5 py-1 text-xs font-mono font-medium text-flagged transition-colors hover:bg-flagged hover:text-white active:scale-95 shadow-2xs"
+                          className="flex-1 sm:flex-initial justify-center flex items-center gap-1.5 rounded-md border border-hairline bg-surface px-2.5 py-1 text-xs font-mono font-medium text-flagged transition-colors hover:bg-flagged hover:text-white active:scale-95 shadow-2xs"
                         >
                           <XCircle size={12} />
                           <span>Failed</span>
@@ -1000,7 +1002,7 @@ export default function LandingPage() {
                         <button
                           type="button"
                           onClick={() => triggerCardSwipe("Ready")}
-                          className="flex items-center gap-1.5 rounded-md border border-hairline bg-surface px-2.5 py-1 text-xs font-mono font-medium text-signal transition-colors hover:bg-signal hover:text-white active:scale-95 shadow-2xs"
+                          className="flex-1 sm:flex-initial justify-center flex items-center gap-1.5 rounded-md border border-hairline bg-surface px-2.5 py-1 text-xs font-mono font-medium text-signal transition-colors hover:bg-signal hover:text-white active:scale-95 shadow-2xs"
                         >
                           <Clock size={12} />
                           <span>Ready</span>
@@ -1024,7 +1026,7 @@ export default function LandingPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between border-t border-hairline pt-3 text-[11px] text-muted">
+                    <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2 border-t border-hairline pt-3 text-[11px] text-muted">
                       <span className="font-mono">Card {activeStackIndex + 1} of {STACKED_TEST_CASES.length} in active deck</span>
                       <button
                         type="button"
@@ -1042,20 +1044,20 @@ export default function LandingPage() {
             </div>
 
             {/* High-Density AG Grid Table View */}
-            <div className="relative rounded-2xl border border-hairline bg-surface/90 backdrop-blur-xl p-4 sm:p-5 shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline pb-3 mb-3">
-                <div className="flex items-center gap-2">
-                  <FileSpreadsheet size={16} className="text-signal" />
+            <div className="relative rounded-2xl border border-hairline bg-surface/90 backdrop-blur-xl p-3.5 sm:p-5 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-hairline pb-3 mb-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <FileSpreadsheet size={16} className="text-signal shrink-0" />
                   <span className="text-xs sm:text-sm font-bold text-ink">Spreadsheet Execution Grid (Live Sync)</span>
                   <span className="font-mono text-[10px] text-muted bg-paper border border-hairline px-2 py-0.5 rounded">
                     AG Grid Community
                   </span>
                 </div>
-                <span className="font-mono text-[11px] text-muted">Double-click cells for inline editing</span>
+                <span className="font-mono text-[10px] sm:text-[11px] text-muted">Double-click cells for inline editing</span>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left font-mono text-[11px]">
+              <div className="overflow-x-auto -mx-1 sm:mx-0">
+                <table className="w-full min-w-[580px] text-left font-mono text-[11px]">
                   <thead>
                     <tr className="border-b border-hairline bg-paper text-muted">
                       <th className="p-2 font-semibold">Test ID</th>
@@ -1090,6 +1092,9 @@ export default function LandingPage() {
                   </tbody>
                 </table>
               </div>
+              <p className="mt-2 text-[10px] text-muted sm:hidden font-mono text-center">
+                ← Swipe horizontally to view full spreadsheet columns →
+              </p>
             </div>
 
 
