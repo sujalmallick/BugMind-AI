@@ -43,7 +43,7 @@ app.include_router(
 )
 allowed_origins = [
     origin.strip()
-    for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
+    for origin in os.getenv("ALLOWED_ORIGINS", "https://black-smoke-05d3e7e00.5.azurestaticapps.net").split(",")
     if origin.strip()
 ]
 
@@ -169,4 +169,4 @@ def analyze_issue(
         actual_result=data.actual_result,
         failed_test_case=data.failed_test_case,
         user_id=current_user.id,
-    )
+    )
