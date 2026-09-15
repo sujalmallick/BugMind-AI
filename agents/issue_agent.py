@@ -8,6 +8,7 @@ def analyze_issue_agent(
     expected_result,
     actual_result,
     failed_test_case,
+    user_id=None,
 ):
     # Enforce failed_test_case as a boolean
     is_failed_test_case = bool(failed_test_case)
@@ -66,14 +67,20 @@ Rules:
 
     logger.info("Running Issue Analysis Agent")
 
-    response = call_llm(prompt)
+    response = call_llm(prompt, user_id=user_id)
 
     if response is None:
-        response = "{}"
+        return {
+            "success": False,
+            "error": "AI Provider error (e.g. invalid API key, quota exceeded, or no response)."
+        }
     if isinstance(response, dict):
         result = response
     else:
-        result = parse_json_response(response, prompt)
+        result = parse_json_response(response, prompt, user_id=user_id)
+
+    if isinstance(result, dict) and result.get("success") is False:
+        return result
 
     # Validate and normalize based on the conditional contract
     if not isinstance(result, dict):

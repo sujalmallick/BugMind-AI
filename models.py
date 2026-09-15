@@ -13,8 +13,7 @@ class WorkflowInput(BaseModel):
     existing_test_cases: list[dict] | None = None
 
 
-class WorkflowState(TypedDict):
-
+class WorkflowState(TypedDict, total=False):
     # User Input
     user_id: int | None
     workflow: str
@@ -28,8 +27,8 @@ class WorkflowState(TypedDict):
     high_risk_areas: list[str]
 
     # Agent Outputs
-    checklist: str
-    test_cases: str
+    checklist: list[dict] | dict | None
+    test_cases: list[dict] | dict | None
 
 class IssueInput(BaseModel):
     workflow: str

@@ -1,8 +1,11 @@
 import os
 import uuid
 import shutil
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
+
+logger = logging.getLogger("BugMind")
 
 import filetype
 from fastapi import (
@@ -23,6 +26,7 @@ from auth.security import hash_password, verify_password
 from database.models.user import User
 from database.session import get_db
 from services.organization_service import get_memberships_for_user
+from services.blob_storage_service import upload_avatar_blob, delete_avatar_blob
 
 router = APIRouter(prefix="/api/me", tags=["Profile"])
 
@@ -173,8 +177,21 @@ async def upload_avatar(
             detail="Could not process the image. Please try a different file.",
         )
 
-    # Collision-proof path: each user gets their own UUID-keyed directory.
-    # Two users uploading simultaneously will never collide.
+    # 1. Try uploading to Azure Blob Storage (production cloud storage)
+    try:
+        blob_url = upload_avatar_blob(current_user.id, clean_contents, "image/webp")
+        if blob_url:
+            if current_user.avatar_url and current_user.avatar_url != blob_url:
+                _delete_avatar_file(current_user.avatar_url)
+            current_user.avatar_url = blob_url
+            current_user.updated_at = datetime.utcnow()
+            db.commit()
+            db.refresh(current_user)
+            return {"avatar_url": current_user.avatar_url}
+    except Exception as e:
+        logger.warning(f"Azure Blob upload failed, falling back to local storage: {e}")
+
+    # 2. Fallback to local disk storage (offline / local dev)
     user_avatar_dir = AVATARS_DIR / str(uuid.uuid5(uuid.NAMESPACE_DNS, f"user-{current_user.id}"))
     user_avatar_dir.mkdir(parents=True, exist_ok=True)
 
@@ -275,10 +292,15 @@ def delete_account(
 # Helpers
 # ──────────────────────────────────────────────────
 def _delete_avatar_file(avatar_url: str) -> None:
-    """Remove an avatar file from disk silently (best-effort)."""
+    """Remove an avatar file from Azure Blob Storage or disk silently (best-effort)."""
+    if not avatar_url:
+        return
     try:
+        if "blob.core.windows.net" in avatar_url:
+            delete_avatar_blob(avatar_url)
+            return
         path = Path(avatar_url)
         if path.exists():
             path.unlink()
     except Exception:
-        pass  # Disk errors must never block the API response
+        pass  # Errors must never block the API response

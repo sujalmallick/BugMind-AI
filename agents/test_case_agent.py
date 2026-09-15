@@ -1,5 +1,3 @@
-from urllib import response
-
 from utils import call_llm, parse_json_response
 from utils import logger
 from constants import TEST_CASE_STATUSES
@@ -15,15 +13,28 @@ def generate_test_cases_agent(
     confirmed_mods = modules.get("confirmed_modules", []) if isinstance(modules, dict) else []
 
     if observed_steps:
-        formatted_steps = "\n".join(
-            f"{i + 1}. {step}"
-            for i, step in enumerate(observed_steps)
-        )
-        steps_section = f"""
+        if isinstance(observed_steps, str):
+            steps_list = [s.strip() for s in observed_steps.split("\n") if s.strip()]
+        elif isinstance(observed_steps, list):
+            steps_list = [str(s).strip() for s in observed_steps if s and str(s).strip()]
+        else:
+            steps_list = []
+
+        if steps_list:
+            formatted_steps = "\n".join(
+                f"{i + 1}. {step}"
+                for i, step in enumerate(steps_list)
+            )
+            steps_section = f"""
 Observed User Steps:
 {formatted_steps}
 
 Your execution steps for the test cases MUST be guided by these observed steps wherever applicable.
+"""
+        else:
+            steps_section = """
+No observed user steps were provided. 
+Assume standard, logical execution steps required to navigate and complete actions.
 """
     else:
         steps_section = """
@@ -94,7 +105,7 @@ Rules:
 """
 
     logger.info("Running Test Case Agent")
-    response = call_llm(prompt,user_id=user_id)
+    response = call_llm(prompt, user_id=user_id)
 
     if response is None:
         return {
@@ -103,9 +114,9 @@ Rules:
         }
     # Validate and normalize test cases
     if isinstance(response, dict):
-     test_cases = response
+        test_cases = response
     else:
-     test_cases = parse_json_response(response, prompt)
+        test_cases = parse_json_response(response, prompt, user_id=user_id)
 
     if isinstance(test_cases, dict) and test_cases.get("success") is False:
         return test_cases

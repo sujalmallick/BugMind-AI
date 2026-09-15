@@ -251,7 +251,15 @@ useEffect(() => {
       // so the tabs render immediately without needing to click "Continue"
       const currentPath = window.location.pathname;
       if (!currentPath.endsWith("/workspace")) {
-        const hasAiAnalysis = !!workspace?.analysis?.result || (await (async () => { try { const a = await import('../services/analysisApi').then(m => m.getAnalysis(projectId)); return a?.result; } catch { return null; } })());
+        let hasAiAnalysis = !!workspace?.analysis?.result;
+        if (!hasAiAnalysis) {
+          try {
+            const a = await getAnalysis(projectId);
+            hasAiAnalysis = !!a?.result;
+          } catch {
+            hasAiAnalysis = false;
+          }
+        }
         if (!hasAiAnalysis) {
           window.history.replaceState(null, '', `/project/${projectId}/workspace`);
         }

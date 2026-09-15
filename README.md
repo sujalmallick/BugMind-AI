@@ -1,16 +1,16 @@
 # BugMind AI
 
-BugMind AI is a full-stack QA workspace designed for exploratory testing, test case management, and issue tracking. It combines an interactive spreadsheet grid powered by AG Grid with AI workflow analysis to help QA engineers and developers plan, execute, and track software testing cycles across teams.
+BugMind AI is a full-stack QA workspace designed for exploratory testing, test case management, and issue tracking. It combines an interactive spreadsheet grid powered by AG Grid with an **orchestrated multi-agent workflow (LangGraph)** to help QA engineers and developers plan, execute, and track software testing cycles across teams.
 
 ---
 
 ## Core Capabilities
 
-- **Interactive Issue Spreadsheet**: High-performance grid with inline cell editing, bulk Excel/CSV import (`.xlsx`, `.csv`), dynamic custom columns, dark hover tooltips, and persistent column management (rename/remove/restore).
-- **Workflow Analysis & Test Case Generation**: Document feature workflows and observed steps to automatically extract test modules, verification checklists, and manual test cases with preconditions and execution tracking.
-- **AI Bug Classifier**: Convert raw tester observations into structured bug reports with suggested severity, priority, and markdown ticket outputs.
+- **Interactive Issue Spreadsheet**: High-performance grid with inline cell editing, bulk Excel/CSV import (`.xlsx`, `.csv`), dynamic custom columns, dark hover tooltips, and isolated per-project column management (rename/remove/restore).
+- **Orchestrated Multi-Agent Workflow**: A deterministic, prompt-chaining state machine powered by **LangGraph** where specialized persona nodes (`Module Agent` $\rightarrow$ `Checklist Agent` $\rightarrow$ `Test Case Agent`) sequentially analyze workflows, map critical user journeys, identify risk boundaries, and generate execution-ready manual test cases with error circuit-breaking.
+- **AI Bug Classifier**: Convert raw tester observations into structured bug tickets with recommended severity, priority, and markdown outputs.
 - **Organizations & Access Control**: Multi-tenant organizations with team-based project isolation and Role-Based Access Control (Owner, Admin, Editor, Viewer).
-- **Real-Time Activity & Notifications**: Live notification drawer streamed via Server-Sent Events (SSE), granular activity feeds, and project/team analytics dashboards.
+- **Real-Time Activity & Notifications**: Live notification drawer streamed via Server-Sent Events (SSE), granular audit feeds, and team analytics dashboards.
 - **Security & BYOK**: JWT session management with instant revocation guards, password hashing, avatar EXIF metadata stripping, and encrypted user storage for custom AI provider keys (Google Gemini, OpenAI, Anthropic, DeepSeek, xAI).
 
 ---
@@ -23,7 +23,7 @@ BugMind AI is a full-stack QA workspace designed for exploratory testing, test c
 | **Backend** | FastAPI, Python 3.11+, SQLAlchemy 2.0, Pydantic v2, Uvicorn, SlowAPI, Pillow |
 | **Database** | PostgreSQL, Alembic |
 | **Authentication** | JWT (python-jose), Passlib (bcrypt), RBAC dependencies |
-| **AI Integration** | LangGraph, LangChain, Google Generative AI |
+| **AI Orchestration** | LangGraph (StateGraph Orchestrator), Multi-Provider LiteLLM Adapter, LangChain |
 
 ---
 

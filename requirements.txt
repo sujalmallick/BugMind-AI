@@ -1,4 +1,4 @@
-﻿alembic==1.18.4
+alembic==1.18.4
 annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.14.0
@@ -82,5 +82,7 @@ zstandard==0.25.0
 slowapi==0.1.9
 Pillow==12.2.0
 gunicorn==23.0.0
+litellm==1.89.3
+
 azure-storage-blob==12.25.1
 azure-communication-email==1.1.0

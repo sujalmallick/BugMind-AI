@@ -42,3 +42,6 @@ dist/
 # Logs
 
 *.log
+
+# Database Backups
+*.sql

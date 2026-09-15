@@ -43,7 +43,7 @@ app.include_router(
 )
 allowed_origins = [
     origin.strip()
-    for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+    for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
     if origin.strip()
 ]
 
@@ -87,18 +87,19 @@ def health_check():
     from sqlalchemy import text
     from database.session import SessionLocal
     db_status = "ok"
+    db = SessionLocal()
     try:
-        db = SessionLocal()
         db.execute(text("SELECT 1"))
-        db.close()
     except Exception as e:
         db_status = f"error: {e}"
+    finally:
+        db.close()
 
     all_ok = db_status == "ok"
     from fastapi.responses import JSONResponse
     return JSONResponse(
         status_code=200 if all_ok else 503,
-        content={"database": db_status}
+        content={"status": "healthy" if all_ok else "degraded", "database": db_status}
     )
 
 @app.post("/analyze-workflow")
@@ -161,17 +162,11 @@ def analyze_issue(
     data: IssueInput,
     current_user: User = Depends(get_current_user),
 ):
-
     return analyze_issue_agent(
-
         workflow=data.workflow,
-
         observation=data.observation,
-
         expected_result=data.expected_result,
-
         actual_result=data.actual_result,
-
-        failed_test_case=data.failed_test_case
-
+        failed_test_case=data.failed_test_case,
+        user_id=current_user.id,
     )

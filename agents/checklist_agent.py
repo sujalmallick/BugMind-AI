@@ -77,7 +77,7 @@ Rules:
     if isinstance(response, dict):
         checklist = response
     else:
-        checklist = parse_json_response(response, prompt)
+        checklist = parse_json_response(response, prompt, user_id=user_id)
 
     if isinstance(checklist, dict) and checklist.get("success") is False:
         return checklist

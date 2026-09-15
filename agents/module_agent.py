@@ -58,7 +58,7 @@ Rules:
     if isinstance(response, dict):
         modules = response
     else:
-        modules = parse_json_response(response, prompt)
+        modules = parse_json_response(response, prompt, user_id=user_id)
 
     if isinstance(modules, dict) and modules.get("success") is False:
         return modules
@@ -84,7 +84,7 @@ Rules:
             normalized_modules[key] = [
                 str(item).strip()
                 for item in value
-                if item is not None
+                if item is not None and str(item).strip()
             ]
         else:
             normalized_modules[key] = []

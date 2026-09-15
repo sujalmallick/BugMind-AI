@@ -98,7 +98,7 @@ def call_llm(
         return {"success": False, "error": "An unexpected error occurred while processing your request. Please try again."}
 
 
-def parse_json_response(response, prompt=None):
+def parse_json_response(response, prompt=None, user_id=None):
     if response is None:
         return {
             "success": False,
@@ -108,7 +108,7 @@ def parse_json_response(response, prompt=None):
     if isinstance(response, dict):
         return response
 
-    cleaned = response.strip()
+    cleaned = str(response).strip()
     cleaned = cleaned.replace("```json", "")
     cleaned = cleaned.replace("```", "")
     cleaned = cleaned.strip()
@@ -137,11 +137,13 @@ Your previous response failed JSON parsing with this error:
 Please correct the response and return ONLY valid JSON.
 Do not wrap it in markdown. Do not include explanations.
 """
-            retry_response = call_llm(retry_prompt)
+            retry_response = call_llm(retry_prompt, user_id=user_id)
 
             if retry_response:
+                if isinstance(retry_response, dict):
+                    return retry_response
                 try:
-                    retry_cleaned = retry_response.strip()
+                    retry_cleaned = str(retry_response).strip()
                     retry_cleaned = retry_cleaned.replace("```json", "").replace("```", "").strip()
                     retry_match = re.search(r'(\{.*\}|\[.*\])', retry_cleaned, re.DOTALL)
                     if retry_match:
@@ -153,5 +155,5 @@ Do not wrap it in markdown. Do not include explanations.
         return {
             "success": False,
             "error": "Invalid JSON returned by AI.",
-            "raw_response": response,
+            "raw_response": str(response),
         }

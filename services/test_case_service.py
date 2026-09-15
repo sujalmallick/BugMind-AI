@@ -16,6 +16,13 @@ def _get_workspace(db: Session, project_id: int):
         raise HTTPException(status_code=404, detail="Workspace not found for this project.")
     return ws
 
+def _normalize_steps(steps) -> str:
+    if isinstance(steps, list):
+        return "\n".join(str(s).strip() for s in steps if s and str(s).strip())
+    if steps is None:
+        return ""
+    return str(steps).strip()
+
 def save_test_cases(
     db: Session,
     project_id: int,
@@ -43,11 +50,11 @@ def save_test_cases(
             category=tc.get("category", ""),
             priority=tc.get("priority", ""),
             status=tc.get("status", "Not Executed"),
-            preconditions=tc.get("preconditions", ""),
-            steps=tc.get("steps", ""),
-            expected_result=tc.get("expectedResult", ""),
-            actual_result=tc.get("actualResult", ""),
-            notes=tc.get("notes", ""),
+            preconditions=str(tc.get("preconditions", "") or ""),
+            steps=_normalize_steps(tc.get("steps", "")),
+            expected_result=str(tc.get("expectedResult", "") or ""),
+            actual_result=str(tc.get("actualResult", "") or ""),
+            notes=str(tc.get("notes", "") or ""),
             is_manual=False
         )
         db.add(test_case)
@@ -82,9 +89,9 @@ def create_manual_test_case(db: Session, project_id: int, current_user_id: int, 
         category=data.get("category", "Functional"),
         priority=data.get("priority", "Medium"),
         status="Not Executed",
-        preconditions=data.get("preconditions", ""),
-        steps=data.get("steps", ""),
-        expected_result=data.get("expected_result", ""),
+        preconditions=str(data.get("preconditions", "") or ""),
+        steps=_normalize_steps(data.get("steps", "")),
+        expected_result=str(data.get("expected_result", "") or ""),
         actual_result="",
         notes=data.get("notes", ""),
         is_manual=True

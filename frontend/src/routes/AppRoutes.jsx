@@ -4,7 +4,7 @@ import {
   Navigate,
   useLocation,
 } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 
 import { useAuth } from "../auth/AuthContext";
 import ProtectedRoute from "../auth/ProtectedRoute";
@@ -13,16 +13,24 @@ import LoginPage from "../pages/LoginPage";
 import RegisterPage from "../pages/RegisterPage";
 import LandingPage from "../pages/LandingPage";
 
-import ProjectsPage from "../pages/ProjectsPage";
-import WorkspacePage from "../pages/WorkspacePage";
-import ProfilePage from "../pages/settings/ProfilePage";
-import OrganizationsPage from "../pages/OrganizationsPage";
-import InviteAcceptPage from "../pages/InviteAcceptPage";
+// Lazy-loaded heavy application routes for code-splitting
+const ProjectsPage = lazy(() => import("../pages/ProjectsPage"));
+const WorkspacePage = lazy(() => import("../pages/WorkspacePage"));
+const ProfilePage = lazy(() => import("../pages/settings/ProfilePage"));
+const OrganizationsPage = lazy(() => import("../pages/OrganizationsPage"));
+const InviteAcceptPage = lazy(() => import("../pages/InviteAcceptPage"));
+const ActivityFeedPage = lazy(() => import("../pages/ActivityFeedPage"));
+const DashboardPage = lazy(() => import("../pages/DashboardPage"));
+const ProjectDashboardPage = lazy(() => import("../pages/ProjectDashboardPage"));
+const TeamDashboardPage = lazy(() => import("../pages/TeamDashboardPage"));
 
-import ActivityFeedPage from "../pages/ActivityFeedPage";
-import DashboardPage from "../pages/DashboardPage";
-import ProjectDashboardPage from "../pages/ProjectDashboardPage";
-import TeamDashboardPage from "../pages/TeamDashboardPage";
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -41,7 +49,8 @@ export default function AppRoutes() {
   return (
     <div key={location.pathname} className="page-fade-in min-h-screen">
       <ScrollToTop />
-      <Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
 
       {/* Public Marketing Landing Pages */}
       <Route path="/landing" element={<LandingPage />} />
@@ -224,6 +233,7 @@ export default function AppRoutes() {
       />
 
       </Routes>
+      </Suspense>
     </div>
   );
 }
