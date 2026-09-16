@@ -62,6 +62,27 @@ app.add_middleware(TimeoutMiddleware)
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+from fastapi.responses import JSONResponse
+import logging
+
+app_logger = logging.getLogger("BugMind")
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    app_logger.error(f"Unhandled Exception on {request.method} {request.url}: {exc}", exc_info=True)
+    origin = request.headers.get("origin", "*")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "error": str(exc)},
+        headers={
+            "Access-Control-Allow-Origin": origin if origin else "*",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        },
+    )
+
 app.include_router(project_router)
 app.include_router(workspace_router)
 app.include_router(analysis_router)
@@ -81,6 +102,26 @@ app.include_router(activity_router)
 # Serve uploaded avatars as static files
 os.makedirs("uploads/avatars", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+
+@app.on_event("startup")
+def self_heal_database_schema():
+    """Ensure newly added columns exist in the database upon startup."""
+    from sqlalchemy import text
+    from database.session import engine
+    with engine.begin() as conn:
+        try:
+            conn.execute(text("ALTER TABLE test_cases ADD COLUMN IF NOT EXISTS custom_fields JSON DEFAULT '{}'::json;"))
+        except Exception as e:
+            print(f"Startup self-heal test_cases.custom_fields: {e}")
+        try:
+            conn.execute(text("ALTER TABLE issues ADD COLUMN IF NOT EXISTS custom_fields JSON DEFAULT '{}'::json;"))
+        except Exception as e:
+            print(f"Startup self-heal issues.custom_fields: {e}")
+        try:
+            conn.execute(text("ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS checklist_progress JSON DEFAULT '{}'::json;"))
+        except Exception as e:
+            print(f"Startup self-heal workspaces.checklist_progress: {e}")
 
 
 @app.get("/health")
