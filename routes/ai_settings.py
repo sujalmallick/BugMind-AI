@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 
 from sqlalchemy.orm import Session
@@ -14,7 +15,7 @@ from services.llm_factory import build_llm_manager
 from database.models.user import User
 from database.models.user_ai_settings import UserAISettings
 
-
+logger = logging.getLogger("BugMind")
 encryption_service = EncryptionService()
 
 router = APIRouter(
@@ -194,14 +195,27 @@ def test_provider_key(
             "deepseek": "deepseek/deepseek-chat",
             "groq": "groq/llama-3.3-70b-versatile",
         }
-        model = default_model_map.get(provider, "gemini/gemini-1.5-flash")
+        model = default_model_map.get(provider, "groq/llama-3.3-70b-versatile")
 
     # Resolve API key (explicit input -> stored user key for this provider -> fallback to developer env key)
     api_key = request.api_key
     if api_key:
-        api_key = api_key.strip().strip("'\"")
+        api_key = api_key.strip().strip("'\"").strip()
     else:
         api_key = ai_settings_service.get_api_key(db, current_user.id, provider=provider)
+
+    if not api_key:
+        return {
+            "success": False,
+            "error": f"No {provider.capitalize()} API key found. Please enter or paste your API key in the field above.",
+        }
+
+    # Format check for Groq keys to give instant feedback
+    if provider == "groq" and not api_key.startswith("gsk_"):
+        return {
+            "success": False,
+            "error": "Invalid Groq API key format. Groq API keys always start with 'gsk_'. Please ensure you copied the key from https://console.groq.com/keys.",
+        }
 
     from providers.litellm_provider import LiteLLMProvider
     try:
@@ -219,15 +233,16 @@ def test_provider_key(
         return {"success": False, "error": "No response returned from provider."}
     except Exception as e:
         err_msg = str(e)
+        logger.error(f"Test key failure for user={current_user.id} provider={provider} model={model}: {err_msg}", exc_info=True)
         err_lower = err_msg.lower()
-        if any(kw in err_lower for kw in ["401", "403", "unauthorized", "forbidden", "api key", "api_key", "invalid key"]):
-            clean_err = "Invalid API key. Please verify your credentials."
+        if any(kw in err_lower for kw in ["401", "403", "unauthorized", "authentication", "invalid_api_key"]):
+            clean_err = f"Authentication failed: Invalid {provider.capitalize()} API key. Please check your key at the {provider.capitalize()} dashboard."
         elif any(kw in err_lower for kw in ["quota", "rate", "429", "resource_exhausted"]):
-            clean_err = "API Key quota exceeded or rate limit reached."
+            clean_err = f"{provider.capitalize()} rate limit or quota exceeded."
         elif any(kw in err_lower for kw in ["not found", "404", "does not exist"]):
             clean_err = f"Model '{model}' is not available with this key."
         else:
-            clean_err = err_msg
+            clean_err = f"{provider.capitalize()} error: {err_msg}"
         return {"success": False, "error": clean_err}
 
 

@@ -68,22 +68,31 @@ class LiteLLMProvider:
     def generate(self, prompt: str) -> str:
         api_key = self._resolve_api_key()
 
+        prov = self.provider.lower().strip()
+        model_name = self.model or ""
+        if prov and not model_name.startswith(f"{prov}/"):
+            if "/" not in model_name:
+                model_name = f"{prov}/{model_name}"
+
+        env_var = _PROVIDER_KEY_MAP.get(prov)
+        if env_var and api_key:
+            os.environ[env_var] = api_key
+
         logger.debug(
-            f"LiteLLM Provider={self.provider} | Model={self.model} | "
-            f"KeyEnv={_PROVIDER_KEY_MAP.get(self.provider.lower(), 'unknown')} | "
+            f"LiteLLM Provider={prov} | Model={model_name} | "
+            f"KeyEnv={env_var or 'unknown'} | "
             f"KeySet={api_key is not None}"
         )
 
         if not api_key:
             raise ValueError(
                 f"No API key found for provider '{self.provider}'. "
-                f"Set {_PROVIDER_KEY_MAP.get(self.provider.lower(), '<PROVIDER>_API_KEY')} "
-                f"in your .env file."
+                f"Please provide an API key or configure {env_var or '<PROVIDER>_API_KEY'}."
             )
 
         try:
             response = completion(
-                model=self.model,
+                model=model_name,
                 api_key=api_key,
                 messages=[
                     {
@@ -94,10 +103,22 @@ class LiteLLMProvider:
             )
         except Exception as err:
             err_str = str(err).lower()
-            if self.provider.lower() == "gemini" and self.model != "gemini/gemini-1.5-flash" and any(k in err_str for k in ["not found", "404", "does not exist", "unsupported"]):
-                logger.warning(f"Model {self.model} failed with '{err}'. Falling back to gemini/gemini-1.5-flash...")
+            if prov == "gemini" and model_name != "gemini/gemini-1.5-flash" and any(k in err_str for k in ["not found", "404", "does not exist", "unsupported"]):
+                logger.warning(f"Model {model_name} failed with '{err}'. Falling back to gemini/gemini-1.5-flash...")
                 response = completion(
                     model="gemini/gemini-1.5-flash",
+                    api_key=api_key,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": prompt,
+                        }
+                    ],
+                )
+            elif prov == "groq" and model_name != "groq/llama-3.3-70b-versatile" and any(k in err_str for k in ["not found", "404", "does not exist"]):
+                logger.warning(f"Model {model_name} failed with '{err}'. Falling back to groq/llama-3.3-70b-versatile...")
+                response = completion(
+                    model="groq/llama-3.3-70b-versatile",
                     api_key=api_key,
                     messages=[
                         {

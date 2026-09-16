@@ -196,8 +196,9 @@ export default function AISettingsModal({ open, onClose, onKeySaved, onKeyDelete
       } else {
         setTestResult({ success: false, message: res.error || "Key validation failed." });
       }
-    } catch {
-      setTestResult({ success: false, message: "Network error while validating key." });
+    } catch (err) {
+      const msg = err.response?.data?.error || err.response?.data?.detail || err.message || "Network error while validating key.";
+      setTestResult({ success: false, message: msg });
     } finally {
       setTesting(false);
     }
