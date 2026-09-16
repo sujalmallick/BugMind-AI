@@ -574,7 +574,7 @@ function handleCopyIssueResult() {
 />
 
 
-<div className="mx-auto max-w-7xl px-4 sm:px-8">
+<div className="mx-auto max-w-7xl px-3 sm:px-8">
       <WorkflowInputPanel
         workflow={workflow}
         observedSteps={observedSteps}
@@ -587,11 +587,12 @@ function handleCopyIssueResult() {
         onExpand={() => setPanelCollapsed(false)}
         error={analysisError}
         hasResult={showWorkspace}
-testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnvironment}
+        testEnvironment={testEnvironment}
+        onTestEnvironmentChange={setTestEnvironment}
       />
 </div>
 {analysisStatus === "error" && (
-  <main className="flex-1">
+  <main className="flex-1 px-3 sm:px-5">
     <APIErrorCard
       message={apiError}
       onRetry={handleAnalyze}
@@ -599,7 +600,7 @@ testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnviron
   </main>
 )}
       {analysisStatus === "loading" && (
-  <main className="flex-1">
+  <main className="flex-1 px-3 sm:px-5">
     <AIThinking title="Analyzing Workflow" />
   </main>
 )}
@@ -618,15 +619,20 @@ testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnviron
     ) : (
       <>
         {/* ---------------- WORKSPACE ---------------- */}
-        <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 sm:px-5">
-          <div className="flex items-center gap-3">
+        <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-3 sm:px-5">
+          <div className="flex items-center justify-between gap-3">
             <button
               type="button"
               onClick={() => navigate("/")}
-              className="btn-secondary px-3 py-1.5 text-[13px]"
+              className="btn-secondary inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 text-xs sm:text-[13px]"
             >
-              ← Back to Projects
+              <span>← Back to Projects</span>
             </button>
+            {project?.name && (
+              <span className="sm:hidden font-mono text-xs font-semibold text-muted truncate max-w-[160px]">
+                {project.name}
+              </span>
+            )}
           </div>
 
           <TabBar
@@ -638,7 +644,7 @@ testEnvironment={testEnvironment}        onTestEnvironmentChange={setTestEnviron
 
 
 
-        <main key={activeTab} className="animate-tab-enter mt-6 pb-12">
+        <main key={activeTab} className="animate-tab-enter mt-4 sm:mt-6 pb-12 px-2 sm:px-4">
 
           {activeTab === "modules" && (
             <ModulesTab

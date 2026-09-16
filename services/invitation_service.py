@@ -6,6 +6,7 @@ Handles generating, validating, accepting, and revoking invitations
 for both Projects and Organizations.
 """
 
+import os
 import logging
 import secrets
 from datetime import datetime, timedelta
@@ -19,6 +20,7 @@ logger = logging.getLogger("BugMind")
 from database.models.invitation import Invitation
 from database.models.user import User
 from services.activity_service import log_activity, Verb
+from services.email_service import send_invitation_email
 
 
 # Default invite expiry

@@ -17,11 +17,11 @@ onTestEnvironmentChange,
 }) {
   if (isCollapsed) {
     return (
-      <div className="mx-auto max-w-4xl mt-4 rounded-2xl border border-white/40 bg-surface/40 px-4 py-3 shadow-[0_4px_24px_rgba(0,0,0,0.03)] backdrop-blur-xl sm:px-5 sm:py-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3 text-sm text-muted">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-signal-soft">
-              <Route size={16} className="text-signal" />
+      <div className="mx-auto max-w-4xl mt-3 sm:mt-4 rounded-xl sm:rounded-2xl border border-hairline/60 bg-surface/70 px-3 py-2.5 shadow-xs backdrop-blur-xl sm:px-5 sm:py-4">
+        <div className="flex items-center justify-between gap-2.5">
+          <div className="flex min-w-0 items-center gap-2.5 text-xs sm:text-sm text-muted">
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg sm:rounded-xl bg-signal-soft shrink-0">
+              <Route size={15} className="text-signal" />
             </div>
 
             <div className="min-w-0">
@@ -40,10 +40,10 @@ onTestEnvironmentChange,
           <button
             type="button"
             onClick={onExpand}
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-hairline bg-white/60 px-4 py-2 text-[13px] font-bold text-ink shadow-sm transition-all duration-200 hover:border-signal/30 hover:bg-white hover:text-signal hover:shadow"
+            className="inline-flex shrink-0 items-center gap-1.5 sm:gap-2 rounded-lg sm:rounded-xl border border-hairline bg-white/80 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-[13px] font-bold text-ink shadow-2xs transition-all duration-200 hover:border-signal/30 hover:bg-white hover:text-signal"
           >
-            <Pencil size={14} />
-            Edit Scope
+            <Pencil size={13} />
+            <span>Edit Scope</span>
           </button>
         </div>
       </div>
@@ -51,10 +51,10 @@ onTestEnvironmentChange,
   }
 
   return (
-    <div className={`px-4 sm:px-5 ${hasResult ? "py-6" : "py-8"}`}>
-      <div className="mx-auto max-w-5xl rounded-[1.5rem] border border-hairline/70 bg-white p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] md:p-8">
+    <div className={`px-2 sm:px-5 ${hasResult ? "py-4 sm:py-6" : "py-5 sm:py-8"}`}>
+      <div className="mx-auto max-w-5xl rounded-2xl sm:rounded-[1.5rem] border border-hairline/70 bg-white p-3.5 sm:p-5 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
         {!hasResult && (
-          <div className="hero-glow hero-glow-soft relative mb-8 overflow-hidden rounded-2xl border border-[#3454d1]/15 bg-gradient-to-br from-[#f0f4ff] via-white to-[#eef2ff] p-6 text-center sm:p-8">
+          <div className="hero-glow hero-glow-soft relative mb-6 sm:mb-8 overflow-hidden rounded-2xl border border-[#3454d1]/15 bg-gradient-to-br from-[#f0f4ff] via-white to-[#eef2ff] p-4 text-center sm:p-8">
 
             {/* Floating background orbs */}
             <div className="workflow-orb-1 pointer-events-none absolute -left-8 -top-8 h-40 w-40 rounded-full bg-[#3454d1]/10 blur-2xl" />
@@ -68,7 +68,7 @@ onTestEnvironmentChange,
               <span className="workflow-dot h-1.5 w-1.5 rounded-full bg-[#3454d1]" />
             </div>
 
-            <h1 className="workflow-hero-title relative text-3xl font-extrabold tracking-tight sm:text-4xl">
+            <h1 className="workflow-hero-title relative text-2xl font-extrabold tracking-tight sm:text-4xl">
               Describe the workflow to test
             </h1>
 
@@ -208,12 +208,12 @@ onTestEnvironmentChange,
               {error}
             </div>
           )}
-<div className="mt-2 flex items-center justify-end gap-3">
+          <div className="mt-4 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3">
             {hasResult && (
               <button
                 type="button"
                 onClick={onExpand}
-                className="btn-secondary px-4 py-2 text-sm"
+                className="btn-secondary justify-center px-4 py-2.5 sm:py-2 text-sm"
               >
                 Cancel
               </button>
@@ -223,17 +223,17 @@ onTestEnvironmentChange,
               type="button"
               onClick={onAnalyze}
               disabled={isAnalyzing}
-              className="btn-primary"
+              className="btn-primary justify-center py-2.5 sm:py-2"
             >
               {isAnalyzing && (
                 <Loader2 size={15} className="animate-spin" />
               )}
 
-            {isAnalyzing
-  ? "Analyzing workflow..."
-  : analysisOutdated
-  ? "Re-analyze Workflow"
-  : "Analyze Workflow"}
+              {isAnalyzing
+                ? "Analyzing workflow..."
+                : analysisOutdated
+                ? "Re-analyze Workflow"
+                : "Analyze Workflow"}
             </button>
           </div>
         </div>

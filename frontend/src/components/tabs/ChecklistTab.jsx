@@ -94,7 +94,7 @@ export default function ChecklistTab({
 
   if (!checklist || checklist.length === 0) {
     return (
-      <div className="p-5">
+      <div className="p-3.5 sm:p-5">
         <EmptyState
           icon={<ListChecks size={22} />}
           title="No checklist yet"
@@ -105,7 +105,7 @@ export default function ChecklistTab({
   }
 
   return (
-    <div className="p-5">
+    <div className="p-3.5 sm:p-5">
       <p className="mb-3 text-[12px] text-muted">
         Execution progress is stored only for the current session.
         It will reset if you refresh the page or run a new analysis.

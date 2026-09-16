@@ -72,6 +72,11 @@ def get_me(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if current_user.avatar_url and not current_user.avatar_url.startswith(("http://", "https://")):
+        if not Path(current_user.avatar_url).exists():
+            current_user.avatar_url = None
+            db.commit()
+            db.refresh(current_user)
     return {
         "id": current_user.id,
         "name": current_user.name,

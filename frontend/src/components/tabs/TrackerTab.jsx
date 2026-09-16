@@ -14,13 +14,13 @@ import { exportTestCasesCSV } from "../../lib/exportCSV";
 
 function MetricCard({ icon, label, value, tone }) {
   return (
-    <div className="group base-card p-4 hover:-translate-y-1">
-      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
+    <div className="group base-card p-3 sm:p-4 hover:-translate-y-1">
+      <div className="mb-1.5 sm:mb-2 flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wide text-muted">
         <span className="transition-transform duration-300 ease-out group-hover:scale-110">{icon}</span>
-        <span>{label}</span>
+        <span className="truncate">{label}</span>
       </div>
 
-      <p className={`text-3xl font-semibold leading-none ${tone}`}>{value}</p>
+      <p className={`text-xl sm:text-3xl font-semibold leading-none ${tone}`}>{value}</p>
     </div>
   );
 }
@@ -212,7 +212,7 @@ export default function TrackerTab({
   ];
 
   return (
-    <div className="base-card p-5 md:p-6">
+    <div className="base-card p-3.5 sm:p-6">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold text-ink">Execution Tracker</h3>
@@ -227,14 +227,14 @@ export default function TrackerTab({
             );
             showToast("Tracker exported successfully!");
           }}
-          className="btn-secondary"
+          className="btn-secondary self-start sm:self-auto"
         >
           <Download size={14} />
           Export CSV
         </button>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
         <MetricCard
           icon={<ClipboardList size={18} />}
           label="Total Tests"
@@ -271,7 +271,7 @@ export default function TrackerTab({
         />
       </div>
 
-      <div className="mt-5 rounded-xl border border-hairline bg-surface p-5">
+      <div className="mt-4 sm:mt-5 rounded-xl border border-hairline bg-surface p-3.5 sm:p-5">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-ink">
             Execution Progress
@@ -298,7 +298,7 @@ export default function TrackerTab({
 
       {hasTestCases && (
         <>
-          <div className="mt-5 rounded-xl border border-hairline bg-paper p-4">
+          <div className="mt-4 sm:mt-5 rounded-xl border border-hairline bg-paper p-3 sm:p-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="relative w-full lg:max-w-xl">
                 <Search

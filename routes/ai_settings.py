@@ -40,8 +40,8 @@ def get_ai_settings(
 
     if not settings:
         return {
-            "provider": "gemini",
-            "model": "gemini/gemini-1.5-flash",
+            "provider": "groq",
+            "model": "groq/llama-3.3-70b-versatile",
             "providers": providers_status,
         }
 

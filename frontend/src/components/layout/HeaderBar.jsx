@@ -19,6 +19,7 @@ import { formatRelativeTime } from "../../utils/time";
 import { useAuth } from "../../auth/AuthContext";
 import favicon from "../../assets/favicon.png";
 import AISettingsModal from "../common/AISettingsModal";
+import UserAvatar from "../common/UserAvatar";
 import { getAvatarUrl } from "../../utils/avatarUrl";
 import useToasts from "../shared/useToasts";
 import ToastStack from "../shared/ToastStack";
@@ -466,16 +467,12 @@ export default function HeaderBar({
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/40
                   "
                 >
-                  {user.avatar_url ? (
-                    <img
-                      src={getAvatarUrl(user.avatar_url)}
-                      alt=""
-                      aria-hidden="true"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span aria-hidden="true">{initials}</span>
-                  )}
+                  <UserAvatar
+                    user={user}
+                    size="sm"
+                    initials={initials}
+                    className="h-full w-full"
+                  />
                 </button>
 
                 {/* Profile dropdown */}

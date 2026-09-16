@@ -233,7 +233,10 @@ def _project_summary_counts(db: Session, project_id: int) -> dict:
         .first()
     )
     if not workspace:
-        raise HTTPException(status_code=404, detail="Workspace not found")
+        workspace = Workspace(project_id=project_id)
+        db.add(workspace)
+        db.commit()
+        db.refresh(workspace)
 
     test_case_rows = (
         db.query(func.lower(TestCase.status), func.count(TestCase.id))

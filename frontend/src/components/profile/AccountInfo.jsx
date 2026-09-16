@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Camera, X, Loader2 } from "lucide-react";
 import { patchProfile, uploadAvatar } from "../../auth/profileService";
 import { useAuth } from "../../auth/AuthContext";
@@ -20,9 +20,14 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
   const [bio, setBio] = useState(profile?.bio ?? "");
   const [saving, setSaving] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const fileRef = useRef(null);
 
   const avatarUrl = getAvatarUrl(profile?.avatar_url);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [avatarUrl]);
 
   const initials = (profile?.name || profile?.email || "?")
     .charAt(0)
@@ -99,10 +104,11 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
       {/* Avatar */}
       <div className="flex items-center gap-5 mb-8">
         <div className="relative">
-          {avatarUrl ? (
+          {avatarUrl && !imgError ? (
             <img
               src={avatarUrl}
               alt="Your avatar"
+              onError={() => setImgError(true)}
               className="h-20 w-20 rounded-full object-cover ring-2 ring-hairline"
             />
           ) : (

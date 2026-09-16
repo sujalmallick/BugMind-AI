@@ -20,7 +20,7 @@ export default function TestCaseTable({
 
   return (
     <div className="scroll-thin overflow-x-auto rounded-xl border border-hairline bg-white">
-      <table className="w-full min-w-225 text-left text-[13px]">
+      <table className="w-full min-w-[760px] text-left text-[13px]">
         <thead>
           <tr className="border-b border-hairline bg-paper text-[11px] uppercase tracking-wide text-muted">
     
@@ -138,6 +138,10 @@ export default function TestCaseTable({
           ))}
         </tbody>
       </table>
+
+      <p className="py-2 text-[11px] text-muted sm:hidden font-mono text-center border-t border-hairline bg-paper/50">
+        ← Swipe horizontally to view all columns →
+      </p>
 
       {/* Slide-over panel for comments & details */}
       <ItemDetailsPanel

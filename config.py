@@ -1,3 +1,3 @@
-DEFAULT_PROVIDER = "gemini"
+DEFAULT_PROVIDER = "groq"
 
-DEFAULT_MODEL = "gemini/gemini-1.5-flash"
+DEFAULT_MODEL = "groq/llama-3.3-70b-versatile"

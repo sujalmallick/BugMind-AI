@@ -38,26 +38,14 @@ import {
 
 
 import { useAuth } from "../auth/AuthContext";
+import UserAvatar from "../components/common/UserAvatar";
 import { getAvatarUrl } from "../utils/avatarUrl";
 import logo from "../assets/bugmind2.png";
 import favicon from "../assets/favicon.png";
 import AppFooter from "../components/layout/AppFooter";
 
 
-// ── Shared Sharp Monospace Feature Badge ─────────────────────────────────────
-function FeatureBadge({ index, icon: Icon, label }) {
-  return (
-    <div className="inline-flex items-center gap-2 rounded-md border border-hairline bg-surface px-2.5 py-1 text-xs font-medium text-ink shadow-2xs">
-      {index && (
-        <span className="font-mono text-[11px] font-bold text-signal bg-paper border border-hairline px-1.5 py-0.5 rounded">
-          {index}
-        </span>
-      )}
-      {Icon && <Icon size={13} className="shrink-0 text-muted" />}
-      <span className="font-sans font-medium text-ink/90">{label}</span>
-    </div>
-  );
-}
+
 
 // ── FAQ Item Component ──────────────────────────────────────────────────────
 function FaqItem({ question, answer }) {
@@ -379,15 +367,12 @@ export default function LandingPage() {
                     aria-label="Open user menu"
                     className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-hairline bg-signal-soft font-mono text-xs font-bold text-signal transition-opacity hover:opacity-85 active:scale-95 overflow-hidden"
                   >
-                    {user?.avatar_url ? (
-                      <img
-                        src={getAvatarUrl(user.avatar_url)}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      initials
-                    )}
+                    <UserAvatar
+                      user={user}
+                      size="md"
+                      initials={initials}
+                      className="h-full w-full"
+                    />
                   </button>
 
                   {profileDropdownOpen && (
@@ -565,12 +550,7 @@ export default function LandingPage() {
               }}
               className="relative z-10 mx-auto max-w-3xl text-center"
             >
-              {/* Pill badge with sharp mono token */}
-              <div className="text-reveal-1 mb-4 inline-flex items-center gap-2 rounded-md border border-hairline bg-surface/90 backdrop-blur-md px-3 py-1 text-xs font-medium text-ink shadow-2xs">
-                <span className="font-mono text-[11px] font-bold text-signal bg-paper border border-hairline px-1.5 py-0.5 rounded">01</span>
-                <Sparkles size={13} className="text-signal" />
-                <span className="text-ink/80 font-sans">AI Copilot for Exploratory QA & Test Generation</span>
-              </div>
+
 
 
               {/* Main Headline with Shimmer */}
@@ -804,9 +784,8 @@ export default function LandingPage() {
               
               {/* Sticky Left Column: Large Heading & Step Controller */}
               <div className="lg:col-span-5 lg:sticky lg:top-24">
-                <FeatureBadge index="02" icon={Cpu} label="Multi-Agent Pipeline" />
                 
-                <h2 className="mt-2.5 text-2xl font-bold tracking-tight text-ink sm:text-3xl leading-tight">
+                <h2 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl leading-tight">
                   4 Specialized AI Agents, Synchronized
                 </h2>
 
@@ -935,8 +914,7 @@ export default function LandingPage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             
             <div className="text-center max-w-2xl mx-auto mb-10">
-              <FeatureBadge index="03" icon={FileSpreadsheet} label="High-Density Execution Grid" />
-              <h2 className="mt-2.5 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+              <h2 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
                 Stacked Test Cases with Full Spreadsheet Control
               </h2>
 
@@ -1108,8 +1086,7 @@ export default function LandingPage() {
         <section id="collaboration" className="relative border-b border-hairline py-12 sm:py-16 bg-surface">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-2xl mx-auto mb-10">
-              <FeatureBadge index="04" icon={Users} label="Collaborative QA Hub" />
-              <h2 className="mt-2.5 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+              <h2 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
 
                 Built for Agile Engineering Organizations
               </h2>

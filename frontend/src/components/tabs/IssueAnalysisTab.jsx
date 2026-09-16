@@ -34,7 +34,7 @@ function ResultRow({ label, children }) {
 
 export default function IssueAnalysisTab({ form, onFormChange, onGenerate, isGenerating, result, error, onCopy }) {
   return (
-    <div className="grid grid-cols-1 gap-4 p-5 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 p-3.5 sm:p-5 lg:grid-cols-2">
       <div className="flex flex-col gap-4">
         <div>
           <label className="mb-1.5 block text-[13px] font-medium text-ink">Testing mode</label>

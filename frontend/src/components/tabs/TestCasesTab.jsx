@@ -115,7 +115,7 @@ export default function TestCasesTab({
   // ── Empty state ──
   if (!testCases.length) {
     return (
-      <div className="base-card p-5 md:p-6">
+      <div className="base-card p-3.5 sm:p-6">
         <EmptyState
           icon={<Table2 size={22} />}
           title="No test cases yet"
@@ -140,7 +140,7 @@ export default function TestCasesTab({
   // ── Imported project → spreadsheet grid ──
   if (isImported) {
     return (
-      <div className="base-card p-4 md:p-5">
+      <div className="base-card p-3 sm:p-5">
         <EditableDataGrid
           rowData={filtered}
           baseColumns={BASE_COLS}
@@ -171,7 +171,7 @@ export default function TestCasesTab({
 
   // ── AI-generated project → classic styled table ──
   return (
-    <div className="base-card p-5 md:p-6">
+    <div className="base-card p-3.5 sm:p-6">
       {/* Header */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>

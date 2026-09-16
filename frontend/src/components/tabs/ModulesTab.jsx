@@ -36,7 +36,7 @@ export default function ModulesTab({ analysis, isLoading }) {
 
   if (!analysis) {
     return (
-      <div className="p-5">
+      <div className="p-3.5 sm:p-5">
         <EmptyState
           icon={<ShieldCheck size={22} />}
           title="No analysis yet"
@@ -49,7 +49,7 @@ export default function ModulesTab({ analysis, isLoading }) {
 
   return (
     
-    <div className="grid grid-cols-1 gap-5 p-6 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3.5 sm:gap-5 p-3.5 sm:p-6 sm:grid-cols-2">
       <Card icon={<ShieldCheck size={18} className="text-verified" />} title="Confirmed modules">
         <ChipRow items={analysis.confirmedModules} tone="verified" confidence="confirmed" />
       </Card>

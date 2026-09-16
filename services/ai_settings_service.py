@@ -30,7 +30,7 @@ class AISettingsService:
         settings = self.get_settings(db, user_id)
 
         if not settings:
-            return "gemini"
+            return "groq"
 
         return settings.provider
 
@@ -43,7 +43,7 @@ class AISettingsService:
 
         if not settings:
             # LiteLLM requires provider-prefixed model names.
-            return "gemini/gemini-1.5-flash"
+            return "groq/llama-3.3-70b-versatile"
 
         return settings.model
 

@@ -263,7 +263,7 @@ export default function IssuesTrackerTab({
   const [showImportModal, setShowImportModal] = useState(false);
 
   return (
-    <div className="base-card p-4 md:p-5">
+    <div className="base-card p-3 sm:p-5">
       <EditableDataGrid
         projectId={projectId}
         rowData={displayRows}

@@ -79,6 +79,7 @@ app.include_router(dashboard_router)
 app.include_router(activity_router)
 
 # Serve uploaded avatars as static files
+os.makedirs("uploads/avatars", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
