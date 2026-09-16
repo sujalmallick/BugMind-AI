@@ -51,10 +51,11 @@ class AISettingsService:
         self,
         db: Session,
         user_id: int,
+        provider: str | None = None,
     ) -> str | None:
         """
-        Returns the decrypted user API key for the active provider if one is
-        stored, otherwise None. None signals the provider to fall back to the
+        Returns the decrypted user API key for the specified provider (or active provider if None)
+        if one is stored, otherwise None. None signals the provider to fall back to the
         .env developer key.
         """
         settings = self.get_settings(db, user_id)
@@ -62,9 +63,9 @@ class AISettingsService:
         if not settings:
             return None
 
-        provider = settings.provider
+        target_provider = provider or settings.provider
         keys = settings.provider_keys or {}
-        entry = keys.get(provider, {})
+        entry = keys.get(target_provider, {})
         encrypted = entry.get("encrypted_key")
 
         if not encrypted:

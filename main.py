@@ -107,14 +107,25 @@ def health_check():
 @limiter.limit("10/minute")
 def analyze_workflow(request: Request, data: WorkflowInput,  current_user: User = Depends(get_current_user)):
 
+    run_config = {
+        "run_name": f"Workflow Analysis - User {current_user.id}",
+        "tags": ["workflow-analysis", f"user:{current_user.id}"],
+        "metadata": {
+            "user_id": current_user.id,
+            "workflow_length": len(data.workflow) if data.workflow else 0,
+            "has_observed_steps": bool(data.observed_steps),
+        },
+    }
+
     result = workflow_graph.invoke(
         {
             "user_id": current_user.id,
             "workflow": data.workflow,
             "observed_steps": data.observed_steps,
             "existing_checklist": data.existing_checklist,
-            "existing_test_cases": data.existing_test_cases
-        }
+            "existing_test_cases": data.existing_test_cases,
+        },
+        config=run_config,
     )
 
     modules = result.get("modules", {})

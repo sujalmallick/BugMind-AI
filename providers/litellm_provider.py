@@ -2,6 +2,7 @@ import os
 import logging
 from pathlib import Path
 from dotenv import load_dotenv
+import litellm
 from litellm import completion
 
 logger = logging.getLogger("BugMind")
@@ -9,6 +10,16 @@ logger = logging.getLogger("BugMind")
 # Ensure .env is loaded from the workspace root regardless of working directory.
 _env_path = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(dotenv_path=_env_path, override=True)
+
+# Register LangSmith callbacks if enabled in environment
+if os.getenv("LANGCHAIN_TRACING_V2", "").lower() == "true" and os.getenv("LANGCHAIN_API_KEY"):
+    current_success = getattr(litellm, "success_callback", []) or []
+    current_failure = getattr(litellm, "failure_callback", []) or []
+    if "langsmith" not in current_success:
+        litellm.success_callback = list(current_success) + ["langsmith"]
+    if "langsmith" not in current_failure:
+        litellm.failure_callback = list(current_failure) + ["langsmith"]
+    logger.info("LangSmith tracing enabled for LiteLLM completions.")
 
 # Provider → environment variable name mapping.
 # Add new providers here — no other code changes needed.

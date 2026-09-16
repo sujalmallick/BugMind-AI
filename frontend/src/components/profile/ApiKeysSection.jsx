@@ -6,7 +6,8 @@ import {
   KeyRound,
   ChevronDown,
   Trash2,
-  Zap,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { getAISettings, updateAISettings, deleteProviderKey, testAIKey } from "../../services/aiSettingsApi";
 
@@ -20,10 +21,18 @@ import { getAISettings, updateAISettings, deleteProviderKey, testAIKey } from ".
 
 const PROVIDERS = [
   {
+    id: "groq",
+    label: "Groq",
+    models: [
+      { id: "groq/llama-3.3-70b-versatile", label: "Llama 3.3 70B (Recommended)" },
+      { id: "groq/llama-3.1-8b-instant",   label: "Llama 3.1 8B (Ultra Fast)" },
+    ],
+  },
+  {
     id: "gemini",
     label: "Google Gemini",
     models: [
-      { id: "gemini/gemini-1.5-flash", label: "Gemini 1.5 Flash (Recommended)" },
+      { id: "gemini/gemini-1.5-flash", label: "Gemini 1.5 Flash" },
       { id: "gemini/gemini-2.0-flash", label: "Gemini 2.0 Flash" },
       { id: "gemini/gemini-1.5-pro",   label: "Gemini 1.5 Pro" },
     ],
@@ -44,11 +53,6 @@ const PROVIDERS = [
     ],
   },
   {
-    id: "groq",
-    label: "Groq",
-    models: [{ id: "groq/llama-3.3-70b-versatile", label: "Llama 3.3 70B" }],
-  },
-  {
     id: "deepseek",
     label: "DeepSeek",
     models: [{ id: "deepseek/deepseek-chat", label: "DeepSeek Chat" }],
@@ -60,9 +64,10 @@ function getProviderMeta(id) {
 }
 
 export default function ApiKeysSection({ showToast }) {
-  const [provider, setProvider]   = useState("gemini");
-  const [model, setModel]         = useState("gemini/gemini-1.5-flash");
+  const [provider, setProvider]   = useState("groq");
+  const [model, setModel]         = useState("groq/llama-3.3-70b-versatile");
   const [apiKey, setApiKey]       = useState("");
+  const [showKey, setShowKey]     = useState(false);
   const [providersStatus, setProvidersStatus] = useState({});
   const [loading, setLoading]     = useState(true);
   const [saving, setSaving]       = useState(false);
@@ -78,8 +83,8 @@ export default function ApiKeysSection({ showToast }) {
     setTestResult(null);
     getAISettings()
       .then((data) => {
-        setProvider(data.provider ?? "gemini");
-        setModel(data.model ?? "gemini/gemini-1.5-flash");
+        setProvider(data.provider ?? "groq");
+        setModel(data.model ?? "groq/llama-3.3-70b-versatile");
         setProvidersStatus(data.providers ?? {});
       })
       .catch(() => setError("Failed to load AI settings."))
@@ -92,6 +97,7 @@ export default function ApiKeysSection({ showToast }) {
     setSaved(false);
     setError(null);
     setApiKey("");
+    setShowKey(false);
     setTestResult(null);
     setConfirmDelete(false);
   }, []);
@@ -99,6 +105,13 @@ export default function ApiKeysSection({ showToast }) {
   const hasKey = !!(providersStatus[provider]?.configured);
 
   const handleTestKey = async () => {
+    if (!apiKey.trim() && !hasKey) {
+      setTestResult({
+        success: false,
+        message: "Please enter or paste your API key in the field above first.",
+      });
+      return;
+    }
     setTesting(true);
     setTestResult(null);
     setError(null);
@@ -255,26 +268,34 @@ export default function ApiKeysSection({ showToast }) {
               <div className="relative flex-1">
                 <KeyRound size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                 <input
-                  type="password"
+                  type={showKey ? "text" : "password"}
                   value={apiKey}
                   onChange={(e) => { setApiKey(e.target.value); setSaved(false); setTestResult(null); }}
                   placeholder={hasKey ? "Enter new key to replace existing…" : `Paste your ${providerMeta.label} API key…`}
                   autoComplete="off"
-                  className="w-full rounded-lg border border-hairline bg-paper py-2.5 pl-9 pr-4 font-mono text-sm text-ink placeholder-muted/60 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20"
+                  className="w-full rounded-lg border border-hairline bg-paper py-2.5 pl-9 pr-10 font-mono text-sm text-ink placeholder-muted/60 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowKey((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink transition-colors"
+                  title={showKey ? "Hide key" : "Show key"}
+                >
+                  {showKey ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
               </div>
               <button
                 type="button"
                 onClick={handleTestKey}
-                disabled={testing || (!apiKey.trim() && !hasKey)}
+                disabled={testing}
                 className="
-                  flex items-center gap-1.5 rounded-lg border border-hairline bg-surface px-3 py-2.5
+                  flex items-center gap-1.5 rounded-lg border border-hairline bg-surface px-3.5 py-2.5
                   text-xs font-semibold text-ink shadow-sm transition-all hover:bg-paper
-                  active:scale-95 disabled:opacity-40 disabled:pointer-events-none shrink-0
+                  active:scale-95 disabled:opacity-50 shrink-0 cursor-pointer
                 "
-                title={!apiKey.trim() && !hasKey ? "Enter or save an API key to test" : "Test key connection"}
+                title="Test key connection"
               >
-                {testing ? <Loader2 size={13} className="animate-spin text-signal" /> : <Zap size={13} className="text-amber-500" />}
+                {testing && <Loader2 size={13} className="animate-spin text-signal" />}
                 <span>{testing ? "Testing…" : "Test Key"}</span>
               </button>
             </div>

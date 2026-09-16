@@ -87,6 +87,7 @@ def update_ai_settings(
         ],
         "groq": [
             "groq/llama-3.3-70b-versatile",
+            "groq/llama-3.1-8b-instant",
         ],
     }
 
@@ -195,12 +196,12 @@ def test_provider_key(
         }
         model = default_model_map.get(provider, "gemini/gemini-1.5-flash")
 
-    # Resolve API key (explicit input -> stored user key -> fallback to developer env key)
+    # Resolve API key (explicit input -> stored user key for this provider -> fallback to developer env key)
     api_key = request.api_key
     if api_key:
         api_key = api_key.strip().strip("'\"")
     else:
-        api_key = ai_settings_service.get_api_key(db, current_user.id)
+        api_key = ai_settings_service.get_api_key(db, current_user.id, provider=provider)
 
     from providers.litellm_provider import LiteLLMProvider
     try:

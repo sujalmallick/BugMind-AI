@@ -1,7 +1,16 @@
 from utils import logger
 from utils import call_llm, parse_json_response
 
+try:
+    from langsmith import traceable
+except ImportError:
+    def traceable(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
 
+
+@traceable(name="Issue Analysis Agent", run_type="chain")
 def analyze_issue_agent(
     workflow,
     observation,

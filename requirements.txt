@@ -86,3 +86,4 @@ litellm==1.89.3
 
 azure-storage-blob==12.25.1
 azure-communication-email==1.1.0
+langsmith==0.8.17

@@ -8,18 +8,28 @@ import {
   Cpu,
   ChevronDown,
   Trash2,
-  Zap,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { getAISettings, updateAISettings, deleteProviderKey, testAIKey } from "../../services/aiSettingsApi";
 
 // ─── Provider / Model catalogue ──────────────────────────────────────────────
 const PROVIDERS = [
   {
+    id: "groq",
+    label: "Groq",
+    color: "#f55036",
+    models: [
+      { id: "groq/llama-3.3-70b-versatile", label: "Llama 3.3 70B (Recommended)" },
+      { id: "groq/llama-3.1-8b-instant",   label: "Llama 3.1 8B (Ultra Fast)" },
+    ],
+  },
+  {
     id: "gemini",
     label: "Google Gemini",
     color: "#1a73e8",
     models: [
-      { id: "gemini/gemini-1.5-flash", label: "Gemini 1.5 Flash (Recommended)" },
+      { id: "gemini/gemini-1.5-flash", label: "Gemini 1.5 Flash" },
       { id: "gemini/gemini-2.0-flash", label: "Gemini 2.0 Flash" },
       { id: "gemini/gemini-1.5-pro",   label: "Gemini 1.5 Pro" },
     ],
@@ -39,14 +49,6 @@ const PROVIDERS = [
     color: "#d97706",
     models: [
       { id: "anthropic/claude-sonnet-4-20250514", label: "Claude Sonnet 4" },
-    ],
-  },
-  {
-    id: "groq",
-    label: "Groq",
-    color: "#7c3aed",
-    models: [
-      { id: "groq/llama-3.3-70b-versatile", label: "Llama 3.3 70B" },
     ],
   },
   {
@@ -119,9 +121,10 @@ function ModelSelect({ models, value, onChange }) {
 
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 export default function AISettingsModal({ open, onClose, onKeySaved, onKeyDeleted }) {
-  const [provider, setProvider]         = useState("gemini");
-  const [model, setModel]               = useState("gemini/gemini-2.5-flash");
+  const [provider, setProvider]         = useState("groq");
+  const [model, setModel]               = useState("groq/llama-3.3-70b-versatile");
   const [apiKey, setApiKey]             = useState("");
+  const [showKey, setShowKey]           = useState(false);
   // providers: { gemini: { configured: bool }, openai: { configured: bool }, ... }
   const [providersStatus, setProvidersStatus] = useState({});
 
@@ -141,12 +144,13 @@ export default function AISettingsModal({ open, onClose, onKeySaved, onKeyDelete
     setError(null);
     setSaved(false);
     setApiKey("");
+    setShowKey(false);
     setTestResult(null);
 
     getAISettings()
       .then((data) => {
-        const p = data.provider ?? "gemini";
-        const m = data.model    ?? "gemini/gemini-1.5-flash";
+        const p = data.provider ?? "groq";
+        const m = data.model    ?? "groq/llama-3.3-70b-versatile";
         setProvider(p);
         setModel(m);
         setProvidersStatus(data.providers ?? {});
@@ -163,6 +167,7 @@ export default function AISettingsModal({ open, onClose, onKeySaved, onKeyDelete
     setSaved(false);
     setError(null);
     setApiKey("");
+    setShowKey(false);
     setTestResult(null);
     setConfirmDelete(false);
   }, []);
@@ -170,6 +175,13 @@ export default function AISettingsModal({ open, onClose, onKeySaved, onKeyDelete
   const hasKeyForCurrentProvider = !!(providersStatus[provider]?.configured);
 
   const handleTestKey = async () => {
+    if (!apiKey.trim() && !hasKeyForCurrentProvider) {
+      setTestResult({
+        success: false,
+        message: "Please enter or paste your API key in the field above first.",
+      });
+      return;
+    }
     setTesting(true);
     setTestResult(null);
     setError(null);
@@ -353,7 +365,7 @@ export default function AISettingsModal({ open, onClose, onKeySaved, onKeyDelete
                       className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
                     />
                     <input
-                      type="password"
+                      type={showKey ? "text" : "password"}
                       value={apiKey}
                       onChange={(e) => { setApiKey(e.target.value); setSaved(false); setTestResult(null); }}
                       placeholder={
@@ -364,23 +376,31 @@ export default function AISettingsModal({ open, onClose, onKeySaved, onKeyDelete
                       autoComplete="off"
                       className="
                         w-full rounded-lg border border-hairline bg-paper py-2.5
-                        pl-9 pr-4 font-mono text-sm text-ink placeholder-muted/60
+                        pl-9 pr-10 font-mono text-sm text-ink placeholder-muted/60
                         transition-colors focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20
                       "
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowKey((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink transition-colors"
+                      title={showKey ? "Hide key" : "Show key"}
+                    >
+                      {showKey ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
                   </div>
                   <button
                     type="button"
                     onClick={handleTestKey}
-                    disabled={testing || (!apiKey.trim() && !hasKeyForCurrentProvider)}
+                    disabled={testing}
                     className="
-                      flex items-center gap-1.5 rounded-lg border border-hairline bg-surface px-3 py-2.5
+                      flex items-center gap-1.5 rounded-lg border border-hairline bg-surface px-3.5 py-2.5
                       text-xs font-semibold text-ink shadow-sm transition-all hover:bg-paper
-                      active:scale-95 disabled:opacity-40 disabled:pointer-events-none shrink-0
+                      active:scale-95 disabled:opacity-50 shrink-0 cursor-pointer
                     "
-                    title={!apiKey.trim() && !hasKeyForCurrentProvider ? "Enter or save an API key to test" : "Test key connection"}
+                    title="Test key connection"
                   >
-                    {testing ? <Loader2 size={13} className="animate-spin text-signal" /> : <Zap size={13} className="text-amber-500" />}
+                    {testing && <Loader2 size={13} className="animate-spin text-signal" />}
                     <span>{testing ? "Testing…" : "Test Key"}</span>
                   </button>
                 </div>
