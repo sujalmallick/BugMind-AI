@@ -103,6 +103,21 @@ def create_invitation(
     # Log invitation creation (token omitted for security)
     logger.info(f"Created invitation ID={inv.id} for email={invited_email or 'anyone'}")
 
+    # Dispatch email if target email specified
+    if inv.invited_email:
+        frontend_url = os.getenv("FRONTEND_URL", "https://black-smoke-05d3e7e00.5.azurestaticapps.net")
+        invite_url = f"{frontend_url}/invite/{inv.token}"
+        inviter_name = inv.inviter.name if inv.inviter and inv.inviter.name else (inv.inviter.email if inv.inviter else "A teammate")
+        target_name = _get_target_name(db, inv.type, inv.target_id)
+        send_invitation_email(
+            to_email=inv.invited_email,
+            invite_url=invite_url,
+            inviter_name=inviter_name,
+            target_name=target_name,
+            target_type=inv.type.capitalize(),
+            role=inv.role.capitalize(),
+        )
+
     return _serialize(inv)
 
 
