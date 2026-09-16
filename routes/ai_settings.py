@@ -235,7 +235,13 @@ def test_provider_key(
         err_msg = str(e)
         logger.error(f"Test key failure for user={current_user.id} provider={provider} model={model}: {err_msg}", exc_info=True)
         err_lower = err_msg.lower()
-        if any(kw in err_lower for kw in ["401", "403", "unauthorized", "authentication", "invalid_api_key"]):
+        if "forbidden" in err_lower or "403" in err_lower:
+            clean_err = (
+                f"{provider.capitalize()} returned Forbidden (403). "
+                f"Please check: (1) Try selecting 'Llama 3.1 8B (Ultra Fast)' in the Model dropdown, or "
+                f"(2) Log into https://console.groq.com and check if your account requires phone verification or if model permissions are restricted for your API key."
+            )
+        elif any(kw in err_lower for kw in ["401", "unauthorized", "authentication", "invalid_api_key"]):
             clean_err = f"Authentication failed: Invalid {provider.capitalize()} API key. Please check your key at the {provider.capitalize()} dashboard."
         elif any(kw in err_lower for kw in ["quota", "rate", "429", "resource_exhausted"]):
             clean_err = f"{provider.capitalize()} rate limit or quota exceeded."

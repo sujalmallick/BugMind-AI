@@ -91,6 +91,9 @@ class LiteLLMProvider:
             )
 
         try:
+            extra_headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            }
             response = completion(
                 model=model_name,
                 api_key=api_key,
@@ -100,6 +103,7 @@ class LiteLLMProvider:
                         "content": prompt,
                     }
                 ],
+                extra_headers=extra_headers,
             )
         except Exception as err:
             err_str = str(err).lower()

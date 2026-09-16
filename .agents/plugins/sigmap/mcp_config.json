@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "sigmap": {
+      "command": "cmd.exe",
+      "args": ["/c", "npx", "--yes", "sigmap", "--mcp"]
+    }
+  }
+}
