@@ -6,8 +6,9 @@ import {
   KeyRound,
   ChevronDown,
   Trash2,
+  Zap,
 } from "lucide-react";
-import { getAISettings, updateAISettings, deleteProviderKey } from "../../services/aiSettingsApi";
+import { getAISettings, updateAISettings, deleteProviderKey, testAIKey } from "../../services/aiSettingsApi";
 
 /**
  * ApiKeysSection — Exact BYOK UI relocated from AISettingsModal into the
@@ -60,7 +61,7 @@ function getProviderMeta(id) {
 
 export default function ApiKeysSection({ showToast }) {
   const [provider, setProvider]   = useState("gemini");
-  const [model, setModel]         = useState("gemini/gemini-2.5-flash");
+  const [model, setModel]         = useState("gemini/gemini-1.5-flash");
   const [apiKey, setApiKey]       = useState("");
   const [providersStatus, setProvidersStatus] = useState({});
   const [loading, setLoading]     = useState(true);
@@ -69,13 +70,16 @@ export default function ApiKeysSection({ showToast }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError]         = useState(null);
   const [saved, setSaved]         = useState(false);
+  const [testing, setTesting]     = useState(false);
+  const [testResult, setTestResult] = useState(null);
 
   useEffect(() => {
     setLoading(true);
+    setTestResult(null);
     getAISettings()
       .then((data) => {
         setProvider(data.provider ?? "gemini");
-        setModel(data.model ?? "gemini/gemini-2.5-flash");
+        setModel(data.model ?? "gemini/gemini-1.5-flash");
         setProvidersStatus(data.providers ?? {});
       })
       .catch(() => setError("Failed to load AI settings."))
@@ -88,10 +92,31 @@ export default function ApiKeysSection({ showToast }) {
     setSaved(false);
     setError(null);
     setApiKey("");
+    setTestResult(null);
     setConfirmDelete(false);
   }, []);
 
   const hasKey = !!(providersStatus[provider]?.configured);
+
+  const handleTestKey = async () => {
+    setTesting(true);
+    setTestResult(null);
+    setError(null);
+    try {
+      const payload = { provider, model };
+      if (apiKey.trim()) payload.api_key = apiKey.trim();
+      const res = await testAIKey(payload);
+      if (res.success) {
+        setTestResult({ success: true, message: res.message || "Key verified successfully!" });
+      } else {
+        setTestResult({ success: false, message: res.error || "Key validation failed." });
+      }
+    } catch {
+      setTestResult({ success: false, message: "Network error while validating key." });
+    } finally {
+      setTesting(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -226,17 +251,46 @@ export default function ApiKeysSection({ showToast }) {
                 <span className="text-xs text-muted">No API Key</span>
               )}
             </div>
-            <div className="relative">
-              <KeyRound size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => { setApiKey(e.target.value); setSaved(false); }}
-                placeholder={hasKey ? "Enter new key to replace existing…" : `Paste your ${providerMeta.label} API key…`}
-                autoComplete="off"
-                className="w-full rounded-lg border border-hairline bg-paper py-2.5 pl-9 pr-4 font-mono text-sm text-ink placeholder-muted/60 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20"
-              />
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <KeyRound size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => { setApiKey(e.target.value); setSaved(false); setTestResult(null); }}
+                  placeholder={hasKey ? "Enter new key to replace existing…" : `Paste your ${providerMeta.label} API key…`}
+                  autoComplete="off"
+                  className="w-full rounded-lg border border-hairline bg-paper py-2.5 pl-9 pr-4 font-mono text-sm text-ink placeholder-muted/60 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleTestKey}
+                disabled={testing || (!apiKey.trim() && !hasKey)}
+                className="
+                  flex items-center gap-1.5 rounded-lg border border-hairline bg-surface px-3 py-2.5
+                  text-xs font-semibold text-ink shadow-sm transition-all hover:bg-paper
+                  active:scale-95 disabled:opacity-40 disabled:pointer-events-none shrink-0
+                "
+                title={!apiKey.trim() && !hasKey ? "Enter or save an API key to test" : "Test key connection"}
+              >
+                {testing ? <Loader2 size={13} className="animate-spin text-signal" /> : <Zap size={13} className="text-amber-500" />}
+                <span>{testing ? "Testing…" : "Test Key"}</span>
+              </button>
             </div>
+
+            {/* Test Result Message */}
+            {testResult && (
+              <div className={`mt-2 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs ${
+                testResult.success
+                  ? "border-verified/30 bg-verified-soft text-verified font-medium"
+                  : "border-flagged/30 bg-flagged-soft text-flagged"
+              }`}>
+                {testResult.success ? <CheckCircle2 size={14} className="shrink-0" /> : <AlertCircle size={14} className="shrink-0" />}
+                <span>{testResult.message}</span>
+              </div>
+            )}
+
             <p className="mt-1.5 text-[11px] text-muted">Leave blank to use the platform's shared developer key.</p>
           </div>
 

@@ -14,3 +14,8 @@ export async function deleteProviderKey(provider) {
   const response = await api.delete(`/ai-settings/key/${provider}`);
   return response.data;
 }
+
+export async function testAIKey(payload) {
+  const response = await api.post("/ai-settings/test-key", payload);
+  return response.data;
+}

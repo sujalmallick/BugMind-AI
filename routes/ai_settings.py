@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from database.session import get_db
 from auth.dependencies import get_current_user
 
-from schemas.ai_settings import AISettingsUpdate
+from schemas.ai_settings import AISettingsUpdate, AISettingsTestKeyRequest
 
 from services.encryption_service import EncryptionService
 from services.ai_settings_service import ai_settings_service, KNOWN_PROVIDERS
@@ -69,6 +69,9 @@ def update_ai_settings(
 
     allowed_models = {
         "gemini": [
+            "gemini/gemini-1.5-flash",
+            "gemini/gemini-2.0-flash",
+            "gemini/gemini-1.5-pro",
             "gemini/gemini-2.5-flash",
             "gemini/gemini-2.5-pro",
         ],
@@ -168,4 +171,62 @@ def delete_provider_key(
         "success": True,
         "providers": ai_settings_service.get_providers_status(settings),
     }
+
+
+@router.post("/test-key")
+def test_provider_key(
+    request: AISettingsTestKeyRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    provider = request.provider.lower().strip()
+    if provider not in KNOWN_PROVIDERS:
+        return {"success": False, "error": f"Unknown provider: {provider}"}
+
+    # Resolve test model
+    model = request.model
+    if not model:
+        default_model_map = {
+            "gemini": "gemini/gemini-1.5-flash",
+            "openai": "openai/gpt-4o-mini",
+            "anthropic": "anthropic/claude-sonnet-4-20250514",
+            "deepseek": "deepseek/deepseek-chat",
+            "groq": "groq/llama-3.3-70b-versatile",
+        }
+        model = default_model_map.get(provider, "gemini/gemini-1.5-flash")
+
+    # Resolve API key (explicit input -> stored user key -> fallback to developer env key)
+    api_key = request.api_key
+    if api_key:
+        api_key = api_key.strip().strip("'\"")
+    else:
+        api_key = ai_settings_service.get_api_key(db, current_user.id)
+
+    from providers.litellm_provider import LiteLLMProvider
+    try:
+        tester = LiteLLMProvider(
+            provider=provider,
+            model=model,
+            api_key=api_key,
+        )
+        response = tester.generate("Respond with the exact word: OK")
+        if response:
+            return {
+                "success": True,
+                "message": f"Connection verified! {provider.capitalize()} API key is active and working."
+            }
+        return {"success": False, "error": "No response returned from provider."}
+    except Exception as e:
+        err_msg = str(e)
+        err_lower = err_msg.lower()
+        if any(kw in err_lower for kw in ["401", "403", "unauthorized", "forbidden", "api key", "api_key", "invalid key"]):
+            clean_err = "Invalid API key. Please verify your credentials."
+        elif any(kw in err_lower for kw in ["quota", "rate", "429", "resource_exhausted"]):
+            clean_err = "API Key quota exceeded or rate limit reached."
+        elif any(kw in err_lower for kw in ["not found", "404", "does not exist"]):
+            clean_err = f"Model '{model}' is not available with this key."
+        else:
+            clean_err = err_msg
+        return {"success": False, "error": clean_err}
+
 
