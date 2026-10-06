@@ -21,6 +21,8 @@ import api from "../services/api";
 
 export function useSSENotifications({ onSignal, enabled = true }) {
   const esRef = useRef(null);
+  // False after unmount, so in-flight ticket requests and reconnect timers stop.
+  const activeRef = useRef(false);
   const onSignalRef = useRef(onSignal);
 
   // Keep ref current without re-opening the connection on every render
@@ -28,14 +30,27 @@ export function useSSENotifications({ onSignal, enabled = true }) {
     onSignalRef.current = onSignal;
   }, [onSignal]);
 
-  const connect = useCallback(() => {
-    if (!enabled) return;
+  const connect = useCallback(async () => {
+    if (!enabled || !activeRef.current) return;
 
     const token = localStorage.getItem("bugmind_token");
     if (!token) return;
 
+    // EventSource can't send an Authorization header, so the credential goes
+    // in the URL (and into proxy logs). Use a 60-second stream-only ticket
+    // instead of the session token; a fresh one is fetched on every reconnect.
+    let ticket;
+    try {
+      const { data } = await api.post("/api/notifications/stream-ticket");
+      ticket = data.ticket;
+    } catch {
+      setTimeout(connect, 10000);
+      return;
+    }
+    if (!activeRef.current) return;
+
     const baseUrl = api.defaults.baseURL || "http://127.0.0.1:8000";
-    const url = `${baseUrl}/api/notifications/stream?token=${encodeURIComponent(token)}`;
+    const url = `${baseUrl}/api/notifications/stream?ticket=${encodeURIComponent(ticket)}`;
     const es = new EventSource(url);
     esRef.current = es;
 
@@ -61,8 +76,10 @@ export function useSSENotifications({ onSignal, enabled = true }) {
   }, [enabled]);
 
   useEffect(() => {
+    activeRef.current = true;
     connect();
     return () => {
+      activeRef.current = false;
       esRef.current?.close();
       esRef.current = null;
     };

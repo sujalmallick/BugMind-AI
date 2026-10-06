@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
+import { neutralizeFormula } from "../../lib/exportCSV";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import { Plus, Trash2, Download, Search, X, Upload, Edit2, AlertTriangle, Settings2, ChevronDown, RotateCcw } from "lucide-react";
@@ -273,6 +274,7 @@ export default function EditableDataGrid({
     if (gridRef.current?.api) {
       gridRef.current.api.exportDataAsCsv({
         fileName: `${title.toLowerCase().replace(/\s+/g, "_")}.csv`,
+        processCellCallback: (params) => neutralizeFormula(params.value),
       });
     }
   }, [title]);

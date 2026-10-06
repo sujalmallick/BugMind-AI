@@ -12,14 +12,14 @@
   "dependencies": {
     "ag-grid-community": "^36.0.2",
     "ag-grid-react": "^36.0.2",
-    "axios": "^1.18.0",
+    "axios": "^1.20.0",
     "lucide-react": "^1.20.0",
     "papaparse": "^5.5.4",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.18.0",
     "recharts": "^3.9.2",
-    "xlsx": "^0.18.5",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
