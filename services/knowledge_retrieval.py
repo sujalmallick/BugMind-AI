@@ -52,28 +52,15 @@ def retrieve(
 ) -> list[dict]:
     """Best-matching excerpts for `query`, most relevant first, within the token budget."""
     require_project_role(db, user_id, project_id, "viewer")
-    if os.getenv("PROJECT_KNOWLEDGE_ENABLED", "true").strip().lower() == "false":
+    if _knowledge_disabled():
         return []  # switching the feature off also keeps existing documents out of prompts
     budget = context_token_budget() if token_budget is None else token_budget
     query_terms = keywords(query)
     if not query_terms or budget < MIN_EXCERPT_TOKENS:
         return []  # too small for even one useful excerpt: skip the scan entirely
 
-    rows = (
-        db.query(DocumentChunk, ProjectDocument.filename)
-        .join(ProjectDocument, ProjectDocument.id == DocumentChunk.document_id)
-        .filter(
-            DocumentChunk.project_id == project_id,
-            ProjectDocument.project_id == project_id,
-            ProjectDocument.deleted_at.is_(None),
-            ProjectDocument.status == "ready",
-            ProjectDocument.ai_enabled.is_(True),
-            DocumentChunk.flagged.is_(False),
-        )
-        .order_by(DocumentChunk.document_id, DocumentChunk.ordinal)
-        .limit(MAX_CHUNKS_SCANNED)
-        .all()
-    )
+    rows = (_usable_chunks(db, project_id).order_by(DocumentChunk.document_id, DocumentChunk.ordinal)
+            .limit(MAX_CHUNKS_SCANNED).all())
     if not rows:
         return []
 
@@ -122,6 +109,73 @@ def retrieve(
             "score": round(score, 3),
         })
     return excerpts
+
+
+def _knowledge_disabled() -> bool:
+    return os.getenv("PROJECT_KNOWLEDGE_ENABLED", "true").strip().lower() == "false"
+
+
+def _usable_chunks(db: Session, project_id: int):
+    """(chunk, filename) rows the AI may read: ready, switched on, not deleted, not flagged."""
+    return (
+        db.query(DocumentChunk, ProjectDocument.filename)
+        .join(ProjectDocument, ProjectDocument.id == DocumentChunk.document_id)
+        .filter(
+            DocumentChunk.project_id == project_id,
+            ProjectDocument.project_id == project_id,
+            ProjectDocument.deleted_at.is_(None),
+            ProjectDocument.status == "ready",
+            ProjectDocument.ai_enabled.is_(True),
+            DocumentChunk.flagged.is_(False),
+        )
+    )
+
+
+def overview_excerpts(
+    db: Session,
+    user_id: int,
+    project_id: int,
+    token_budget: int,
+    max_excerpts: int = 8,
+    model: str | None = None,
+) -> list[dict]:
+    """
+    No query to rank by (e.g. drafting a workflow from the documents): the opening
+    sections of every usable document, taken in turns (doc A part 1, doc B part 1,
+    doc A part 2, ...) so one long document can't crowd out the others.
+    """
+    require_project_role(db, user_id, project_id, "viewer")
+    if _knowledge_disabled() or token_budget < MIN_EXCERPT_TOKENS:
+        return []
+    # Openings only: the first few sections of each document are all this can use.
+    rows = (_usable_chunks(db, project_id).order_by(DocumentChunk.ordinal, DocumentChunk.document_id)
+            .limit(max_excerpts * 25).all())
+    per_excerpt = max(MIN_EXCERPT_TOKENS, token_budget // 3)
+    picked, chosen_terms, used = [], [], 0
+    for chunk, filename in rows:
+        if len(picked) >= max_excerpts:
+            break
+        terms = keywords(f"{chunk.heading or ''} {chunk.text}")
+        if not terms or any(_jaccard(terms, other) >= DUPLICATE_SIMILARITY for other in chosen_terms):
+            continue
+        text = compress_excerpt(chunk.text, set(), per_excerpt, model)
+        cost = count_tokens(text, model)
+        if used + cost > token_budget:
+            continue
+        used += cost
+        chosen_terms.append(terms)
+        picked.append(((chunk.document_id, chunk.ordinal), {
+            "chunkId": chunk.id,
+            "documentId": chunk.document_id,
+            "filename": filename,
+            "heading": chunk.heading,
+            "text": text,
+            "compressed": text != chunk.text,
+            "tokens": cost,
+            "score": 0.0,
+        }))
+    # Back in reading order, so the model sees each document's sections in sequence.
+    return [e for _, e in sorted(picked, key=lambda item: item[0])]
 
 
 def _jaccard(a: set, b: set) -> float:

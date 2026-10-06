@@ -81,13 +81,21 @@ export default function WorkflowInputPanel({
               onChange={(event) => onWorkflowChange(event.target.value)}
               placeholder="E.g., User logs in → Navigates to Dashboard → Opens Messages → Sends a new message"
               id="wf-workflow"
-              rows={3}
+              rows={Math.min(8, Math.max(3, Math.ceil(workflow.length / 90)))}
               className="field resize-none"
             />
           </div>
 
           {projectId && (
-            <WorkflowDocuments projectId={projectId} showToast={showToast} />
+            <WorkflowDocuments
+              projectId={projectId}
+              showToast={showToast}
+              workflow={workflow}
+              onDraft={(text) => {
+                onWorkflowChange(text);
+                document.getElementById("wf-workflow")?.focus();
+              }}
+            />
           )}
 
           <div>

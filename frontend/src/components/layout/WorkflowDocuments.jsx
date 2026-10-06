@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Download, FileText, Loader2, Paperclip, RotateCw, ShieldAlert, Trash2 } from 'lucide-react'
+import { Download, FileText, Loader2, Paperclip, RotateCw, ShieldAlert, Sparkles, Trash2, X } from 'lucide-react'
 import Pill from '../shared/Pill'
 import SkeletonBlock from '../shared/SkeletonBlock'
 import ConfirmDialog from '../shared/ConfirmDialog'
 import {
   deleteDocument,
   downloadDocument,
+  draftWorkflowFromDocuments,
   listDocuments,
   retryDocument,
   setDocumentAiEnabled,
@@ -113,13 +114,17 @@ function DocumentRow({ doc, busy, onToggleAi, onRetry, onDownload, onDelete }) {
   )
 }
 
-export default function WorkflowDocuments({ projectId, showToast }) {
+export default function WorkflowDocuments({ projectId, showToast, workflow, onDraft }) {
   const [documents, setDocuments] = useState([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [busyId, setBusyId] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [dragging, setDragging] = useState(false)
+  const [focus, setFocus] = useState('')
+  const [drafting, setDrafting] = useState(false)
+  const [draftResult, setDraftResult] = useState(null)
+  const [confirmReplace, setConfirmReplace] = useState(false)
   const inputRef = useRef(null)
 
   // The project this panel currently shows: responses for another project are ignored.
@@ -127,6 +132,11 @@ export default function WorkflowDocuments({ projectId, showToast }) {
   useEffect(() => {
     projectRef.current = projectId
   }, [projectId])
+  // Latest workflow text: a draft never overwrites edits made while it was generating.
+  const workflowRef = useRef(workflow)
+  useEffect(() => {
+    workflowRef.current = workflow
+  }, [workflow])
   // Background polling reports a failure once, not on every tick.
   const pollErrorShown = useRef(false)
 
@@ -208,6 +218,33 @@ export default function WorkflowDocuments({ projectId, showToast }) {
     }
   }
 
+  async function runDraft() {
+    setConfirmReplace(false)
+    setDrafting(true)
+    const requestedFor = projectId
+    const workflowBefore = workflowRef.current
+    try {
+      const result = await draftWorkflowFromDocuments(projectId, focus)
+      if (projectRef.current !== requestedFor) return
+      if (!result?.success) {
+        showToast(result?.error || 'Could not draft a workflow.', 'error')
+        return
+      }
+      if (workflowRef.current !== workflowBefore) {
+        showToast('You edited the workflow while it was being drafted, so the draft was not applied.', 'error')
+        return
+      }
+      onDraft(result.workflow)
+      setDraftResult(result)
+    } catch (error) {
+      if (projectRef.current === requestedFor) showToast(errorMessage(error, 'Could not draft a workflow.'), 'error')
+    } finally {
+      if (projectRef.current === requestedFor) setDrafting(false)
+    }
+  }
+
+  const canDraft = documents.some((d) => d.availableToAi)
+
   return (
     <div>
       <p className="mb-1 text-[13px] font-medium text-ink">
@@ -275,10 +312,88 @@ export default function WorkflowDocuments({ projectId, showToast }) {
         </ul>
       )}
 
+      {canDraft && (
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <label htmlFor="wf-draft-focus" className="sr-only">Focus for the drafted workflow</label>
+          <input
+            id="wf-draft-focus"
+            type="text"
+            className="field sm:flex-1"
+            placeholder="Focus (optional), e.g. checkout or password reset"
+            maxLength={300}
+            value={focus}
+            onChange={(e) => setFocus(e.target.value)}
+          />
+          <button
+            type="button"
+            className="btn-secondary shrink-0"
+            disabled={drafting}
+            onClick={() => (workflow?.trim() ? setConfirmReplace(true) : runDraft())}
+          >
+            {drafting ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <Sparkles size={14} aria-hidden="true" />}
+            {drafting ? 'Drafting…' : 'Draft workflow from documents'}
+          </button>
+        </div>
+      )}
+
+      {draftResult && (
+        <div className="mt-3 rounded-xl border border-hairline bg-surface px-3 py-2.5 text-[12px] leading-relaxed text-muted" role="status">
+          <div className="flex items-start justify-between gap-2">
+            <p>
+              <span className="font-medium text-ink">Workflow drafted</span>
+              {draftResult.sources?.length > 0 && ` from ${draftResult.sources.map((s) => s.filename).join(', ')}`}.
+              {' '}Review and edit it above before analysing.
+            </p>
+            <button
+              type="button"
+              className="rounded-md p-0.5 text-muted hover:text-ink"
+              onClick={() => setDraftResult(null)}
+              aria-label="Dismiss draft notes"
+            >
+              <X size={14} />
+            </button>
+          </div>
+          {draftResult.leftOut?.length > 0 && (
+            <div className="mt-2">
+              <p className="text-ochre">Left out, because your documents don’t support them:</p>
+              <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                {draftResult.leftOut.map((step, i) => (
+                  <li key={i}>{step.text} <span className="text-muted/80">({step.note})</span></li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {draftResult.gaps?.length > 0 && (
+            <div className="mt-2">
+              <p className="text-ink">Not covered by your documents (worth clarifying):</p>
+              <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                {draftResult.gaps.map((gap, i) => <li key={i}>{gap}</li>)}
+              </ul>
+            </div>
+          )}
+          {draftResult.removedForSafety > 0 && (
+            <p className="mt-2 flex items-center gap-1 text-ochre">
+              <ShieldAlert size={12} aria-hidden="true" />
+              {draftResult.removedForSafety} step{draftResult.removedForSafety > 1 ? 's' : ''} removed by safety checks.
+            </p>
+          )}
+        </div>
+      )}
+
       <p className="mt-2 text-[11.5px] leading-relaxed text-muted">
         Relevant excerpts from documents marked “Use in AI” are sent to your AI provider during analysis.
         Secrets like API keys and passwords are removed first.
       </p>
+
+      <ConfirmDialog
+        open={confirmReplace}
+        title="Replace the workflow?"
+        message="The drafted workflow will replace what's in the workflow box now."
+        confirmText="Draft and replace"
+        danger={false}
+        onCancel={() => setConfirmReplace(false)}
+        onConfirm={runDraft}
+      />
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}

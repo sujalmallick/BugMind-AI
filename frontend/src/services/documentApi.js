@@ -45,3 +45,11 @@ export async function downloadDocument(projectId, doc) {
   // Revoking immediately can cancel the download in Firefox/Safari.
   setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
+
+// AI-drafted workflow description from the project's documents ({ success, workflow, ... }).
+export async function draftWorkflowFromDocuments(projectId, focus) {
+  const response = await api.post(`/projects/${projectId}/documents/draft-workflow`, {
+    focus: focus?.trim() || null,
+  });
+  return response.data;
+}

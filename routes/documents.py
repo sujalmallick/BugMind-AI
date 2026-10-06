@@ -2,7 +2,7 @@ import os
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from auth.dependencies import get_current_user
@@ -10,6 +10,7 @@ from database.models.user import User
 from database.session import get_db
 from limiter import limiter
 from services import documents
+from services.workflow_draft import draft_workflow
 
 
 def _knowledge_enabled():
@@ -41,6 +42,18 @@ def upload_project_document(request: Request, project_id: int, file: UploadFile 
     data = file.file.read(documents.max_file_bytes() + 1)
     doc = documents.upload_document(db, project_id, current_user.id, file.filename, data)
     return documents.serialize(doc)
+
+
+class DraftRequest(BaseModel):
+    focus: str | None = Field(default=None, max_length=300)
+
+
+@router.post("/draft-workflow")
+@limiter.limit("5/minute")
+def draft_workflow_from_documents(request: Request, project_id: int, body: DraftRequest,
+                                  db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """AI-drafted workflow description from the project's documents, for the user to review."""
+    return draft_workflow(db, current_user.id, project_id, body.focus)
 
 
 @router.get("/{document_id}")
