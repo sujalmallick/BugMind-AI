@@ -15,6 +15,7 @@ import AnalysisSummary from "../components/shared/AnalysisSummary";
 import ModulesTab from "../components/tabs/ModulesTab";
 import ChecklistTab from "../components/tabs/ChecklistTab";
 import TestCasesTab from "../components/tabs/TestCasesTab";
+import TestPlanTab from "../components/tabs/TestPlanTab";
 import IssueAnalysisTab from "../components/tabs/IssueAnalysisTab";
 import IssuesTrackerTab from "../components/tabs/IssuesTrackerTab";
 import TrackerTab from "../components/tabs/TrackerTab";
@@ -44,6 +45,7 @@ const TABS = [
   { key: 'dashboard', label: 'Dashboard' },
   { key: 'modules', label: 'Modules' },
   { key: 'checklist', label: 'Checklist' },
+  { key: 'test_plan', label: 'Test Plan' },
   { key: 'testcases', label: 'Test Cases' },
   { key: 'bug_tracker', label: 'Issues Tracker' },
   { key: 'issues', label: 'AI Bug Reports' },
@@ -219,6 +221,8 @@ useEffect(() => {
             is_manual: tc.is_manual,
             custom_fields: tc.custom_fields || {},
             grounding: tc.grounding || null,
+            origin: tc.origin || null,
+            plan_phase_id: tc.plan_phase_id ?? null,
           };
         });
         setTestCases(loadedCases);
@@ -364,7 +368,8 @@ await saveAnalysis(
   projectId,
   result
 );
-setTestCases(result.testCases)
+// The analysis replaces only the AI cases of the previous analysis: manual and test plan cases stay.
+setTestCases(prev => [...result.testCases, ...prev.filter(tc => tc.is_manual || tc.origin === "plan")])
 await saveTestCases(
   projectId,
   result.testCases
@@ -684,6 +689,19 @@ function handleCopyIssueResult() {
             />
           )}
 
+            {activeTab === 'test_plan' && (
+              <TestPlanTab
+                projectId={projectId}
+                workflow={workflow}
+                showToast={showToast}
+                onViewTestCases={() => setActiveTab('testcases')}
+                onCasesGenerated={(cases) => setTestCases(prev => [
+                  ...prev,
+                  ...cases.map(tc => ({ ...tc, db_id: tc.id, grounding: tc.grounding || null })),
+                ])}
+              />
+            )}
+
             {activeTab === 'testcases' && (
               <TestCasesTab
                 testCases={testCases}
@@ -761,7 +779,7 @@ function handleCopyIssueResult() {
       <CommandPalette open={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} commands={commands} /><ConfirmDialog
     open={showReanalyzeDialog}
     title="Replace Existing Analysis?"
-    message="Regenerating will replace the current AI-generated checklist and test cases. Any execution progress associated with them may also be removed."
+    message="Regenerating will replace the current AI-generated checklist and test cases. Any execution progress associated with them may also be removed. Manual and test plan cases are kept."
     confirmText="Replace & Regenerate"
     cancelText="Cancel"
     onCancel={() => setShowReanalyzeDialog(false)}

@@ -230,6 +230,9 @@ def delete_project(
     ]
     db.query(DocumentChunk).filter(DocumentChunk.project_id == project_id).delete(synchronize_session=False)
     db.query(ProjectDocument).filter(ProjectDocument.project_id == project_id).delete(synchronize_session=False)
+    from services.test_plan_service import delete_project_plans
+
+    delete_project_plans(db, project_id)
 
     db.delete(project)
     db.commit()

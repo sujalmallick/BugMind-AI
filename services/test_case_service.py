@@ -45,7 +45,7 @@ def save_test_cases(
     - Unmatched incoming cases are inserted.
     - Stored AI cases that matched nothing (a re-analysis replaced them) are
       deleted after their issues move to the IMPORT-DEFAULT placeholder, so no bug
-      report is lost or blocks the save.
+      report is lost or blocks the save. Cases generated from a test plan are kept.
     """
     require_project_role(db, current_user_id, project_id, "editor")
     workspace = _get_workspace(db, project_id)
@@ -84,7 +84,8 @@ def save_test_cases(
             db.add(row)
         _apply_fields(row, tc, display_id)
 
-    stale_ids = [row.id for row in existing if row.id not in matched]
+    # Test plan cases aren't part of an analysis result: an analysis save never removes them.
+    stale_ids = [row.id for row in existing if row.id not in matched and row.origin != PLAN_ORIGIN]
     if stale_ids:
         _move_issues_to_placeholder(db, workspace, stale_ids)
         db.query(TestCase).filter(TestCase.id.in_(stale_ids)).delete(synchronize_session=False)
@@ -94,6 +95,7 @@ def save_test_cases(
 
 
 PLACEHOLDER_TEST_CASE_ID = "IMPORT-DEFAULT"
+PLAN_ORIGIN = "plan"
 
 
 def _match_key(display_id, description) -> tuple[str, str]:
