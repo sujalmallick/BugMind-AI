@@ -4,14 +4,15 @@ on:
   push:
     branches:
       - main
+  # PRs only build the frontend as a check; nothing is uploaded. Preview
+  # environments kept failing at the Azure upload step, and changes are
+  # verified on the live site after merge.
   pull_request:
-    types: [opened, synchronize, reopened, closed]
     branches:
       - main
 
 jobs:
   build_and_deploy_job:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     name: Build and Deploy Job
     steps:
@@ -37,6 +38,7 @@ jobs:
           VITE_API_URL: https://bugmind-backend-sea-h2epaudqf5gmcmhv.koreacentral-01.azurewebsites.net
 
       - name: Build And Deploy
+        if: github.event_name == 'push'
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         with:
@@ -47,15 +49,3 @@ jobs:
           api_location: "" # Api source code path - optional
           output_location: "" # Already at the built output
           skip_app_build: true
-
-  close_pull_request_job:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    name: Close Pull Request Job
-    steps:
-      - name: Close Pull Request
-        id: closepullrequest
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_BLACK_SMOKE_05D3E7E00 }}
-          action: "close"
