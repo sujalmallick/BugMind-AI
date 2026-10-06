@@ -136,9 +136,13 @@ def request_password_reset(
             detail="No account found with that email address.",
         )
 
-    # Cap reset emails per account so the endpoint can't flood an inbox.
+    # Cap reset emails per account so the endpoint can't flood an inbox
+    # (the IP rate limit doesn't stop requests spread across many IPs).
     if password_reset_requests.is_blocked(email):
-        return generic_response
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many reset emails requested for this account. Please check your inbox or try again later.",
+        )
     password_reset_requests.record(email)
 
     token = create_password_reset_token(user.id, user.password_hash)

@@ -48,6 +48,16 @@ def _fresh_settings(monkeypatch):
     reload_settings()
 
 
+@pytest.fixture(autouse=True)
+def _fresh_account_throttles():
+    """Per-account login/reset counters are process-global; isolate tests."""
+    from auth.throttle import failed_logins, password_reset_requests
+
+    for limiter in (failed_logins, password_reset_requests):
+        limiter._attempts.clear()
+    yield
+
+
 @pytest.fixture
 def set_env(monkeypatch):
     from guardrails import reload_settings

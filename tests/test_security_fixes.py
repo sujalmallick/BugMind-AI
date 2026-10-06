@@ -213,9 +213,8 @@ def test_password_reset_emails_are_capped_per_account(api, world, monkeypatch):
     sent = []
     monkeypatch.setattr(auth_service, "send_password_reset_email", lambda **kw: sent.append(kw) or True)
     password_reset_requests.reset("vic@corp.io")
-    for _ in range(5):
-        res = api.post("/auth/forgot-password", json={"email": "vic@corp.io"})
-        assert res.status_code == 200  # identical response either way
+    codes = [api.post("/auth/forgot-password", json={"email": "vic@corp.io"}).status_code for _ in range(5)]
+    assert codes == [200, 200, 200, 429, 429]
     assert len(sent) == 3
 
 
