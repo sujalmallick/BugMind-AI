@@ -34,9 +34,9 @@ export default function AppFooter() {
 
   return (
     <footer className="border-t border-hairline bg-surface">
-      <div className="mx-auto max-w-6xl px-4 pb-8 pt-14 sm:px-6">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
-          <div className="flex flex-col items-start">
+      <div className="mx-auto max-w-6xl px-4 pb-8 pt-12 sm:px-6 sm:pt-14">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+          <div className="col-span-2 flex flex-col items-start lg:col-span-1">
             <button
               type="button"
               onClick={() => navigate("/landing")}

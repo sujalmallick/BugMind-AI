@@ -120,8 +120,9 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
 
       {/* Showcase column */}
       <aside className="hidden p-3 lg:block" aria-label="What BugMind does">
-        <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-hairline bg-paper px-10 py-12">
-          <div className="w-full max-w-[440px]">
+        <div className="relative flex h-full flex-col items-center justify-center overflow-hidden rounded-2xl border border-hairline bg-paper px-10 py-12">
+          <div className="aurora aurora-soft" aria-hidden="true" />
+          <div className="relative w-full max-w-[440px]">
             <p className="eyebrow">Inside BugMind</p>
             <h2 className="mt-3 text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.03em] text-ink">
               One workflow in.
@@ -129,7 +130,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
               <span className="text-muted">A full test suite out.</span>
             </h2>
           </div>
-          <div className="mt-10 w-full max-w-[440px]">
+          <div className="relative mt-10 w-full max-w-[440px]">
             <Showcase />
           </div>
         </div>

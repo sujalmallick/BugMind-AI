@@ -526,7 +526,8 @@ export default function LandingPage() {
 
       <main className="relative">
         {/* ── Hero ─────────────────────────────────────────────────────────── */}
-        <section className="relative -mt-16 pb-16 pt-28 sm:pt-36 md:pb-4">
+        <section className="relative -mt-16 overflow-x-clip pb-14 pt-24 sm:pt-36 md:pb-4">
+          <div className="aurora" aria-hidden="true" />
           <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
             <div ref={heroTextRef} className="relative z-10 mx-auto max-w-3xl text-center will-change-transform">
               <p className="stagger eyebrow" style={{ "--d": "0ms" }}>
@@ -534,17 +535,17 @@ export default function LandingPage() {
               </p>
 
               <h1
-                className="stagger mt-5 text-[2.5rem] font-semibold leading-[1.02] tracking-[-0.035em] text-ink xs:text-[2.875rem] sm:text-6xl lg:text-[4.5rem]"
+                className="stagger mt-5 text-[2.375rem] font-semibold leading-[1.04] tracking-[-0.035em] text-ink xs:text-[2.75rem] sm:text-6xl lg:text-[4.5rem]"
                 style={{ "--d": "80ms" }}
               >
-                Plain-text workflows,{" "}
+                Plain‑text workflows,{" "}
                 <span className="text-signal">
-                  execution-ready QA.
+                  execution‑ready QA.
                 </span>
               </h1>
 
               <p
-                className="stagger mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted sm:text-lg"
+                className="stagger mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-muted sm:mt-6 sm:text-lg"
                 style={{ "--d": "160ms" }}
               >
                 Describe how your application works. BugMind decomposes modules, drafts
@@ -552,7 +553,7 @@ export default function LandingPage() {
               </p>
 
               <div
-                className="stagger mt-9 flex flex-col items-stretch justify-center gap-3 xs:flex-row xs:items-center"
+                className="stagger mt-8 flex flex-col items-stretch justify-center gap-2.5 xs:flex-row xs:items-center sm:mt-9 sm:gap-3"
                 style={{ "--d": "240ms" }}
               >
                 <button
@@ -584,7 +585,7 @@ export default function LandingPage() {
             </div>
 
             {/* ── Product mockup ───────────────────────────────────────── */}
-            <div className="stagger relative z-20 mx-auto mt-14 max-w-5xl sm:mt-20" style={{ "--d": "420ms" }}>
+            <div className="stagger relative z-20 mx-auto mt-12 max-w-5xl sm:mt-20" style={{ "--d": "420ms" }}>
               <div ref={heroMockRef} className="glass relative z-20 rounded-2xl p-2 will-change-transform">
                 <div className="overflow-hidden rounded-xl border border-hairline bg-surface">
                   {/* Window chrome */}
@@ -613,7 +614,7 @@ export default function LandingPage() {
                         id="demo-workflow"
                         value={demoWorkflow}
                         onChange={(e) => setDemoWorkflow(e.target.value)}
-                        rows={5}
+                        rows={4}
                         className="mt-2 w-full flex-1 resize-none rounded-lg border border-hairline bg-paper p-3 font-mono text-[12px] leading-relaxed text-ink transition-colors placeholder:text-muted focus:border-signal focus:bg-surface focus:outline-none"
                         placeholder="Describe user flow…"
                       />
@@ -623,7 +624,7 @@ export default function LandingPage() {
                     </div>
 
                     {/* Output */}
-                    <div className="flex min-h-[300px] flex-col p-4 sm:p-5 lg:col-span-7">
+                    <div className="flex flex-col p-4 sm:p-5 lg:col-span-7 lg:min-h-[300px]">
                       <div
                         role="tablist"
                         aria-label="Agent outputs"
@@ -734,20 +735,20 @@ export default function LandingPage() {
         </section>
 
         {/* ── Motion cards ─────────────────────────────────────────────────── */}
-        <section className="border-t border-hairline py-20 sm:py-28">
+        <section className="border-t border-hairline py-16 sm:py-28">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <SectionHeading eyebrow="See it work" title="From a sentence to a" accent="test suite.">
               Every step below is what BugMind does with a single workflow description.
             </SectionHeading>
 
-            <div className="mt-14 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="no-scrollbar -mx-4 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:mt-14 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:gap-y-10 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
               {[
                 { label: "01 · modules", title: "Understands the flow", description: "Splits a workflow into modules and critical paths.", Scene: WorkflowScene },
                 { label: "02 · checklist", title: "Plans exploration", description: "Drafts boundary, negative and UX checks.", Scene: ChecklistScene },
                 { label: "03 · test cases", title: "Writes the cases", description: "Execution-ready steps land in the grid.", Scene: TestCaseScene },
                 { label: "04 · issues", title: "Triages defects", description: "Classifies severity and links root cause.", Scene: TriageScene },
               ].map(({ label, title, description, Scene }, i) => (
-                <div key={label} className="reveal" style={{ "--d": `${i * 90}ms` }}>
+                <div key={label} className="reveal w-[82%] shrink-0 snap-center xs:w-[70%] sm:w-auto" style={{ "--d": `${i * 90}ms` }}>
                   <MotionCard label={label} title={title} description={description} steps={Scene.steps} compact>
                     {(step) => <Scene step={step} />}
                   </MotionCard>
@@ -758,7 +759,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── Pipeline ─────────────────────────────────────────────────────── */}
-        <section id="pipeline" className="scroll-mt-16 border-t border-hairline bg-surface py-20 sm:py-28">
+        <section id="pipeline" className="scroll-mt-16 border-t border-hairline bg-surface py-16 sm:py-28">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="grid gap-12 lg:grid-cols-12 lg:items-start lg:gap-16">
               <div className="lg:sticky lg:top-28 lg:col-span-5">
@@ -844,14 +845,14 @@ export default function LandingPage() {
         </section>
 
         {/* ── Workspace ────────────────────────────────────────────────────── */}
-        <section id="workspace" className="scroll-mt-16 border-t border-hairline py-20 sm:py-28">
+        <section id="workspace" className="scroll-mt-16 border-t border-hairline py-16 sm:py-28">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <SectionHeading eyebrow="The workspace" title="Test cases with" accent="spreadsheet control.">
               Execute cases, edit preconditions and tag custom fields inline — built on AG Grid
               so large suites stay responsive.
             </SectionHeading>
 
-            <div className="mt-14 grid gap-6 lg:grid-cols-5">
+            <div className="mt-10 sm:mt-14 grid gap-6 lg:grid-cols-5">
               {/* Active case */}
               <div className="reveal relative lg:col-span-2">
                 <div aria-hidden="true" className="absolute inset-x-4 -top-2 hidden h-full rounded-2xl border border-hairline bg-surface/60 sm:block" />
@@ -965,13 +966,13 @@ export default function LandingPage() {
         </section>
 
         {/* ── Teams ────────────────────────────────────────────────────────── */}
-        <section id="collaboration" className="scroll-mt-16 border-t border-hairline bg-surface py-20 sm:py-28">
+        <section id="collaboration" className="scroll-mt-16 border-t border-hairline bg-surface py-16 sm:py-28">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <SectionHeading eyebrow="For teams" title="Built for engineering" accent="organizations.">
               Manage projects under organizations and teams, with role-based access and your own AI keys.
             </SectionHeading>
 
-            <div className="mt-14 grid border-y border-hairline sm:grid-cols-3 sm:divide-x sm:divide-hairline">
+            <div className="mt-10 sm:mt-14 grid border-y border-hairline sm:grid-cols-3 sm:divide-x sm:divide-hairline">
               {TEAM_FEATURES.map(({ icon: Icon, title, body }, i) => (
                 <div
                   key={title}
@@ -988,7 +989,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── FAQ ──────────────────────────────────────────────────────────── */}
-        <section id="faq" className="scroll-mt-16 border-t border-hairline py-20 sm:py-28">
+        <section id="faq" className="scroll-mt-16 border-t border-hairline py-16 sm:py-28">
           <div className="mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-12">
             <div className="lg:col-span-4">
               <SectionHeading eyebrow="FAQ" title="Questions," accent="answered." align="left">
@@ -1006,8 +1007,9 @@ export default function LandingPage() {
         </section>
 
         {/* ── Closing CTA ──────────────────────────────────────────────────── */}
-        <section className="border-t border-hairline bg-surface py-20 sm:py-24">
-          <div className="reveal mx-auto max-w-3xl px-4 text-center sm:px-6">
+        <section className="relative overflow-hidden border-t border-hairline bg-surface py-20 sm:py-28">
+          <div className="aurora aurora-soft rotate-180" aria-hidden="true" />
+          <div className="reveal relative mx-auto max-w-3xl px-4 text-center sm:px-6">
             <h2 className="text-[1.875rem] font-semibold leading-[1.1] tracking-[-0.025em] text-ink sm:text-[2.75rem]">
               Your next release,{" "}
               <span className="text-signal">fully covered.</span>
