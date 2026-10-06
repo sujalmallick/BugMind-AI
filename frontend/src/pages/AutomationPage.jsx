@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Bot, FileCode2, Globe } from 'lucide-react'
+import { Bot, FileCode2, Globe, History } from 'lucide-react'
 import HeaderBar from '../components/layout/HeaderBar'
 import PageHeading from '../components/shared/PageHeading'
 import SegmentedControl from '../components/shared/SegmentedControl'
@@ -10,6 +10,7 @@ import useToasts from '../components/shared/useToasts'
 import EnvironmentsSection from '../components/automation/EnvironmentsSection'
 import ScriptsSection from '../components/automation/ScriptsSection'
 import ScriptEditor from '../components/automation/ScriptEditor'
+import RunsSection from '../components/automation/RunsSection'
 import { apiErrorMessage, listEnvironments, listScripts } from '../services/automationApi'
 import { getProject } from '../services/projectApi'
 
@@ -78,6 +79,7 @@ export default function AutomationPage() {
             options={[
               { value: 'scripts', label: 'Scripts', icon: FileCode2, count: scripts.length },
               { value: 'environments', label: 'Environments', icon: Globe, count: environments.length },
+              { value: 'runs', label: 'Runs', icon: History },
             ]}
           />
         )}
@@ -99,6 +101,8 @@ export default function AutomationPage() {
             onSaved={upsertScript}
             onDeleted={(id) => { setScripts((prev) => prev.filter((s) => s.id !== id)); setOpenScriptId(null) }}
           />
+        ) : section === 'runs' ? (
+          <RunsSection projectId={projectId} environments={environments} showToast={showToast} />
         ) : section === 'environments' ? (
           <EnvironmentsSection
             projectId={projectId}

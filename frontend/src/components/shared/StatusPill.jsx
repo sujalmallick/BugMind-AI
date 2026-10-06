@@ -31,19 +31,33 @@ const STATUS_CONFIG = {
   },
 };
 
+// Some rows (spreadsheet imports, older test plan cases) store the display form
+// ("Passed", "Not Executed"); read both as the canonical key.
+const STATUS_ALIASES = {
+  "not executed": "not-executed",
+  passed: "pass",
+  failed: "fail",
+};
+
+function canonicalStatus(status) {
+  const value = String(status || "not-executed").trim().toLowerCase();
+  return STATUS_ALIASES[value] ?? value;
+}
+
 export default function StatusPill({
   status = "not-executed",
   onChange,
 }) {
+  const key = canonicalStatus(status);
   const config =
-    STATUS_CONFIG[status] ??
+    STATUS_CONFIG[key] ??
     STATUS_CONFIG["not-executed"];
 
   function handleClick() {
     if (!onChange) return;
 
     const currentIndex =
-      STATUS_ORDER.indexOf(status);
+      STATUS_ORDER.indexOf(key);
 
     const nextStatus =
       STATUS_ORDER[

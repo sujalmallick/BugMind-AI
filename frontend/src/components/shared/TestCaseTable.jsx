@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Bot } from 'lucide-react'
 import StatusPill, { PriorityPill } from './StatusPill'
 import AssigneeSelector from '../common/AssigneeSelector'
 import { MessageSquare } from 'lucide-react'
@@ -100,6 +100,14 @@ export default function TestCaseTable({
                     onStatusChange(testCase.id, status)
                   }
                 />
+                {testCase.automation && (
+                  <span
+                    className="mt-1 flex items-center gap-1 text-[11px] text-muted"
+                    title={`Set by automated run #${testCase.automation.runId}`}
+                  >
+                    <Bot size={11} aria-hidden="true" /> Automated · run #{testCase.automation.runId}
+                  </span>
+                )}
               </td>
 
               {project?.organization_id && (

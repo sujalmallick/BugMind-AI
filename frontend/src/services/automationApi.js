@@ -54,3 +54,61 @@ export function apiErrorMessage(error, fallback) {
   if (Array.isArray(detail) && detail[0]?.msg) return detail[0].msg;
   return error?.response?.data?.error || fallback;
 }
+
+// ---------- Export and results (tests run on the user's machine or their own CI) ----------
+
+function filenameFrom(response, fallback) {
+  const header = response.headers?.["content-disposition"] || "";
+  const match = header.match(/filename="([^"]+)"/);
+  return match ? match[1] : fallback;
+}
+
+// Downloads a file the API returns. Error bodies arrive as a Blob too: turn them back into
+// JSON so apiErrorMessage() can show the server's message.
+async function download(url, fallbackName) {
+  let response;
+  try {
+    response = await api.get(url, { responseType: "blob" });
+  } catch (error) {
+    const body = error?.response?.data;
+    if (body instanceof Blob) {
+      try {
+        error.response.data = JSON.parse(await body.text());
+      } catch {
+        // not JSON: keep the generic message
+      }
+    }
+    throw error;
+  }
+  const objectUrl = URL.createObjectURL(response.data);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filenameFrom(response, fallbackName);
+  link.click();
+  // Revoking immediately can cancel the download in Firefox/Safari.
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
+}
+
+export function exportScript(projectId, scriptId) {
+  return download(`${base(projectId)}/scripts/${scriptId}/export`, `bugmind-script-${scriptId}.spec.ts`);
+}
+
+export function exportProject(projectId, envId) {
+  return download(`${base(projectId)}/environments/${envId}/export`, "bugmind-e2e.zip");
+}
+
+export async function listRuns(projectId) {
+  return (await api.get(`${base(projectId)}/runs`)).data;
+}
+
+export async function getRun(projectId, runId) {
+  return (await api.get(`${base(projectId)}/runs/${runId}`)).data;
+}
+
+export async function importResults(projectId, file) {
+  const form = new FormData();
+  form.append("file", file);
+  return (await api.post(`${base(projectId)}/runs/import`, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  })).data;
+}
