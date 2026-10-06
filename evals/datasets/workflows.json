@@ -1,0 +1,85 @@
+{
+  "_comment": "Quality eval cases. Expectations are case-insensitive regexes. modules: each must match a confirmed/assumed module name. risks: each must be mentioned by at least one test case. Keep workflows free of real personal data.",
+  "cases": [
+    {
+      "id": "ecommerce_checkout",
+      "workflow": "Shoppers browse products, add items to a cart and change quantities. At checkout they enter a shipping address, can apply one coupon code per order, and pay by credit card or UPI. If an item goes out of stock while it is in the cart, checkout is blocked with a message. After payment succeeds the order appears in Order History and a confirmation email is sent.",
+      "expect": {
+        "modules": ["cart", "checkout", "payment", "order"],
+        "risks": ["payment|card|upi", "coupon|discount|promo", "out of stock|stock|inventory"],
+        "categories": ["Negative", "Security"],
+        "test_cases": [6, 40]
+      }
+    },
+    {
+      "id": "auth_signup_login",
+      "workflow": "New users sign up with email and password and must verify their email via a link before logging in. Login supports an optional two-factor OTP sent by SMS. After 5 failed login attempts the account is locked for 15 minutes. Users can reset a forgotten password through an emailed reset link that expires after 30 minutes.",
+      "expect": {
+        "modules": ["sign ?up|registration|register", "log ?in|authentication|auth", "password reset|forgot|reset", "two-factor|2fa|otp|mfa"],
+        "risks": ["lock|failed (login )?attempt|brute", "otp|two-factor|2fa", "expir", "verif"],
+        "categories": ["Negative", "Security"],
+        "test_cases": [6, 40]
+      }
+    },
+    {
+      "id": "file_sharing",
+      "workflow": "Users upload PDF and DOCX files up to 25 MB into folders. They can share a file by link with an expiry date and choose viewer or editor permission. Viewers can only download; editors can replace the file. The owner can revoke a share link at any time, after which the link returns an access denied page.",
+      "expect": {
+        "modules": ["upload|file", "shar", "permission|access"],
+        "risks": ["25 ?mb|size|large", "pdf|docx|file type|format|extension", "expir", "revok", "viewer|editor|permission"],
+        "categories": ["Negative", "Security", "Edge Case"],
+        "test_cases": [6, 40]
+      }
+    },
+    {
+      "id": "bank_transfer",
+      "workflow": "Customers add a payee by entering account number and IFSC, confirmed with an OTP. They can transfer money immediately or schedule a transfer for a future date. Each customer has a daily transfer limit. Transfers fail with a clear error when the balance is insufficient. Every transfer appears in transaction history with a reference number.",
+      "expect": {
+        "modules": ["payee|beneficiar", "transfer|payment", "history|transaction"],
+        "risks": ["limit", "otp", "insufficient|balance", "schedul|future"],
+        "categories": ["Negative", "Security", "Edge Case"],
+        "test_cases": [6, 40]
+      }
+    },
+    {
+      "id": "appointment_booking",
+      "workflow": "Patients pick a doctor, view available 30-minute slots in their local time zone, and book one. A slot can only be booked by one patient. Patients may reschedule or cancel up to 24 hours before the appointment. An SMS reminder is sent 2 hours before the appointment.",
+      "expect": {
+        "modules": ["doctor|slot|availability|schedul", "book", "cancel|reschedul", "remind|notif|sms"],
+        "risks": ["same slot|double|already booked|concurren|conflict", "24 ?h|cancel", "time ?zone"],
+        "categories": ["Negative", "Edge Case"],
+        "test_cases": [6, 40]
+      }
+    },
+    {
+      "id": "admin_roles",
+      "workflow": "Organization admins invite users by email and assign a role: admin, editor or viewer. Viewers can read projects but cannot edit them. Editors can edit but cannot manage users. Admins can deactivate a user, which immediately ends that user's sessions. Every role change is recorded in an audit log.",
+      "expect": {
+        "modules": ["invit", "role|permission|access", "user management|users|deactivat", "audit"],
+        "risks": ["viewer", "editor", "deactivat|session", "audit"],
+        "categories": ["Negative", "Security"],
+        "test_cases": [6, 40]
+      }
+    },
+    {
+      "id": "catalog_search",
+      "workflow": "Visitors search the product catalog by keyword, filter by category and price range, and sort by price or rating. Results are paginated 20 per page. When nothing matches, an empty-state message with suggestions is shown.",
+      "expect": {
+        "modules": ["search", "filter", "sort", "pagination|results"],
+        "risks": ["empty|no (matching )?results|nothing matches", "price range|min|max", "page|pagination", "special character|invalid|injection|xss|sql"],
+        "categories": ["Negative", "Edge Case"],
+        "test_cases": [6, 40]
+      }
+    },
+    {
+      "id": "offline_notes_sync",
+      "workflow": "A mobile notes app lets users create and edit notes while offline. When the device reconnects, notes sync to the server. If the same note was edited on two devices, the most recent edit wins and the other version is kept in note history. Notes can have image attachments up to 10 MB.",
+      "expect": {
+        "modules": ["note", "sync", "attach|image", "history|version"],
+        "risks": ["offline|network|reconnect", "conflict|two devices|most recent|concurren", "10 ?mb|size|attachment"],
+        "categories": ["Negative", "Edge Case"],
+        "test_cases": [6, 40]
+      }
+    }
+  ]
+}
