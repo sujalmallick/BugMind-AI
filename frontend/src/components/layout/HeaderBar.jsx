@@ -38,7 +38,7 @@ function IconBtn({ onClick, label, children, className = "" }) {
       className={`
         relative flex h-[34px] w-[34px] items-center justify-center
         rounded-lg text-muted transition-colors duration-150
-        hover:bg-ink/[0.05] hover:text-ink
+        hover:bg-white/70 hover:text-ink
         active:translate-y-px
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/40
         ${className}
@@ -199,13 +199,13 @@ export default function HeaderBar({
 
   return (
     <>
-      <header
-        className={`glass-bar sticky top-0 z-50 border-b border-ink/[0.07] transition-shadow duration-300 ${
-          scrolled ? "shadow-[0_8px_24px_-14px_rgba(9,10,15,0.18)]" : ""
-        }`}
-      >
-
-        <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:h-16 sm:px-6">
+      <header className="sticky top-0 z-50 px-3 pt-3 sm:px-4">
+        {/* Same floating glass bar as the landing page */}
+        <div
+          className={`glass-header mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-3 rounded-2xl pl-3 pr-2 sm:pl-4 ${
+            scrolled ? "is-scrolled" : ""
+          }`}
+        >
 
           {/* ── Left cluster ─────────────────────────────────────────────── */}
           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
@@ -236,8 +236,10 @@ export default function HeaderBar({
                     type="button"
                     onClick={() => navigate(item.to)}
                     aria-current={active ? "page" : undefined}
-                    className={`rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors duration-150 ${
-                      active ? "bg-ink/[0.05] text-ink" : "text-muted hover:bg-ink/[0.04] hover:text-ink"
+                    className={`rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors duration-150 ${
+                      active
+                        ? "bg-white/80 text-ink shadow-[0_1px_2px_rgba(9,10,15,0.06)] ring-1 ring-ink/[0.04]"
+                        : "text-ink/70 hover:bg-white/70 hover:text-ink"
                     }`}
                   >
                     {item.label}
