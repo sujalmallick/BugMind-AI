@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { BookOpen, Download, FileText, Loader2, RotateCw, ShieldAlert, Trash2, Upload } from 'lucide-react'
-import EmptyState from '../shared/EmptyState'
+import { Download, FileText, Loader2, Paperclip, RotateCw, ShieldAlert, Trash2 } from 'lucide-react'
 import Pill from '../shared/Pill'
 import SkeletonBlock from '../shared/SkeletonBlock'
 import ConfirmDialog from '../shared/ConfirmDialog'
@@ -13,8 +12,12 @@ import {
   uploadDocument,
 } from '../../services/documentApi'
 
+// Reference documents (specs, PRDs, notes) attached to the project from the workflow panel.
+// They are project-wide: every analysis of this project can draw on them.
+
 const ACCEPT = '.pdf,.docx,.txt,.md,.markdown'
 const ALLOWED_EXTENSIONS = ['pdf', 'docx', 'txt', 'md', 'markdown']
+const FILE_TYPES = ['PDF', 'DOCX', 'TXT', 'MD']
 const MAX_BYTES = 10 * 1024 * 1024
 const POLL_MS = 3000
 
@@ -40,17 +43,14 @@ function DocumentRow({ doc, busy, onToggleAi, onRetry, onDownload, onDelete }) {
   const pending = doc.status === 'uploaded' || doc.status === 'processing'
 
   return (
-    <li className="flex flex-col gap-2 border-b border-hairline px-4 py-3 last:border-0 sm:flex-row sm:items-center">
-      <div className="flex min-w-0 flex-1 items-start gap-3">
-        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-hairline bg-paper text-muted">
-          <FileText size={15} aria-hidden="true" />
-        </div>
+    <li className="flex flex-col gap-2 border-b border-hairline px-3 py-2.5 last:border-0 sm:flex-row sm:items-center">
+      <div className="flex min-w-0 flex-1 items-start gap-2.5">
+        <FileText size={15} className="mt-0.5 shrink-0 text-muted" aria-hidden="true" />
         <div className="min-w-0">
           <p className="truncate text-[13px] font-medium text-ink" title={doc.filename}>{doc.filename}</p>
           <p className="text-[12px] text-muted">
             {doc.fileType.toUpperCase()} · {formatSize(doc.sizeBytes)}
             {doc.pageCount ? ` · ${doc.pageCount} pages` : ''}
-            {doc.uploadedBy ? ` · ${doc.uploadedBy.name}` : ''}
           </p>
           {doc.status === 'failed' && doc.error && (
             <p className="mt-1 text-[12px] text-flagged">{doc.error}</p>
@@ -64,7 +64,7 @@ function DocumentRow({ doc, busy, onToggleAi, onRetry, onDownload, onDelete }) {
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2 pl-11 sm:pl-0">
+      <div className="flex shrink-0 items-center gap-2 pl-6 sm:pl-0">
         <Pill tone={status.tone}>
           {pending && <Loader2 size={11} className="animate-spin" aria-hidden="true" />}
           {status.label}
@@ -81,7 +81,7 @@ function DocumentRow({ doc, busy, onToggleAi, onRetry, onDownload, onDelete }) {
             disabled={doc.status !== 'ready' || busy}
             onChange={(e) => onToggleAi(doc, e.target.checked)}
           />
-          {doc.availableToAi ? 'Used by AI' : 'Use in AI'}
+          Use in AI
         </label>
 
         {doc.status === 'failed' && (
@@ -102,8 +102,8 @@ function DocumentRow({ doc, busy, onToggleAi, onRetry, onDownload, onDelete }) {
           type="button"
           className="rounded-lg p-1.5 text-muted transition-colors hover:bg-flagged-soft hover:text-flagged"
           onClick={() => onDelete(doc)}
-          aria-label={`Delete ${doc.filename}`}
-          title="Delete"
+          aria-label={`Remove ${doc.filename}`}
+          title="Remove"
           disabled={busy}
         >
           <Trash2 size={15} />
@@ -113,7 +113,7 @@ function DocumentRow({ doc, busy, onToggleAi, onRetry, onDownload, onDelete }) {
   )
 }
 
-export default function KnowledgeTab({ projectId, showToast }) {
+export default function WorkflowDocuments({ projectId, showToast }) {
   const [documents, setDocuments] = useState([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -122,7 +122,7 @@ export default function KnowledgeTab({ projectId, showToast }) {
   const [dragging, setDragging] = useState(false)
   const inputRef = useRef(null)
 
-  // The project this tab currently shows: responses for another project are ignored.
+  // The project this panel currently shows: responses for another project are ignored.
   const projectRef = useRef(projectId)
   useEffect(() => {
     projectRef.current = projectId
@@ -167,13 +167,13 @@ export default function KnowledgeTab({ projectId, showToast }) {
 
   async function handleFiles(fileList) {
     const files = Array.from(fileList || [])
-    if (!files.length) return
+    if (!files.length || uploading) return
     setUploading(true)
     let uploaded = 0
     for (const file of files) {
       const ext = file.name.split('.').pop()?.toLowerCase()
       if (!ALLOWED_EXTENSIONS.includes(ext)) {
-        showToast(`${file.name}: upload PDF, DOCX, TXT or Markdown files.`, 'error')
+        showToast(`${file.name}: attach PDF, DOCX, TXT or Markdown files.`, 'error')
         continue
       }
       if (file.size > MAX_BYTES) {
@@ -190,7 +190,7 @@ export default function KnowledgeTab({ projectId, showToast }) {
     setUploading(false)
     if (inputRef.current) inputRef.current.value = ''
     if (uploaded) {
-      showToast(`${uploaded} document${uploaded > 1 ? 's' : ''} uploaded. Processing has started.`)
+      showToast(`${uploaded} document${uploaded > 1 ? 's' : ''} attached. Processing has started.`)
       refresh()
     }
   }
@@ -208,86 +208,88 @@ export default function KnowledgeTab({ projectId, showToast }) {
     }
   }
 
-  const readyForAi = documents.filter((d) => d.availableToAi).length
-
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-4 px-4 py-2">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-[15px] font-semibold text-ink">Project knowledge</h2>
-          <p className="mt-0.5 max-w-xl text-[13px] leading-relaxed text-muted">
-            Upload specs, PRDs or notes. The AI uses only the relevant parts as extra context;
-            your workflow description stays the main source of truth.
-          </p>
-          <p className="mt-1 max-w-xl text-[12px] leading-relaxed text-muted">
-            Relevant excerpts from documents marked “Use in AI” are sent to your AI provider during analysis.
-            Secrets like API keys and passwords are removed first. Turn a document off to keep it out of AI requests.
-          </p>
-        </div>
-        <button type="button" className="btn-primary" onClick={() => inputRef.current?.click()} disabled={uploading}>
-          {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-          {uploading ? 'Uploading…' : 'Upload documents'}
-        </button>
-        <input
-          ref={inputRef}
-          type="file"
-          accept={ACCEPT}
-          multiple
-          className="hidden"
-          onChange={(e) => handleFiles(e.target.files)}
-        />
-      </div>
+    <div>
+      <p className="mb-1 text-[13px] font-medium text-ink">
+        Reference documents
+        <span className="ml-1 font-normal text-muted">(optional)</span>
+      </p>
+      <p className="mb-3 text-[12px] leading-relaxed text-muted">
+        Specs, PRDs or notes for this project. The AI uses only the relevant parts; your workflow
+        description stays the main source of truth.
+      </p>
 
-      <div
+      <button
+        type="button"
+        // Not `disabled` while uploading: a disabled drop target would let the browser
+        // open a dropped file in place of the page and lose the typed workflow.
+        onClick={() => { if (!uploading) inputRef.current?.click() }}
         onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
-        onDragLeave={() => setDragging(false)}
+        onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDragging(false) }}
         onDrop={(e) => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files) }}
-        className={`rounded-xl transition-colors ${dragging ? 'ring-2 ring-signal/40' : ''}`}
+        aria-disabled={uploading}
+        className={`flex w-full flex-col items-center gap-2 rounded-xl border border-dashed px-4 py-4 text-center transition-colors sm:flex-row sm:justify-between sm:text-left ${
+          dragging ? 'border-signal bg-signal-soft' : 'border-hairline bg-paper/50 hover:border-signal/50'
+        }`}
       >
-        {loading ? (
-          <div className="flex flex-col gap-2">
-            {Array.from({ length: 3 }).map((_, i) => <SkeletonBlock key={i} className="h-14 w-full" />)}
-          </div>
-        ) : documents.length === 0 ? (
-          <EmptyState
-            icon={<BookOpen size={18} />}
-            title="No documents yet"
-            description="Drop PDF, DOCX, TXT or Markdown files here (up to 10 MB each, 20 per project)."
-          />
-        ) : (
-          <div className="overflow-hidden rounded-xl border border-hairline bg-surface shadow-[var(--shadow-card)]">
-            <div className="flex items-center justify-between border-b border-hairline bg-paper/60 px-4 py-2 text-[12px] text-muted">
-              <span>{documents.length} document{documents.length > 1 ? 's' : ''}</span>
-              <span>{readyForAi} available to AI</span>
-            </div>
-            <ul>
-              {documents.map((doc) => (
-                <DocumentRow
-                  key={doc.id}
-                  doc={doc}
-                  busy={busyId === doc.id}
-                  onToggleAi={(d, enabled) => runAction(d, () => setDocumentAiEnabled(projectId, d.id, enabled))}
-                  onRetry={(d) => runAction(d, () => retryDocument(projectId, d.id), 'Processing restarted.')}
-                  onDownload={(d) => downloadDocument(projectId, d).catch((error) =>
-                    showToast(errorMessage(error, 'Download failed.'), 'error'))}
-                  onDelete={(d) => setPendingDelete(d)}
-                />
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
+        <span className="flex items-center gap-2 text-[13px] text-ink">
+          {uploading
+            ? <Loader2 size={15} className="animate-spin text-signal" aria-hidden="true" />
+            : <Paperclip size={15} className="text-signal" aria-hidden="true" />}
+          {uploading ? 'Attaching…' : 'Attach files or drop them here'}
+        </span>
+        <span className="flex flex-wrap items-center justify-center gap-1.5">
+          {FILE_TYPES.map((type) => (
+            <span key={type} className="rounded-md border border-hairline bg-surface px-1.5 py-0.5 text-[11px] font-medium text-muted">
+              {type}
+            </span>
+          ))}
+          <span className="text-[11px] text-muted">· up to 10 MB</span>
+        </span>
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={ACCEPT}
+        multiple
+        className="hidden"
+        onChange={(e) => handleFiles(e.target.files)}
+      />
+
+      {loading ? (
+        <SkeletonBlock className="mt-3 h-12 w-full" />
+      ) : documents.length > 0 && (
+        <ul className="mt-3 overflow-hidden rounded-xl border border-hairline bg-surface">
+          {documents.map((doc) => (
+            <DocumentRow
+              key={doc.id}
+              doc={doc}
+              busy={busyId === doc.id}
+              onToggleAi={(d, enabled) => runAction(d, () => setDocumentAiEnabled(projectId, d.id, enabled))}
+              onRetry={(d) => runAction(d, () => retryDocument(projectId, d.id), 'Processing restarted.')}
+              onDownload={(d) => downloadDocument(projectId, d).catch((error) =>
+                showToast(errorMessage(error, 'Download failed.'), 'error'))}
+              onDelete={(d) => setPendingDelete(d)}
+            />
+          ))}
+        </ul>
+      )}
+
+      <p className="mt-2 text-[11.5px] leading-relaxed text-muted">
+        Relevant excerpts from documents marked “Use in AI” are sent to your AI provider during analysis.
+        Secrets like API keys and passwords are removed first.
+      </p>
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}
-        title="Delete document?"
-        message={pendingDelete ? `"${pendingDelete.filename}" will be removed and no longer used by the AI.` : ''}
-        confirmText="Delete"
+        title="Remove document?"
+        message={pendingDelete ? `"${pendingDelete.filename}" will be deleted from this project and no longer used by the AI.` : ''}
+        confirmText="Remove"
         loading={busyId === pendingDelete?.id}
         onCancel={() => setPendingDelete(null)}
         onConfirm={async () => {
           const doc = pendingDelete
-          await runAction(doc, () => deleteDocument(projectId, doc.id), 'Document deleted.')
+          await runAction(doc, () => deleteDocument(projectId, doc.id), 'Document removed.')
           setPendingDelete(null)
         }}
       />
