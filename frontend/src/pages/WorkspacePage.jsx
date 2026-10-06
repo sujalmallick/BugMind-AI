@@ -18,6 +18,7 @@ import TestCasesTab from "../components/tabs/TestCasesTab";
 import IssueAnalysisTab from "../components/tabs/IssueAnalysisTab";
 import IssuesTrackerTab from "../components/tabs/IssuesTrackerTab";
 import TrackerTab from "../components/tabs/TrackerTab";
+import KnowledgeTab from "../components/tabs/KnowledgeTab";
 import { analyzeWorkflow, classifyIssue, saveAnalysis, getAnalysis } from "../services/analysisApi";
 import { useRef } from "react";
 import ActivityFeed from "../components/shared/ActivityFeed";
@@ -47,6 +48,7 @@ const TABS = [
   { key: 'testcases', label: 'Test Cases' },
   { key: 'bug_tracker', label: 'Issues Tracker' },
   { key: 'issues', label: 'AI Bug Reports' },
+  { key: 'knowledge', label: 'Knowledge' },
 ]
 
 // testCaseRef: display id (e.g. "TC-003") of the test case the issue was raised from, if any.
@@ -728,6 +730,10 @@ function handleCopyIssueResult() {
               onJumpToIssue={handleJumpToIssue}
               showToast={showToast}
             />
+          )}
+
+          {activeTab === "knowledge" && (
+            <KnowledgeTab projectId={projectId} showToast={showToast} />
           )}
 
           {activeTab === "activity" && (
