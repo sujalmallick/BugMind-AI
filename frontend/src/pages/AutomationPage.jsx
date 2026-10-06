@@ -102,7 +102,8 @@ export default function AutomationPage() {
             onDeleted={(id) => { setScripts((prev) => prev.filter((s) => s.id !== id)); setOpenScriptId(null) }}
           />
         ) : section === 'runs' ? (
-          <RunsSection projectId={projectId} environments={environments} showToast={showToast} />
+          <RunsSection projectId={projectId} environments={environments} showToast={showToast}
+                       onOpenScript={(id) => { refreshScripts(); setOpenScriptId(id) }} />
         ) : section === 'environments' ? (
           <EnvironmentsSection
             projectId={projectId}
