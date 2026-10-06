@@ -172,18 +172,18 @@ class LiteLLMProvider:
                     messages=self._build_messages(prompt, system, merge=True),
                     extra_headers=extra_headers,
                 )
-            elif prov == "gemini" and model_name != "gemini/gemini-1.5-flash" and any(k in err_str for k in ["not found", "404", "does not exist", "unsupported"]):
-                logger.warning(f"Model {model_name} failed with '{err}'. Falling back to gemini/gemini-1.5-flash...")
+            elif prov == "gemini" and model_name != "gemini/gemini-2.5-flash" and any(k in err_str for k in ["not found", "404", "does not exist", "unsupported"]):
+                logger.warning(f"Model {model_name} failed with '{err}'. Falling back to gemini/gemini-2.5-flash...")
                 response, used_model = self._complete(
-                    model="gemini/gemini-1.5-flash",
+                    model="gemini/gemini-2.5-flash",
                     api_key=api_key,
                     **json_kwargs,
                     messages=messages,
                 )
-            elif prov == "groq" and model_name != "groq/llama-3.3-70b-versatile" and any(k in err_str for k in ["not found", "404", "does not exist"]):
-                logger.warning(f"Model {model_name} failed with '{err}'. Falling back to groq/llama-3.3-70b-versatile...")
+            elif prov == "groq" and model_name != "groq/openai/gpt-oss-120b" and any(k in err_str for k in ["not found", "404", "does not exist"]):
+                logger.warning(f"Model {model_name} failed with '{err}'. Falling back to groq/openai/gpt-oss-120b...")
                 response, used_model = self._complete(
-                    model="groq/llama-3.3-70b-versatile",
+                    model="groq/openai/gpt-oss-120b",
                     api_key=api_key,
                     **json_kwargs,
                     messages=messages,

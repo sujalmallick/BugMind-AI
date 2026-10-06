@@ -43,7 +43,7 @@ class AISettingsService:
 
         if not settings:
             # LiteLLM requires provider-prefixed model names.
-            return "groq/llama-3.3-70b-versatile"
+            return "groq/openai/gpt-oss-120b"
 
         return settings.model
 

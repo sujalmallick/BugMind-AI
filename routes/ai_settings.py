@@ -55,7 +55,7 @@ def get_ai_settings(
     if not settings:
         return {
             "provider": "groq",
-            "model": "groq/llama-3.3-70b-versatile",
+            "model": "groq/openai/gpt-oss-120b",
             "providers": providers_status,
         }
 
@@ -84,9 +84,6 @@ def update_ai_settings(
 
     allowed_models = {
         "gemini": [
-            "gemini/gemini-1.5-flash",
-            "gemini/gemini-2.0-flash",
-            "gemini/gemini-1.5-pro",
             "gemini/gemini-2.5-flash",
             "gemini/gemini-2.5-pro",
         ],
@@ -101,8 +98,7 @@ def update_ai_settings(
             "deepseek/deepseek-chat",
         ],
         "groq": [
-            "groq/llama-3.3-70b-versatile",
-            "groq/llama-3.1-8b-instant",
+            "groq/openai/gpt-oss-120b",
         ],
         "openrouter": [
             "openrouter/openrouter/free",
@@ -210,14 +206,14 @@ def test_provider_key(
     model = request.model
     if not model:
         default_model_map = {
-            "gemini": "gemini/gemini-1.5-flash",
+            "gemini": "gemini/gemini-2.5-flash",
             "openai": "openai/gpt-4o-mini",
             "anthropic": "anthropic/claude-sonnet-4-20250514",
             "deepseek": "deepseek/deepseek-chat",
-            "groq": "groq/llama-3.3-70b-versatile",
+            "groq": "groq/openai/gpt-oss-120b",
             "openrouter": "openrouter/openrouter/free",
         }
-        model = default_model_map.get(provider, "groq/llama-3.3-70b-versatile")
+        model = default_model_map.get(provider, "groq/openai/gpt-oss-120b")
 
     # Resolve API key (explicit input -> stored user key for this provider -> fallback to developer env key)
     api_key = request.api_key
