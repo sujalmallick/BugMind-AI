@@ -3,7 +3,7 @@ export default function TabBar({ tabs, activeTab, onChange }) {
     <div
       role="tablist"
       aria-label="Workspace sections"
-      className="scroll-thin flex max-w-full gap-0.5 overflow-x-auto rounded-lg bg-paper p-1 ring-1 ring-inset ring-hairline"
+      className="scroll-thin flex max-w-full gap-0.5 overflow-x-auto rounded-lg bg-white/50 p-1 ring-1 ring-inset ring-ink/[0.06] backdrop-blur-md"
     >
       {tabs.map((tab) => {
         const isActive = tab.key === activeTab

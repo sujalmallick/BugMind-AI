@@ -29,7 +29,7 @@ function ChecklistGroup({ group, checkedItems, onToggleItem }) {
   const items = group.items ?? []
 
   return (
-    <div className="rounded-lg border border-hairline bg-surface">
+    <div className="glass-card">
       <button
         type="button"
         onClick={() => setIsOpen((value) => !value)}

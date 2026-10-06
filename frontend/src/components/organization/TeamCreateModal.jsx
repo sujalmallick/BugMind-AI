@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { X, Users, Loader2 } from "lucide-react";
+import useEscapeKey from "../../hooks/useEscapeKey";
 
 export default function TeamCreateModal({ onClose, onCreate, orgProjects = [] }) {
+  useEscapeKey(true, onClose);
   const [name, setName]               = useState("");
   const [description, setDescription] = useState("");
   const [selectedProjects, setSelectedProjects] = useState([]);

@@ -341,7 +341,7 @@ export default function EditableDataGrid({
   return (
     <div className="flex flex-col gap-3 w-full">
       {/* ── Toolbar ── */}
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-hairline bg-surface px-3 py-2.5 sm:px-4">
+      <div className="glass-card flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-ink">{title}</span>
           {rowData.length > 0 && (
@@ -522,8 +522,8 @@ export default function EditableDataGrid({
 
       {/* ── Add Column Modal ── */}
       {showAddColModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 sm:pt-32 bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm bg-white rounded-xl border border-hairline p-5 shadow-2xl flex flex-col gap-4">
+        <div className="modal-backdrop-enter fixed inset-0 z-50 flex items-start justify-center pt-24 sm:pt-32 bg-ink/25 backdrop-blur-[6px] p-4">
+          <div className="glass modal-pop-enter w-full max-w-sm rounded-2xl p-5 flex flex-col gap-4">
             <div>
               <h4 className="text-sm font-bold text-ink">Add Custom Column</h4>
               <p className="text-xs text-muted mt-1">
@@ -561,8 +561,8 @@ export default function EditableDataGrid({
 
       {/* ── Rename Column Modal ── */}
       {showRenameModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 sm:pt-32 bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm bg-white rounded-xl border border-hairline p-5 shadow-2xl flex flex-col gap-4">
+        <div className="modal-backdrop-enter fixed inset-0 z-50 flex items-start justify-center pt-24 sm:pt-32 bg-ink/25 backdrop-blur-[6px] p-4">
+          <div className="glass modal-pop-enter w-full max-w-sm rounded-2xl p-5 flex flex-col gap-4">
             <div>
               <h4 className="text-sm font-bold text-ink">Rename Column</h4>
               <p className="text-xs text-muted mt-1">

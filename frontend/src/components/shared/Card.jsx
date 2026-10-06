@@ -1,6 +1,6 @@
 export default function Card({ icon, title, action, children, className = '' }) {
   return (
-    <div className={`rounded-lg border border-hairline bg-surface p-4 ${className}`}>
+    <div className={`glass-card p-4 ${className}`}>
       {(title || action) && (
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">

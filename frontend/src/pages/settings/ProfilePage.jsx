@@ -109,7 +109,7 @@ export default function ProfilePage() {
 
             {/* Desktop sidebar */}
             <aside className="hidden w-60 shrink-0 lg:sticky lg:top-24 lg:block">
-              <div className="flex items-center gap-3 rounded-xl border border-hairline bg-surface px-3 py-3 shadow-[var(--shadow-card)]">
+              <div className="glass-card flex items-center gap-3 px-3 py-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-signal-soft text-[13px] font-semibold text-signal">
                   {profile?.avatar_url ? (
                     <img src={getAvatarUrl(profile.avatar_url)} alt="" className="h-full w-full object-cover" />

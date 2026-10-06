@@ -50,7 +50,7 @@ export default function OrgSettingsPanel() {
   return (
     <div className="flex flex-col gap-8 max-w-2xl">
       {/* General Settings */}
-      <section className="rounded-xl border border-hairline bg-surface p-5 shadow-[var(--shadow-card)] sm:p-6">
+      <section className="glass-card p-5 sm:p-6">
         <div className="mb-4">
           <h2 className="text-[15px] font-semibold text-ink">General Settings</h2>
           <p className="text-xs text-muted">Update your organization's name and description.</p>
@@ -109,7 +109,7 @@ export default function OrgSettingsPanel() {
       </section>
 
       {/* Danger Zone */}
-      <section className="rounded-xl border border-flagged/25 bg-surface p-5 sm:p-6">
+      <section className="glass-card !border-flagged/25 p-5 sm:p-6">
         <div className="mb-4">
           <h2 className="text-sm font-semibold text-flagged flex items-center gap-2">
             <AlertTriangle size={16} /> Danger Zone

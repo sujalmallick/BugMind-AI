@@ -5,8 +5,10 @@ import { createInvitation, listInvitations, revokeInvitation } from "../../api/i
 import { transferProjectToOrg } from "../../services/projectApi";
 import useOrgStore from "../../store/useOrgStore";
 import useToasts from "../shared/useToasts";
+import useEscapeKey from "../../hooks/useEscapeKey";
 
 export default function ShareProjectModal({ project, onClose }) {
+  useEscapeKey(true, onClose);
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState([]);
   const [teams, setTeams] = useState([]);
@@ -165,8 +167,8 @@ export default function ShareProjectModal({ project, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm modal-backdrop-enter" onClick={onClose} />
-      <div className="relative w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl flex flex-col max-h-[90vh] modal-pop-enter">
+      <div className="absolute inset-0 bg-ink/25 backdrop-blur-[6px] modal-backdrop-enter" onClick={onClose} />
+      <div className="glass modal-pop-enter relative w-full max-w-xl overflow-hidden rounded-2xl flex flex-col max-h-[90vh]">
 
         {/* ── Header ── */}
         <div className="flex items-center justify-between border-b border-hairline px-6 py-4 bg-white shrink-0">

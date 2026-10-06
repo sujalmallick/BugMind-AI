@@ -62,7 +62,7 @@ export default function AppFooter({ variant = "compact" }) {
 
   if (variant === "compact") {
     return (
-      <footer className="mt-auto border-t border-hairline bg-paper/70">
+      <footer className="glass-strip mt-auto border-t border-white/70 shadow-[0_-1px_0_rgba(9,10,15,0.05)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="flex flex-col gap-6 py-7 md:flex-row md:items-start md:justify-between">
             <div className="max-w-xs">

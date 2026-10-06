@@ -217,7 +217,7 @@ export default function OrganizationsPage() {
 
               {/* ── Org overview ─────────────────────────────────────────── */}
               {!activeTeam && (
-                <section className="section-enter relative mb-6 overflow-hidden rounded-2xl border border-hairline bg-surface shadow-[var(--shadow-card)]">
+                <section className="glass-card section-enter mb-6 overflow-hidden !rounded-2xl">
                   <Orbs variant="panel" className="opacity-60" />
                   <div className="relative flex flex-col gap-6 p-5 sm:p-7 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex min-w-0 items-start gap-4">
@@ -259,7 +259,7 @@ export default function OrganizationsPage() {
               {/* ── Team detail ──────────────────────────────────────────── */}
               {activeTeam ? (
                 <div className="section-enter">
-                  <section className="relative mb-6 overflow-hidden rounded-2xl border border-hairline bg-surface shadow-[var(--shadow-card)]">
+                  <section className="glass-card mb-6 overflow-hidden !rounded-2xl">
                     <Orbs variant="panel" className="opacity-50" />
                     <div className="relative flex flex-col gap-6 p-5 sm:p-7 lg:flex-row lg:items-center lg:justify-between">
                       <div className="flex min-w-0 items-start gap-4">

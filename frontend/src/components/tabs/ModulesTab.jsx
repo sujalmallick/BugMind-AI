@@ -20,7 +20,7 @@ function ChipRow({ items, tone, confidence }) {
 
 function ModuleCardSkeleton() {
   return (
-    <div className="rounded-lg border border-hairline bg-surface p-4">
+    <div className="glass-card p-4">
       <SkeletonBlock className="mb-3 h-4 w-32" />
       <div className="flex gap-2">
         <SkeletonBlock className="h-6 w-16" />

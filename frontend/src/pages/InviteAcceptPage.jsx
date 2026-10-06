@@ -213,7 +213,7 @@ export default function InviteAcceptPage() {
                 </div>
 
                 {/* Details card */}
-                <div className="rounded-xl border border-hairline bg-surface p-4 space-y-3">
+                <div className="glass-card p-4 space-y-3">
                   {invite.inviter && (
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted font-medium">Invited by</span>

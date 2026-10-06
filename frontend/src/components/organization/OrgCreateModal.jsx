@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { X, Building2, Loader2 } from "lucide-react";
+import useEscapeKey from "../../hooks/useEscapeKey";
 
 export default function OrgCreateModal({ onClose, onCreate }) {
+  useEscapeKey(true, onClose);
   const [name, setName]               = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading]         = useState(false);

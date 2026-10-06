@@ -51,11 +51,11 @@ function Metric({ label, value, detail, to }) {
     </>
   );
   return to ? (
-    <Link to={to} className="group block bg-surface px-5 py-4 transition-colors hover:bg-paper">
+    <Link to={to} className="group block px-5 py-4 transition-colors hover:bg-white/50">
       {body}
     </Link>
   ) : (
-    <div className="bg-surface px-5 py-4">{body}</div>
+    <div className="px-5 py-4">{body}</div>
   );
 }
 
@@ -169,7 +169,7 @@ export default function DashboardPage() {
         {/* KPI strip */}
         <section
           aria-label="Summary"
-          className="section-enter section-enter-1 mt-7 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-hairline bg-hairline shadow-[var(--shadow-card)] lg:grid-cols-4"
+          className="glass-card section-enter section-enter-1 mt-7 grid grid-cols-2 overflow-hidden lg:grid-cols-4 [&>*]:border-ink/[0.06] [&>*:nth-child(odd)]:border-r [&>*:nth-child(-n+2)]:border-b lg:[&>*:nth-child(2)]:border-r lg:[&>*:nth-child(3)]:border-r lg:[&>*:nth-child(-n+2)]:border-b-0"
         >
           <Metric label="Projects" value={summary.projects} detail={`${totalTestCases} test cases across all projects`} to="/" />
           <Metric
@@ -214,7 +214,7 @@ export default function DashboardPage() {
               {activeWorkTab === "testcases" &&
                 (assigned_test_cases.length > 0 ? (
                   <table className="w-full min-w-[520px] text-[13px]">
-                    <thead className="sticky top-0 bg-surface">
+                    <thead className="sticky top-0 bg-white/80 backdrop-blur-md">
                       <tr className="border-b border-hairline">
                         <Th className="w-28">ID</Th>
                         <Th>Test case</Th>
@@ -224,7 +224,7 @@ export default function DashboardPage() {
                     </thead>
                     <tbody className="divide-y divide-hairline">
                       {assigned_test_cases.map((tc) => (
-                        <tr key={tc.id} className="group transition-colors hover:bg-ink/[0.02]">
+                        <tr key={tc.id} className="group transition-colors hover:bg-white/50">
                           <td className="px-5 py-3 font-mono text-[12px] text-muted">{tc.test_case_id}</td>
                           <td className="max-w-0 px-5 py-3">
                             <Link to={`/project/${tc.project.id}/workspace`} className="block truncate font-medium text-ink group-hover:text-signal">
@@ -249,7 +249,7 @@ export default function DashboardPage() {
               {activeWorkTab === "bugs" &&
                 (assigned_issues.length > 0 ? (
                   <table className="w-full min-w-[520px] text-[13px]">
-                    <thead className="sticky top-0 bg-surface">
+                    <thead className="sticky top-0 bg-white/80 backdrop-blur-md">
                       <tr className="border-b border-hairline">
                         <Th className="w-28">ID</Th>
                         <Th>Bug</Th>
@@ -259,7 +259,7 @@ export default function DashboardPage() {
                     </thead>
                     <tbody className="divide-y divide-hairline">
                       {assigned_issues.map((bug) => (
-                        <tr key={bug.id} className="group transition-colors hover:bg-ink/[0.02]">
+                        <tr key={bug.id} className="group transition-colors hover:bg-white/50">
                           <td className="px-5 py-3 font-mono text-[12px] text-muted">{bug.bug_id}</td>
                           <td className="max-w-0 px-5 py-3">
                             <Link to={`/project/${bug.project.id}/workspace?issue=${bug.id}`} className="block truncate font-medium text-ink group-hover:text-signal">
@@ -428,7 +428,7 @@ export default function DashboardPage() {
                 </thead>
                 <tbody className="divide-y divide-hairline">
                   {recentProjects.map((p) => (
-                    <tr key={p.id} className="group transition-colors hover:bg-ink/[0.02]">
+                    <tr key={p.id} className="group transition-colors hover:bg-white/50">
                       <td className="max-w-0 px-5 py-3">
                         <Link to={`/project/${p.id}/workspace`} className="flex items-center gap-3">
                           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-hairline bg-paper text-muted group-hover:text-signal">

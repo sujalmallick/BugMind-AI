@@ -108,7 +108,7 @@ export default function OrgInvitePanel({ orgId }) {
     <div className="org-invite-panel"><div className="space-y-6">
       <div className="grid gap-6 md:grid-cols-2">
         {/* Email Invite */}
-        <div className="rounded-xl border border-hairline bg-surface p-5">
+        <div className="rounded-xl border border-white/70 bg-white/45 p-5 ring-1 ring-ink/[0.05]">
           <h3 className="mb-1 text-[14px] font-semibold text-ink">Invite via Email</h3>
           <p className="text-xs text-muted mb-4">Send a direct email invitation to join this organization.</p>
           <form onSubmit={handleSendEmailInvite} className="space-y-3">
@@ -148,7 +148,7 @@ export default function OrgInvitePanel({ orgId }) {
         </div>
 
         {/* Share Link */}
-        <div className="rounded-xl border border-hairline bg-surface p-5">
+        <div className="rounded-xl border border-white/70 bg-white/45 p-5 ring-1 ring-ink/[0.05]">
           <h3 className="mb-1 text-[14px] font-semibold text-ink">Invite via Link</h3>
           <p className="text-xs text-muted mb-4">Generate a shareable link. Anyone with this link can join.</p>
           <div className="space-y-3">
@@ -182,7 +182,7 @@ export default function OrgInvitePanel({ orgId }) {
       {invites.length > 0 && (
         <div className="mt-8">
           <h3 className="text-sm font-semibold text-ink mb-3">Pending Invitations ({invites.length})</h3>
-          <div className="divide-y divide-hairline rounded-xl border border-hairline bg-surface">
+          <div className="divide-y divide-hairline rounded-xl border border-white/70 bg-white/45 ring-1 ring-ink/[0.05]">
             {invites.map((inv) => (
               <div key={inv.token} className="flex items-center justify-between p-3">
                 <div className="flex items-center gap-3 min-w-0">

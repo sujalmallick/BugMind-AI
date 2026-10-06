@@ -55,11 +55,14 @@
   html,
   body,
   #root {
-    /* Pure white canvas; --color-paper is kept for subtle fills only */
-    background-color: var(--color-surface);
     color: var(--color-ink);
     width: 100%;
     min-height: 100%;
+  }
+  /* Pure white canvas painted by <html> only. body/#root stay transparent so
+     page-level backdrop layers (the fixed orbs at z-index -1) show through. */
+  html {
+    background-color: var(--color-surface);
   }
 
   body {
@@ -131,42 +134,38 @@
   }
 
   /* Page backgrounds — previously radial "atmosphere" gradients, now flat paper */
+  /* No isolation/background here on purpose: the fixed orbs (z-index -1)
+     sit on the white body, and dialogs inside the page can still stack
+     above the sticky header. */
   .projects-atmosphere,
   .workspace-atmosphere {
     position: relative;
-    isolation: isolate;
     overflow-x: clip;
-    background-color: var(--color-surface);
   }
 
-  /* App pages: two faint, static orbs at the top corners so white never
-     feels flat (kept still and light — these sit behind working UI) */
+  /* App pages: soft orbs fixed to the viewport (static, behind everything)
+     so the frosted cards always have a little colour to refract. */
   .projects-atmosphere::before,
   .workspace-atmosphere::before,
   .projects-atmosphere::after,
   .workspace-atmosphere::after {
     content: "";
-    position: absolute;
+    position: fixed;
+    inset: 0;
     z-index: -1;
-    border-radius: 9999px;
     pointer-events: none;
-    filter: blur(40px);
   }
   .projects-atmosphere::before,
   .workspace-atmosphere::before {
-    top: -140px;
-    left: -120px;
-    width: 380px;
-    height: 380px;
-    background: radial-gradient(circle, rgba(37, 99, 235, 0.16), transparent 68%);
+    background:
+      radial-gradient(28rem 28rem at 8% 6%, rgba(37, 99, 235, 0.16), transparent 70%),
+      radial-gradient(24rem 24rem at 92% 38%, rgba(56, 189, 248, 0.14), transparent 70%);
   }
   .projects-atmosphere::after,
   .workspace-atmosphere::after {
-    top: -100px;
-    right: -100px;
-    width: 320px;
-    height: 320px;
-    background: radial-gradient(circle, rgba(5, 150, 105, 0.12), transparent 68%);
+    background:
+      radial-gradient(26rem 26rem at 78% 96%, rgba(5, 150, 105, 0.12), transparent 70%),
+      radial-gradient(16rem 16rem at 22% 78%, rgba(217, 119, 6, 0.08), transparent 70%);
   }
 
   /* Kept as a no-op hook so existing markup keeps working */
@@ -463,30 +462,70 @@
     .glass-header.is-scrolled { background: rgba(255, 255, 255, 0.97); }
   }
 
-  /* Card */
-  .base-card {
-    border: 1px solid var(--color-hairline);
+  /* Card-level glass. The frost lives on ::before, never on the card
+     itself: a backdrop-filter on the card would make it the containing block
+     for position:fixed children and trap dialogs/toasts rendered inside. */
+  .glass-card,
+  .base-card,
+  .signal-card,
+  .dashboard-stat-card {
+    position: relative;
+    isolation: isolate;
+    border: 1px solid rgba(255, 255, 255, 0.75);
     border-radius: 0.75rem;
-    background-color: var(--color-surface);
-    box-shadow: var(--shadow-card);
+    background: transparent;
+    box-shadow:
+      0 0 0 1px rgba(9, 10, 15, 0.055),
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      0 10px 28px -16px rgba(9, 10, 15, 0.14);
     transition: box-shadow 200ms ease, border-color 200ms ease, transform 200ms var(--ease-out-expo);
+  }
+  .glass-card::before,
+  .base-card::before,
+  .signal-card::before,
+  .dashboard-stat-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.74) 0%, rgba(255, 255, 255, 0.56) 100%);
+    -webkit-backdrop-filter: blur(18px) saturate(170%);
+    backdrop-filter: blur(18px) saturate(170%);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-card::before,
+    .base-card::before,
+    .signal-card::before,
+    .dashboard-stat-card::before { background: rgba(255, 255, 255, 0.96); }
+  }
+
+  /* Full-width frosted strip (in-app footer) */
+  .glass-strip {
+    position: relative;
+    isolation: isolate;
+  }
+  .glass-strip::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.72) 100%);
+    -webkit-backdrop-filter: blur(20px) saturate(170%);
+    backdrop-filter: blur(20px) saturate(170%);
   }
 
   /* Interactive card hover — border + soft lift, no glow */
   .card-glow-hover:hover {
-    border-color: var(--color-hairline-strong);
-    box-shadow: var(--shadow-raised);
+    box-shadow:
+      0 0 0 1px rgba(9, 10, 15, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      0 16px 36px -16px rgba(9, 10, 15, 0.2);
     transform: translateY(-1px);
   }
 
-  /* General content card used across dashboards — neutral, not tinted */
-  .signal-card {
-    border: 1px solid var(--color-hairline);
-    border-radius: 0.75rem;
-    background: var(--color-surface);
-    box-shadow: var(--shadow-card);
-    transition: border-color 200ms ease;
-  }
 
   /* Buttons */
   .btn-primary {
@@ -556,7 +595,7 @@
     min-height: 2.5rem;
     border: 1px solid var(--color-hairline);
     border-radius: 0.5rem;
-    background: var(--color-surface);
+    background: rgba(255, 255, 255, 0.82);
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
     line-height: 1.5;
@@ -619,15 +658,10 @@
      DASHBOARD STAT CARDS — flat surface, tone shown by a small accent bar
   ═══════════════════════════════════════════════════════════════════════════ */
   .dashboard-stat-card {
-    position: relative;
-    border: 1px solid var(--color-hairline);
-    border-radius: 0.75rem;
-    background: var(--color-surface);
     padding: 1rem 1.125rem;
-    box-shadow: var(--shadow-card);
     overflow: hidden;
   }
-  .dashboard-stat-card::before {
+  .dashboard-stat-card::after {
     content: "";
     position: absolute;
     left: 0;

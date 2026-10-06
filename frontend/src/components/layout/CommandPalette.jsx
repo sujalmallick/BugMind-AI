@@ -45,11 +45,11 @@ export default function CommandPalette({ open, onClose, commands }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-ink/30 pt-[12vh]"
+      className="modal-backdrop-enter fixed inset-0 z-50 flex items-start justify-center bg-ink/25 backdrop-blur-[6px] px-4 pt-[12vh]"
       onClick={closePalette}
     >
       <div
-        className="w-full max-w-md overflow-hidden rounded-lg border border-hairline bg-surface"
+        className="glass modal-pop-enter w-full max-w-md overflow-hidden rounded-xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center gap-2 border-b border-hairline px-3.5 py-2.5">
