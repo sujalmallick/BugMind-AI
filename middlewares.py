@@ -6,6 +6,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 from guardrails import set_request_id
+from services.llm_usage import finish_request_collection, start_request_collection
 
 logger = logging.getLogger("BugMind")
 
@@ -28,7 +29,16 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         
         logger.info(f"[{request_id}] {request.method} {request.url.path} headers={safe_headers}")
         
-        response = await call_next(request)
+        # Collect this request's LLM calls into one usage summary line.
+        usage_token = start_request_collection()
+        status_code = None
+        try:
+            response = await call_next(request)
+            status_code = response.status_code
+        finally:
+            finish_request_collection(
+                usage_token, method=request.method, path=request.url.path, status_code=status_code
+            )
         response.headers["X-Request-ID"] = request_id
         return response
 

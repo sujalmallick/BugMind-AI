@@ -29,4 +29,5 @@ def build_llm_manager(db, user_id) -> LLMManager:
         provider=provider,
         model=model,
         api_key=api_key,  # None → LiteLLMProvider falls back to .env key
+        user_id=user_id,
     )

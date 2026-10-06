@@ -16,7 +16,8 @@ logging.basicConfig(
 logger = logging.getLogger("BugMind")
 
 import guardrails
-from guardrails import GuardrailViolation, output_guardrail
+from guardrails import GuardrailViolation
+from services.llm_errors import classify_llm_error
 
 # Redact secrets/PII from every log record and LangSmith/LiteLLM trace.
 guardrails.bootstrap()
@@ -37,82 +38,66 @@ default_llm_manager = LLMManager(
 _call_count = 0
 
 
+# Backoff (seconds) before each retry of a retryable failure (rate limits).
+RETRY_BACKOFF_SECONDS = (1, 2, 4)
+
+
 def call_llm(
     prompt: str,
     user_id: int | None = None,
-    _retry_count: int = 0,
     agent: str | None = None,
     json_mode: bool = False,
 ):
     """
     Sends a single request to the configured LLM provider.
 
+    Returns the response text, None for an empty response, or a
+    {"success": False, "error", "code"} dict the agents and graph route on.
+
     json_mode asks the provider for a JSON object response where supported;
     the caller must still validate the result (it is a hint, not a guarantee).
     """
     global _call_count
-    _call_count += 1
 
-    logger.info(f"LLM request #{_call_count} | user_id={user_id}")
+    for attempt in range(len(RETRY_BACKOFF_SECONDS) + 1):
+        _call_count += 1
+        logger.info(f"LLM request #{_call_count} | user_id={user_id} | agent={agent} | attempt={attempt + 1}")
 
-    try:
-        if user_id:
-            db = SessionLocal()
-            try:
-                manager = build_llm_manager(db, user_id)
-            finally:
-                db.close()
-        else:
-            manager = default_llm_manager
+        try:
+            if user_id:
+                db = SessionLocal()
+                try:
+                    manager = build_llm_manager(db, user_id)
+                finally:
+                    db.close()
+            else:
+                manager = default_llm_manager
 
-        response = manager.generate(prompt, agent=agent, json_mode=json_mode)
+            response = manager.generate(prompt, agent=agent, json_mode=json_mode)
 
-        if not response:
-            return None
+            if not response:
+                return None
 
-        return response
+            return response
 
-    except GuardrailViolation as e:
-        logger.warning(f"LLM response blocked by guardrail '{e.guardrail}' | agent={agent}")
-        return {"success": False, "error": e.user_message, "guardrail": e.guardrail}
+        except GuardrailViolation as e:
+            logger.warning(f"LLM response blocked by guardrail '{e.guardrail}' | agent={agent}")
+            return {"success": False, "error": e.user_message, "guardrail": e.guardrail}
 
-    except Exception as e:
-        error_str = str(e).lower()
+        except Exception as e:
+            err = classify_llm_error(e)
 
-        # Handle rate limit / quota errors
-        if any(kw in error_str for kw in ["rate limit", "quota", "429", "resource exhausted", "too many requests"]):
-            if _retry_count < 3:
-                backoff = [1, 2, 4][_retry_count]
-                logger.warning(
-                    f"Rate/quota limit hit. Waiting {backoff}s before retry {_retry_count + 1}..."
-                )
+            if err.retryable and attempt < len(RETRY_BACKOFF_SECONDS):
+                backoff = RETRY_BACKOFF_SECONDS[attempt]
+                logger.warning(f"LLM {err.code} | agent={agent}. Waiting {backoff}s before retry {attempt + 1}...")
                 time.sleep(backoff)
-                return call_llm(
-                    prompt,
-                    user_id=user_id,
-                    _retry_count=_retry_count + 1,
-                    agent=agent,
-                    json_mode=json_mode,
-                )
-            logger.error("Quota exceeded (after backoff retries).")
-            return {"success": False, "error": "AI Quota exceeded. Please try again later."}
+                continue
 
-        # Authentication errors
-        if any(kw in error_str for kw in ["401", "403", "unauthorized", "forbidden", "api key", "invalid key"]):
-            logger.error("Invalid or missing API Key.")
-            return {"success": False, "error": "Invalid or missing API Key."}
-
-        # Model / Provider errors
-        if any(kw in error_str for kw in ["not found", "model", "404", "does not exist"]):
-            logger.error("Model not found or unavailable.")
-            return {"success": False, "error": "The selected AI model is unavailable or incorrect."}
-
-        if any(kw in error_str for kw in ["502", "503", "504", "timeout", "connection", "offline"]):
-            logger.error("AI Provider offline or timed out.")
-            return {"success": False, "error": "AI Provider is currently offline or timed out. Please try again."}
-
-        logger.error(f"LLM call failed with unhandled exception: {e}", exc_info=True)
-        return {"success": False, "error": f"AI service error: {output_guardrail.sanitize_error(e)}"}
+            if err.code == "unknown":
+                logger.error(f"LLM call failed with unhandled exception: {err.user_message}", exc_info=True)
+            else:
+                logger.error(f"LLM call failed: {err.code} | agent={agent}")
+            return err.to_response()
 
 
 def parse_json_response(response, prompt=None, user_id=None, agent=None, json_mode=False):
