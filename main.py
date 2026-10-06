@@ -42,6 +42,7 @@ from routes.ai_settings import (
 )
 from routes.ai_workload import router as ai_workload_router
 from guardrails import Source, input_guardrail, masker, output_guardrail
+from services.guardrail_llm import guardrail_llm
 
 # API docs are a full endpoint map; only serve them outside production.
 _is_development = os.getenv("ENVIRONMENT", "production").lower() in ("development", "dev", "local")
@@ -196,6 +197,15 @@ def analyze_workflow(
     if steps_block:
         return steps_block.error_response()
 
+    # Model-based second opinion (paraphrased / non-English injections). Runs on
+    # the masked text; fails open, since the rule checks above already ran.
+    classifier_check = input_guardrail.classify(
+        {"workflow": workflow_check.sanitized_text, "observed_steps": "\n".join(observed_steps or [])},
+        guardrail_llm(current_user.id),
+    )
+    if classifier_check.blocked:
+        return classifier_check.error_response()
+
     # Not sent to the LLM today, but they enter graph state (and traces).
     existing_checklist, _ = masker.mask_obj(data.existing_checklist)
     existing_test_cases, _ = masker.mask_obj(data.existing_test_cases)
@@ -292,6 +302,12 @@ def analyze_issue(
         if check.blocked:
             return check.error_response()
         sanitized[field] = check.sanitized_text
+
+    classifier_check = input_guardrail.classify(
+        {k: v for k, v in sanitized.items() if v}, guardrail_llm(current_user.id),
+    )
+    if classifier_check.blocked:
+        return classifier_check.error_response()
 
     # Project context (read-only, viewer role): the failing test case and possible duplicates.
     test_case = None
