@@ -7,7 +7,7 @@
     ".json": "application/json"
   },
   "globalHeaders": {
-    "Content-Security-Policy": "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://bugmind-backend-sea-h2epaudqf5gmcmhv.koreacentral-01.azurewebsites.net; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'",
     "X-Frame-Options": "DENY",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
