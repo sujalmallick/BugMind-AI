@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
-from jose import JWTError, jwt, ExpiredSignatureError
+import jwt
+from jwt import ExpiredSignatureError, InvalidTokenError
 
 from auth.config import (
     SECRET_KEY,
@@ -34,7 +35,7 @@ def create_access_token(data: dict) -> str:
 
 
 def verify_access_token(token: str):
-    """Decode a session token. Raises ExpiredSignatureError / JWTError."""
+    """Decode a session token. Raises ExpiredSignatureError / InvalidTokenError."""
     payload = jwt.decode(
         token,
         SECRET_KEY,
@@ -45,7 +46,7 @@ def verify_access_token(token: str):
     # must never work as a session. Access tokens always carry iat, which the
     # revocation check in auth.dependencies relies on.
     if payload.get("purpose") is not None or payload.get("iat") is None:
-        raise JWTError("Not an access token")
+        raise InvalidTokenError("Not an access token")
 
     return payload
 
@@ -73,8 +74,8 @@ def create_stream_ticket(user_id: int) -> str:
 
 
 def verify_purpose_token(token: str, purpose: str):
-    """Decode a purpose-scoped token. Raises ExpiredSignatureError / JWTError."""
+    """Decode a purpose-scoped token. Raises ExpiredSignatureError / InvalidTokenError."""
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     if payload.get("purpose") != purpose or payload.get("iat") is None:
-        raise JWTError(f"Not a {purpose} token")
+        raise InvalidTokenError(f"Not a {purpose} token")
     return payload

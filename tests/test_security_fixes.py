@@ -387,3 +387,33 @@ def test_valid_stream_ticket_resolves_to_its_user(world):
 
     ticket = create_stream_ticket(world["vic"].id)
     assert user_from_token(ticket, world["db"], purpose="sse").id == world["vic"].id
+
+
+# ── JWT library migration (python-jose → PyJWT) ──────────────────────────────
+
+# Minted with python-jose 3.5.0 before the migration (HS256, the test
+# SECRET_KEY, exp in 2099): sessions issued before the deploy must keep working.
+LEGACY_JOSE_TOKEN = (
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJ2aWNAY29ycC5pbyIsImlhdCI6MTc2NzIyNTYwMCwiZXhwIjo0MDcwOTA4ODAwfQ"
+    ".FEStKxmUuQ41ckfBbgJK9DGsLlkOCwSagUkNDi0xsyk"
+)
+
+
+def test_tokens_issued_by_python_jose_are_still_accepted(api, world):
+    res = api.get("/api/me", headers={"Authorization": f"Bearer {LEGACY_JOSE_TOKEN}"})
+    assert res.status_code == 200 and res.json()["email"] == "vic@corp.io"
+
+
+def test_unsigned_and_wrongly_signed_tokens_are_rejected(api, world):
+    import base64
+    import json as _json
+
+    import jwt as pyjwt
+
+    def b64(obj):
+        return base64.urlsafe_b64encode(_json.dumps(obj).encode()).rstrip(b"=").decode()
+
+    unsigned = f"{b64({'alg': 'none', 'typ': 'JWT'})}.{b64({'sub': '1', 'iat': 1767225600, 'exp': 4070908800})}."
+    forged = pyjwt.encode({"sub": "1", "iat": 1767225600, "exp": 4070908800}, "x" * 40, algorithm="HS256")
+    for token in (unsigned, forged):
+        assert api.get("/api/me", headers={"Authorization": f"Bearer {token}"}).status_code == 401
