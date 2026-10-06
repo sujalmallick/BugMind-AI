@@ -4,7 +4,7 @@ import React from "react";
 // optional hint line. `colorClass`/`bgClass` tint the icon chip only.
 export default function StatCard({ title, value, icon: Icon, colorClass = "text-signal", bgClass = "bg-signal-soft", hint }) {
   return (
-    <div className="group relative overflow-hidden rounded-xl border border-hairline bg-surface p-4 shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-px hover:border-hairline-strong hover:shadow-[var(--shadow-raised)] sm:p-5">
+    <div className="glass-card card-glow-hover group overflow-hidden p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <p className="text-[13px] font-medium text-muted">{title}</p>
         {Icon && (

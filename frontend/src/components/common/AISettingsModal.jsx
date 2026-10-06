@@ -274,12 +274,12 @@ export default function AISettingsModal({ open, onClose, onKeySaved, onKeyDelete
   return (
     /* Backdrop */
     <div
-      className="fixed inset-0 z-[999] flex items-center justify-center bg-ink/30 p-4 backdrop-blur-sm"
+      className="modal-backdrop-enter fixed inset-0 z-[999] flex items-center justify-center bg-ink/25 backdrop-blur-[6px] p-4"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       {/* Panel */}
       <div
-        className="relative w-full max-w-lg rounded-2xl border border-hairline bg-surface shadow-2xl"
+        className="glass modal-pop-enter relative w-full max-w-lg rounded-2xl"
         style={{ animation: "aiModalEnter 0.22s cubic-bezier(0.16,1,0.3,1) both" }}
       >
         {/* Header */}

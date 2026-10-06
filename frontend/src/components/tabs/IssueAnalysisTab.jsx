@@ -88,7 +88,7 @@ export default function IssueAnalysisTab({ form, onFormChange, onGenerate, isGen
         </button>
       </div>
 
-      <div className="rounded-lg border border-hairline bg-surface p-4">
+      <div className="glass-card p-4">
         <div className="mb-1 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-ink">Classification</h3>
           {result && (

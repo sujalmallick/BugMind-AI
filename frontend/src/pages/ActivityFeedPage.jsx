@@ -15,7 +15,7 @@ export default function ActivityFeedPage() {
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface">
+    <div className="projects-atmosphere flex min-h-screen flex-col">
       <HeaderBar />
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 pb-16 pt-8 sm:px-6 sm:pt-10">
         {projectId && (

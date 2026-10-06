@@ -29,7 +29,7 @@ export default function MyWorkPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col bg-surface">
+      <div className="projects-atmosphere flex min-h-screen flex-col">
         <ProjectsHeader />
         <main className="flex-1 flex items-center justify-center">
           <Loader2 className="animate-spin text-signal" size={28} />
@@ -42,7 +42,7 @@ export default function MyWorkPage() {
   const { test_cases, issues } = data;
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface font-sans">
+    <div className="projects-atmosphere flex min-h-screen flex-col font-sans">
       <ProjectsHeader />
       
       <main className="flex-1">

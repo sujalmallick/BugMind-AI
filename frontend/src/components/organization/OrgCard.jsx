@@ -15,8 +15,7 @@ export default function OrgCard({ org, onClick }) {
     <button
       id={`org-card-${org.id}`}
       onClick={onClick}
-      className="group flex w-full flex-col rounded-xl border border-hairline bg-surface p-5 text-left shadow-[var(--shadow-card)]
-                 transition-all duration-200 hover:-translate-y-px hover:border-hairline-strong hover:shadow-[var(--shadow-raised)]"
+      className="glass-card card-glow-hover group flex w-full flex-col p-5 text-left"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">

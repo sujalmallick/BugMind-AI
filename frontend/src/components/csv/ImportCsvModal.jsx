@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { bulkImportTestCases, bulkImportIssues } from "../../api/csvApi";
 import { createProject as createProjectApi, getProjects as getProjectsApi } from "../../services/projectApi";
+import useEscapeKey from "../../hooks/useEscapeKey";
 
 // ── Field definitions ─────────────────────────────────────────────────────────
 const TEST_CASE_FIELDS = [
@@ -338,6 +339,8 @@ export default function ImportCsvModal({
     }
   }
 
+  useEscapeKey(open, onClose);
+
   if (!open) return null;
 
   const displaySteps = existingProjectId
@@ -346,8 +349,8 @@ export default function ImportCsvModal({
   const stepIndex = displaySteps.indexOf(step);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl border border-hairline bg-white shadow-2xl flex flex-col">
+    <div className="modal-backdrop-enter fixed inset-0 z-50 flex items-center justify-center bg-ink/25 backdrop-blur-[6px] p-4">
+      <div className="glass modal-pop-enter relative w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl flex flex-col">
 
         {/* Header */}
         <div className="flex items-center justify-between border-b border-hairline px-6 py-4 shrink-0">

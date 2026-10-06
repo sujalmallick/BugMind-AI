@@ -39,14 +39,14 @@ export default function ConfirmDialog({
 
   return (
     <div
-      className="modal-backdrop-enter fixed inset-0 z-[200] flex items-center justify-center bg-ink/30 p-4"
+      className="modal-backdrop-enter fixed inset-0 z-[200] flex items-center justify-center bg-ink/25 backdrop-blur-[6px] p-4"
       onClick={(e) => { if (e.target === e.currentTarget && !loading) onCancel(); }}
     >
       <div
         role="alertdialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="glass glass-menu modal-pop-enter w-full max-w-sm overflow-hidden rounded-2xl"
+        className="glass modal-pop-enter w-full max-w-sm overflow-hidden rounded-2xl"
       >
         <div className="p-5 sm:p-6">
           <div className="flex items-start gap-3.5">

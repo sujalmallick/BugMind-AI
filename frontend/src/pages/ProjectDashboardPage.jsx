@@ -95,8 +95,8 @@ export default function ProjectDashboardPage() {
     <div className="space-y-8 pb-12 animate-fade-in">
       {/* Error Modal */}
       {errorModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl border border-hairline w-full max-w-md mx-4 p-6">
+        <div className="modal-backdrop-enter fixed inset-0 z-50 flex items-center justify-center bg-ink/25 backdrop-blur-[6px]">
+          <div className="glass modal-pop-enter rounded-2xl w-full max-w-md mx-4 p-6">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-flagged-soft flex items-center justify-center">
                 <AlertCircle size={20} className="text-flagged" />

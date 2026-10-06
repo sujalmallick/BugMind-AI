@@ -42,7 +42,7 @@ function PageLoader() {
 function StandaloneProjectDashboard() {
   const { projectId } = useParams();
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="projects-atmosphere min-h-screen">
       <HeaderBar />
       <main className="mx-auto w-full max-w-7xl px-4 pb-16 pt-8 sm:px-6 sm:pt-10">
         <Link

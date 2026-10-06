@@ -5,7 +5,7 @@ export default function SegmentedControl({ options, value, onChange, label, size
     <div
       role="tablist"
       aria-label={label}
-      className="no-scrollbar inline-flex max-w-full gap-0.5 overflow-x-auto rounded-lg bg-paper p-0.5 ring-1 ring-inset ring-hairline"
+      className="no-scrollbar inline-flex max-w-full gap-0.5 overflow-x-auto rounded-lg bg-white/50 p-0.5 ring-1 ring-inset ring-ink/[0.06] backdrop-blur-md"
     >
       {options.map((option) => {
         const isActive = option.value === value

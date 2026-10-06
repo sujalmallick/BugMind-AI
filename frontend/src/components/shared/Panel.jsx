@@ -2,7 +2,7 @@
 // card with an optional description and a right-aligned action slot.
 export default function Panel({ title, description, action, children, className = "", bodyClassName = "p-5" }) {
   return (
-    <section className={`flex flex-col rounded-xl border border-hairline bg-surface shadow-[var(--shadow-card)] ${className}`}>
+    <section className={`glass-card flex flex-col ${className}`}>
       {(title || action) && (
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline px-5 py-3.5">
           <div className="min-w-0">

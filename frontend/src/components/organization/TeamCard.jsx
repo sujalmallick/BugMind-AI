@@ -14,8 +14,7 @@ export default function TeamCard({ team, onClick }) {
     <button
       id={`team-card-${team.id}`}
       onClick={onClick}
-      className="group flex w-full items-start gap-3 rounded-xl border border-hairline bg-surface p-4 text-left shadow-[var(--shadow-card)]
-                 transition-all duration-200 hover:-translate-y-px hover:border-hairline-strong hover:shadow-[var(--shadow-raised)]"
+      className="glass-card card-glow-hover group flex w-full items-start gap-3 p-4 text-left"
     >
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-verified-soft text-verified">
         <Users size={16} aria-hidden="true" />

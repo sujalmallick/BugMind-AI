@@ -58,7 +58,7 @@ export default function ActivityFeed({ fetchFn }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-hairline bg-surface p-2 shadow-[var(--shadow-card)]">
+      <div className="glass-card p-2">
         {activities.map((activity) => (
           <ActivityItem key={activity.id} activity={activity} />
         ))}

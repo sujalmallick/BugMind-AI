@@ -52,7 +52,7 @@ onTestEnvironmentChange,
 
   return (
     <div className={`px-2 sm:px-5 ${hasResult ? "py-4 sm:py-6" : "py-5 sm:py-8"}`}>
-      <div className="mx-auto max-w-4xl rounded-xl border border-hairline bg-surface p-4 shadow-[var(--shadow-card)] sm:p-6 md:p-8">
+      <div className="glass-card mx-auto max-w-4xl p-4 sm:p-6 md:p-8">
         {!hasResult && (
           <div className="mb-8 border-b border-hairline pb-6">
             <p className="eyebrow">New analysis</p>

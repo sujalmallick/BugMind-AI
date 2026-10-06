@@ -271,7 +271,7 @@ export default function TrackerTab({
         />
       </div>
 
-      <div className="mt-4 sm:mt-5 rounded-xl border border-hairline bg-surface p-3.5 sm:p-5">
+      <div className="glass-card mt-4 sm:mt-5 p-3.5 sm:p-5">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-ink">
             Execution Progress

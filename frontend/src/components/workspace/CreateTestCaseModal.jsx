@@ -2,8 +2,10 @@ import { useState } from "react";
 import { X, Loader2 } from "lucide-react";
 import { createManualTestCase } from "../../services/testCaseApi";
 import useToasts from "../shared/useToasts";
+import useEscapeKey from "../../hooks/useEscapeKey";
 
 export default function CreateTestCaseModal({ projectId, onClose, onSuccess }) {
+  useEscapeKey(true, onClose);
   const [loading, setLoading] = useState(false);
   const { showToast } = useToasts();
   const [form, setForm] = useState({
@@ -37,8 +39,8 @@ export default function CreateTestCaseModal({ projectId, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl animate-in zoom-in-95">
+    <div className="modal-backdrop-enter fixed inset-0 z-50 flex items-center justify-center bg-ink/25 backdrop-blur-[6px] p-4">
+      <div className="glass modal-pop-enter w-full max-w-lg rounded-2xl">
         <div className="flex items-center justify-between border-b border-hairline px-6 py-4">
           <h2 className="text-lg font-bold text-ink">Create Manual Test Case</h2>
           <button onClick={onClose} className="rounded-md p-1.5 text-muted hover:bg-paper hover:text-ink transition">
