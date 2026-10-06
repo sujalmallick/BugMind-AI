@@ -111,33 +111,43 @@ def request_password_reset(
     db: Session,
     email: str,
 ):
-    # SECURITY: the response is identical whether or not the account exists,
-    # so this endpoint can't be used to discover registered emails.
-    generic_response = {
-        "message": "If an account exists for that email, a password reset link has been sent.",
-    }
-
     user = (
         db.query(User)
         .filter(User.email == email.lower().strip())
         .first()
     )
 
+    # Unknown emails are reported explicitly. /auth/register already reveals
+    # whether an email is registered, so hiding it here adds no protection;
+    # the endpoint's rate limit still slows down bulk probing.
     if not user or user.deleted_at is not None:
-        return generic_response
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No account found with that email address.",
+        )
 
     token = create_password_reset_token(user.id, user.password_hash)
     frontend_url = os.getenv("FRONTEND_URL", "https://black-smoke-05d3e7e00.5.azurestaticapps.net")
     reset_url = f"{frontend_url.rstrip('/')}/reset-password?token={token}"
 
-    send_password_reset_email(
+    sent = send_password_reset_email(
         to_email=user.email,
         reset_url=reset_url,
         user_name=user.name or "there",
         expire_minutes=PASSWORD_RESET_EXPIRE_MINUTES,
     )
 
-    return generic_response
+    # False means email isn't configured or Azure rejected the message
+    # (details are in the log). Say so instead of claiming the link was sent.
+    if not sent:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="We couldn't send the reset email right now. Please try again later or contact support.",
+        )
+
+    return {
+        "message": f"We've sent a password reset link to {user.email}.",
+    }
 
 
 def reset_password(

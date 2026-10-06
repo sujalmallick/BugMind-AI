@@ -18,20 +18,26 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notFound, setNotFound] = useState(false);
   const [sentMessage, setSentMessage] = useState("");
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setNotFound(false);
     try {
       setLoading(true);
       const data = await requestPasswordReset(email);
       setSentMessage(data.message);
     } catch (err) {
-      if (err?.response?.status === 429) {
+      const status = err?.response?.status;
+      if (!err?.response) {
+        setError("Can't reach the server. Please check your connection and try again in a minute.");
+      } else if (status === 429) {
         setError("Too many requests. Please wait a minute and try again.");
       } else {
-        setError(err?.response?.data?.detail ?? "Unable to send reset link. Please try again.");
+        setNotFound(status === 404);
+        setError(err.response.data?.detail ?? "Unable to send reset link. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -97,7 +103,14 @@ export default function ForgotPasswordPage() {
               {error && (
                 <div className="auth-error" role="alert">
                   <AlertCircle size={15} className="mt-px shrink-0" />
-                  <span>{error}</span>
+                  <span>
+                    {error}{" "}
+                    {notFound && (
+                      <Link to="/register" className="font-semibold underline">
+                        Create an account
+                      </Link>
+                    )}
+                  </span>
                 </div>
               )}
 
