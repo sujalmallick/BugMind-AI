@@ -10,7 +10,7 @@ from auth.jwt import create_stream_ticket
 from database.session import SessionLocal, get_db
 from database.models.user import User
 from database.models.notification import Notification
-from services.sse_manager import sse_manager
+from services.sse_manager import CLOSE_STREAM, sse_manager
 
 from schemas.notification import (
     NotificationResponse, 
@@ -34,8 +34,8 @@ router = APIRouter(prefix="/api/notifications", tags=["Notifications"])
 
 @router.get("", response_model=NotificationListResponse)
 def get_notifications_route(
-    limit: int = 50,
-    offset: int = 0,
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -170,6 +170,9 @@ async def notification_stream(
     # --- SSE event generator ---
     async def event_generator():
         q = sse_manager.connect(user_id)
+        if q is None:
+            yield "data: {\"error\": \"too many connections\"}\n\n"
+            return
         try:
             # Send an immediate ping so the client knows the connection is live
             yield f"data: {json.dumps({'event': 'connected', 'user_id': user_id})}\n\n"
@@ -177,6 +180,8 @@ async def notification_stream(
                 try:
                     # Wait for a broadcast signal (timeout keeps connection alive via comment)
                     data = await asyncio.wait_for(q.get(), timeout=25.0)
+                    if data is CLOSE_STREAM:
+                        break  # superseded by a newer connection from this user
                     yield f"data: {json.dumps(data)}\n\n"
                 except asyncio.TimeoutError:
                     # SSE keep-alive comment (prevents proxies from closing idle connections)

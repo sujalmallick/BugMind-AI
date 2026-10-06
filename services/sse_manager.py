@@ -1,5 +1,14 @@
 import asyncio
-from typing import Dict, List
+from typing import Dict, List, Optional
+
+# Bounds so one account (or a script holding one token) can't exhaust
+# file descriptors or memory with streams.
+MAX_CONNECTIONS_PER_USER = 5
+MAX_CONNECTIONS_TOTAL = 2000
+QUEUE_SIZE = 100
+
+# Put on a queue to make its stream end (used when a user exceeds the cap).
+CLOSE_STREAM = {"event": "__close__"}
 
 class SSEManager:
     """
@@ -20,11 +29,29 @@ class SSEManager:
         # user_id -> list of asyncio.Queue
         self._connections: Dict[int, List[asyncio.Queue]] = {}
 
-    def connect(self, user_id: int) -> asyncio.Queue:
-        """Register a new SSE connection for a user and return its queue."""
-        q: asyncio.Queue = asyncio.Queue()
-        self._connections.setdefault(user_id, []).append(q)
+    def connect(self, user_id: int) -> Optional[asyncio.Queue]:
+        """
+        Register a new SSE connection for a user and return its queue, or None
+        when the server-wide cap is reached. Past the per-user cap the oldest
+        stream is closed, so the newest tab always works.
+        """
+        queues = self._connections.setdefault(user_id, [])
+        if len(queues) >= MAX_CONNECTIONS_PER_USER:
+            oldest = queues.pop(0)
+            self._close(oldest)
+        elif sum(len(v) for v in self._connections.values()) >= MAX_CONNECTIONS_TOTAL:
+            if not queues:
+                self._connections.pop(user_id, None)
+            return None
+        q: asyncio.Queue = asyncio.Queue(maxsize=QUEUE_SIZE)
+        queues.append(q)
         return q
+
+    @staticmethod
+    def _close(q: asyncio.Queue) -> None:
+        while not q.empty():
+            q.get_nowait()
+        q.put_nowait(CLOSE_STREAM)
 
     def disconnect(self, user_id: int, q: asyncio.Queue) -> None:
         """Remove a queue when a client disconnects."""
@@ -44,8 +71,11 @@ class SSEManager:
 
         Example payload: {"event": "new_notification", "unread_count": 3}
         """
-        for q in self._connections.get(user_id, []):
-            await q.put(payload)
+        for q in list(self._connections.get(user_id, [])):
+            try:
+                q.put_nowait(payload)
+            except asyncio.QueueFull:
+                pass  # client isn't reading; signals are idempotent counts, so drop
 
 
 # Singleton shared across the entire application lifetime.

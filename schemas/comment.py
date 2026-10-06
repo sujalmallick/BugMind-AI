@@ -30,13 +30,13 @@ class CommentAuthor(BaseModel):
 class CommentBase(BaseModel):
     entity_type: str = Field(..., description="'test_case' or 'issue'")
     entity_id: int
-    body: str
+    body: str = Field(..., min_length=1, max_length=10_000)
 
 class CommentCreate(CommentBase):
     parent_id: Optional[int] = None
 
 class CommentUpdate(BaseModel):
-    body: str
+    body: str = Field(..., min_length=1, max_length=10_000)
 
 class CommentResponse(CommentBase):
     id: int
@@ -63,4 +63,4 @@ class CommentResponse(CommentBase):
 CommentResponse.model_rebuild()
 
 class ReactionCreate(BaseModel):
-    emoji: str
+    emoji: str = Field(..., min_length=1, max_length=10)  # column is String(10)

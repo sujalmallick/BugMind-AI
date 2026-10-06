@@ -19,7 +19,7 @@ from fastapi import (
 )
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from limiter import limiter
@@ -48,10 +48,10 @@ AVATARS_DIR.mkdir(parents=True, exist_ok=True)
 # Schemas
 # ──────────────────────────────────────────────────
 class PatchMeRequest(BaseModel):
-    name: str | None = None
-    bio: str | None = None
-    job_title: str | None = None
-    location: str | None = None
+    name: str | None = Field(None, max_length=100)
+    bio: str | None = Field(None, max_length=1000)
+    job_title: str | None = Field(None, max_length=100)
+    location: str | None = Field(None, max_length=100)
     # avatar=None clears the avatar; omitting the field entirely is a no-op.
     # Use a sentinel to distinguish "not sent" from "explicitly null".
     avatar: str | None = "__UNSET__"
@@ -227,8 +227,10 @@ async def upload_avatar(
     except Exception as e:
         logger.warning(f"Azure Blob upload failed, falling back to local storage: {e}")
 
-    # 2. Fallback to local disk storage (offline / local dev)
-    user_avatar_dir = AVATARS_DIR / str(uuid.uuid5(uuid.NAMESPACE_DNS, f"user-{current_user.id}"))
+    # 2. Fallback to local disk storage (offline / local dev). Random per-upload
+    # directory: /uploads is public, so a name derived from the user id would
+    # let anyone enumerate every user's avatar.
+    user_avatar_dir = AVATARS_DIR / uuid.uuid4().hex
     user_avatar_dir.mkdir(parents=True, exist_ok=True)
 
     avatar_path = user_avatar_dir / "avatar.webp"
@@ -336,5 +338,8 @@ def _delete_avatar_file(avatar_url: str) -> None:
         path = Path(avatar_url)
         if path.exists():
             path.unlink()
+            # Each upload gets its own random directory; drop it once empty.
+            if path.parent.parent == AVATARS_DIR and not any(path.parent.iterdir()):
+                path.parent.rmdir()
     except Exception:
         pass  # Errors must never block the API response

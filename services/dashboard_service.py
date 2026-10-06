@@ -133,6 +133,10 @@ def _counts_for_assigned_issues(db: Session, user_id: int) -> list[dict]:
     return _build_breakdown(rows, ["critical", "high", "medium", "low"])
 
 
+def _accessible_project_ids(db: Session, user_id: int, project_ids: set[int]) -> set[int]:
+    return {pid for pid in project_ids if get_project_role(db, user_id, pid)}
+
+
 def _current_user_test_cases(db: Session, user_id: int, limit: int = 100) -> list[dict]:
     rows = (
         db.query(TestCase, Project)
@@ -145,7 +149,10 @@ def _current_user_test_cases(db: Session, user_id: int, limit: int = 100) -> lis
     )
 
     items = []
+    visible = _accessible_project_ids(db, user_id, {project.id for _, project in rows})
     for test_case, project in rows:
+        if project.id not in visible:
+            continue  # still assigned, but the user lost access to the project
         items.append(
             {
                 "id": test_case.id,
@@ -180,7 +187,10 @@ def _current_user_issues(db: Session, user_id: int, limit: int = 100) -> list[di
     )
 
     items = []
+    visible = _accessible_project_ids(db, user_id, {project.id for _, project in rows})
     for issue, project in rows:
+        if project.id not in visible:
+            continue  # still assigned, but the user lost access to the project
         items.append(
             {
                 "id": issue.id,
