@@ -16,7 +16,7 @@ export default function CommentItem({ comment }) {
   return (
     <div className="flex gap-3 mb-6">
       {/* Avatar */}
-      <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-bold text-indigo-700 shrink-0">
+      <div className="w-8 h-8 rounded-full bg-signal-soft flex items-center justify-center text-sm font-bold text-signal shrink-0">
         {author?.name?.charAt(0) || "?"}
       </div>
 

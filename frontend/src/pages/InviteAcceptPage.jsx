@@ -18,7 +18,7 @@ import favicon from "../assets/favicon.png";
 
 const ROLE_COLORS = {
   owner: "text-amber-700 bg-amber-50 border-amber-200",
-  admin: "text-purple-700 bg-purple-50 border-purple-200",
+  admin: "text-signal bg-signal-soft border-signal/20",
   editor: "text-blue-700 bg-blue-50 border-blue-200",
   viewer: "text-slate-700 bg-slate-50 border-slate-200",
   member: "text-green-700 bg-green-50 border-green-200",
@@ -93,7 +93,7 @@ export default function InviteAcceptPage() {
   const goToDashboard = () => navigate("/");
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans">
+    <div className="min-h-screen bg-surface flex items-center justify-center p-6 font-sans">
       
       <div className="relative w-full max-w-md">
         {/* Logo Header */}
@@ -106,7 +106,6 @@ export default function InviteAcceptPage() {
 
         <div className="rounded-2xl border border-hairline bg-white shadow-xl overflow-hidden">
           {/* Top accent bar */}
-          <div className="h-1 w-full bg-gradient-to-r from-violet-500 via-blue-500 to-cyan-500" />
 
           <div className="p-8">
 
@@ -202,7 +201,7 @@ export default function InviteAcceptPage() {
                   <div className="flex justify-center mb-4">
                     <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface border border-hairline shadow-sm">
                       {invite.type === "organization"
-                        ? <Building2 size={26} className="text-violet-500" />
+                        ? <Building2 size={26} className="text-signal" />
                         : <FolderKanban size={26} className="text-blue-500" />}
                     </div>
                   </div>

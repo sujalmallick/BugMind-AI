@@ -67,7 +67,7 @@ export default function DangerZone({ showToast }) {
 
         <form onSubmit={handleOpenDialog} className="flex flex-col gap-4 max-w-sm">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">
+            <label className="block text-[13px] font-medium text-ink mb-1.5">
               Confirm with your password
             </label>
             <input

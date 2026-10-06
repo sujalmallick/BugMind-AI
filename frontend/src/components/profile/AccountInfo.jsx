@@ -165,7 +165,7 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
       {/* Name form */}
       <form onSubmit={handleSaveName} className="flex flex-col gap-4 max-w-sm">
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">
+          <label className="block text-[13px] font-medium text-ink mb-1.5">
             Display name
           </label>
           <input
@@ -179,7 +179,7 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">
+          <label className="block text-[13px] font-medium text-ink mb-1.5">
             Email address
           </label>
           {/* Email is read-only — no edit affordance in this phase */}
@@ -190,7 +190,7 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">
+          <label className="block text-[13px] font-medium text-ink mb-1.5">
             Job Title
           </label>
           <input
@@ -204,7 +204,7 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">
+          <label className="block text-[13px] font-medium text-ink mb-1.5">
             Location
           </label>
           <input
@@ -218,7 +218,7 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">
+          <label className="block text-[13px] font-medium text-ink mb-1.5">
             Bio
           </label>
           <textarea

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import {
-  Building2, Plus, Loader2, ArrowLeft, Users, Settings,
+  Building2, Plus, Loader2, Users, Settings,
   Crown, ShieldCheck, User, Trash2, FolderKanban, ListChecks, Sparkles, Layers3
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -19,10 +19,9 @@ import OrgSettingsPanel from "../components/organization/OrgSettingsPanel";
 import OrgInvitePanel from "../components/organization/OrgInvitePanel";
 import CreateProjectModal from "../components/projects/CreateProjectModal";
 import AppFooter from "../components/layout/AppFooter";
+import HeaderBar from "../components/layout/HeaderBar";
 import { createProject as createProjectApi, getProjects, addTeamToProject } from "../services/projectApi";
 import { getTeamDashboard } from "../services/dashboardApi";
-import logo from "../assets/bugmind2.png";
-import favicon from "../assets/favicon.png";
 
 const ROLE_META = {
   owner:  { label: "Owner",  color: "bg-ochre-soft text-ochre border-ochre/30",   icon: Crown },
@@ -127,52 +126,12 @@ export default function OrganizationsPage() {
   const teamAssignments = teamDashboard?.member_load || [];
 
   // ── Header ────────────────────────────────────────────────────────────────
-  const TopHeader = () => (
-    <header className="sticky top-0 z-50 border-b border-hairline bg-white/95 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3 sm:px-8">
-        <div
-          className="flex cursor-pointer items-center gap-3 transition-opacity hover:opacity-80"
-          onClick={() => navigate("/")}
-        >
-          <img src={favicon} alt="BugMind" className="h-9 w-9 object-contain" />
-          <img src={logo} alt="BugMind AI" className="h-10 w-auto object-contain" />
-        </div>
-        <div className="flex items-center gap-2">
-          {activeTeam ? (
-            <button
-              onClick={() => setActiveTeam(null)}
-              className="rounded-lg border border-hairline bg-surface px-3 py-2 text-xs font-medium text-muted
-                         transition hover:bg-paper hover:text-ink flex items-center gap-1.5"
-            >
-              <ArrowLeft size={13} /> Back to {org?.name || "Organization"}
-            </button>
-          ) : orgId ? (
-            <button
-              onClick={() => navigate("/organizations")}
-              className="rounded-lg border border-hairline bg-surface px-3 py-2 text-xs font-medium text-muted
-                         transition hover:bg-paper hover:text-ink flex items-center gap-1.5"
-            >
-              <ArrowLeft size={13} /> Back to Organizations
-            </button>
-          ) : (
-            <button
-              onClick={() => navigate("/")}
-              className="rounded-lg border border-hairline bg-surface px-3 py-2 text-xs font-medium text-muted
-                         transition hover:bg-paper hover:text-ink flex items-center gap-1.5"
-            >
-              <ArrowLeft size={13} /> Back to Projects
-            </button>
-          )}
-        </div>
-      </div>
-    </header>
-  );
 
   if (store.loading && !org && !store.orgs.length) {
     return (
       <div className="workspace-atmosphere min-h-screen">
-        <TopHeader />
-        <main className="mx-auto flex w-full max-w-5xl items-center justify-center py-20 px-4 sm:px-8">
+        <HeaderBar />
+        <main className="mx-auto flex w-full max-w-7xl items-center justify-center px-4 py-20 sm:px-6">
           <Loader2 size={28} className="animate-spin text-signal" />
         </main>
       </div>
@@ -181,9 +140,9 @@ export default function OrganizationsPage() {
 
   return (
     <div className="workspace-atmosphere min-h-screen flex flex-col">
-      <TopHeader />
+      <HeaderBar />
 
-      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-8 flex-1">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-16 pt-8 sm:px-6 sm:pt-10">
         {/* ── LIST VIEW ───────────────────────────────────────────────────── */}
         {!orgId ? (
           <>
@@ -195,8 +154,7 @@ export default function OrganizationsPage() {
               {store.orgs.length > 0 && (
                 <button
                   onClick={() => setShowCreateOrg(true)}
-                  className="flex items-center gap-2 rounded-lg bg-signal px-4 py-2.5 text-sm font-semibold
-                             text-white shadow-sm transition hover:bg-signal/90 hover:-translate-y-0.5"
+                  className="btn-primary"
                 >
                   <Plus size={15} /> New organization
                 </button>
@@ -255,7 +213,7 @@ export default function OrganizationsPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-4 min-w-0">
                       <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl
-                                      bg-linear-to-br from-signal to-indigo-500 text-white shadow-sm text-xl font-bold">
+                                      bg-signal-soft text-signal text-xl font-bold">
                         {org.logo_url ? (
                           <img src={org.logo_url} alt={org.name} className="h-full w-full rounded-xl object-cover" />
                         ) : (
@@ -283,7 +241,7 @@ export default function OrganizationsPage() {
               {/* Team Detail View */}
               {activeTeam ? (
                 <div className="animate-fade-in">
-                  <section className="mb-6 rounded-3xl border border-hairline bg-white p-6 shadow-sm">
+                  <section className="mb-6 rounded-xl border border-hairline bg-white p-6 shadow-sm">
                     <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
                       <div className="max-w-3xl">
                         <p className="inline-flex items-center gap-2 rounded-full border border-signal/20 bg-signal-soft px-3 py-1 text-xs font-semibold text-signal">
@@ -316,7 +274,7 @@ export default function OrganizationsPage() {
                   </section>
 
                   <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-                    <section className="rounded-3xl border border-hairline bg-white p-6 shadow-sm">
+                    <section className="rounded-xl border border-hairline bg-white p-6 shadow-sm">
                       <div className="mb-4 flex items-center justify-between">
                         <div>
                           <h2 className="text-lg font-semibold text-ink">Members</h2>
@@ -357,7 +315,7 @@ export default function OrganizationsPage() {
                       />
                     </section>
 
-                    <section className="rounded-3xl border border-hairline bg-white p-6 shadow-sm">
+                    <section className="rounded-xl border border-hairline bg-white p-6 shadow-sm">
                       <div className="mb-4 flex items-center justify-between gap-4 flex-wrap">
                         <div>
                           <h2 className="text-lg font-semibold text-ink">Projects</h2>
@@ -432,7 +390,7 @@ export default function OrganizationsPage() {
                       </div>
                     </section>
 
-                    <section className="rounded-3xl border border-hairline bg-white p-6 shadow-sm xl:col-span-2">
+                    <section className="rounded-xl border border-hairline bg-white p-6 shadow-sm xl:col-span-2">
                       <div className="mb-4 flex items-center justify-between">
                         <div>
                           <h2 className="text-lg font-semibold text-ink">Assignments</h2>

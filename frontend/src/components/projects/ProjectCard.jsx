@@ -71,23 +71,20 @@ return (
         onOpen(project.id);
       }
     }}
-    className="group w-full cursor-pointer base-card card-cascade-enter card-glow-hover p-5 text-left transition-all duration-300"
+    className="group flex w-full cursor-pointer flex-col base-card card-cascade-enter card-glow-hover p-5 text-left"
   >
       {/* Header */}
 
       <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-paper p-2">
-            <FolderOpen
-              size={18}
-              className="text-signal transition-transform duration-300 ease-out group-hover:scale-110"
-            />
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-signal-soft">
+            <FolderOpen size={17} className="text-signal" aria-hidden="true" />
           </div>
 
          <div>
   <div className="flex items-center gap-2">
 
-    <h3 className="text-base font-semibold text-ink">
+    <h3 className="truncate text-[15px] font-semibold tracking-[-0.01em] text-ink">
       {project.name}
     </h3>
 
@@ -105,7 +102,7 @@ return (
 
   </div>
 
-  <p className="mt-1 line-clamp-2 text-sm text-muted">
+  <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-muted">
     {project.description || "No description"}
   </p>
 </div>
@@ -120,15 +117,19 @@ return (
               e.stopPropagation();
               setMenuOpen((prev) => !prev);
             }}
-            className="rounded-lg p-1.5 text-muted transition hover:bg-paper hover:text-ink"
+            aria-label={`Actions for ${project.name}`}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            className="-mr-1.5 -mt-1 rounded-lg p-1.5 text-muted transition-colors hover:bg-ink/[0.05] hover:text-ink"
           >
-            <MoreVertical size={18} />
+            <MoreVertical size={17} />
           </button>
 
           {menuOpen && (
             <div
               onClick={(e) => e.stopPropagation()}
-              className="absolute right-0 bottom-full mb-2 z-20 w-40 rounded-xl border border-hairline bg-white py-2 shadow-xl menu-enter"
+              role="menu"
+              className="glass glass-menu menu-enter absolute right-0 top-full z-20 mt-1 w-44 rounded-xl p-1"
             >
               <button
                 onClick={(e) => {
@@ -136,7 +137,8 @@ return (
                   onDashboard?.(project);
                   setMenuOpen(false);
                 }}
-                className="flex w-full items-center gap-3 px-4 py-2 text-sm hover:bg-paper"
+                role="menuitem"
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-ink transition-colors hover:bg-ink/[0.04]"
               >
                 <LayoutDashboard size={15} />
                 Dashboard
@@ -149,7 +151,8 @@ return (
                     onRename(project);
                     setMenuOpen(false);
                   }}
-                  className="flex w-full items-center gap-3 px-4 py-2 text-sm hover:bg-paper"
+                  role="menuitem"
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-ink transition-colors hover:bg-ink/[0.04]"
                 >
                   <Pencil size={15} />
                   Rename
@@ -163,7 +166,8 @@ return (
                     setMenuOpen(false);
                     onShare(project);
                   }}
-                  className="flex w-full items-center gap-3 px-4 py-2 text-sm hover:bg-paper"
+                  role="menuitem"
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-ink transition-colors hover:bg-ink/[0.04]"
                 >
                   <Share2 size={15} />
                   Share
@@ -177,7 +181,8 @@ return (
                     setMenuOpen(false);
                     onDelete(project);
                   }}
-                  className="flex w-full items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                  role="menuitem"
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-flagged transition-colors hover:bg-flagged-soft"
                 >
                   <Trash2 size={15} />
                   Delete
@@ -190,7 +195,7 @@ return (
     </div>
 
     {/* Stats */}
-    <div className="mt-5 flex items-center gap-5 text-sm text-muted">
+    <div className="mt-auto flex items-center gap-5 pt-5 text-[13px] text-muted">
       {/* If project has issues but no modules (e.g. imported issues project), show Issues count */}
       {project.moduleCount === 0 && project.issueCount > 0 ? (
         <div className="flex items-center gap-1.5 text-flagged font-medium">
@@ -221,14 +226,14 @@ return (
 
       {/* Footer */}
 
-      <div className="mt-5 flex items-center justify-between border-t border-hairline pt-4 text-xs text-muted">
+      <div className="mt-4 flex items-center justify-between border-t border-hairline pt-3.5 text-xs text-muted">
         <div className="flex items-center gap-1.5">
           <Calendar size={13} />
        Updated {formatRelativeTime(project.updatedAt)}
         </div>
 
-        <span className="font-medium text-signal">
-          Open
+        <span className="flex items-center gap-1 font-medium text-ink opacity-60 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100">
+          Open <span aria-hidden="true">→</span>
         </span>
       </div>
        </div>

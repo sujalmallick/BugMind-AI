@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Loader2, User, ShieldCheck, Users, KeyRound, TriangleAlert, ArrowLeft, Menu, X, Bell } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Loader2, User, ShieldCheck, Users, KeyRound, TriangleAlert, Menu, X, Bell } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { getAvatarUrl } from "../../utils/avatarUrl";
 
 import { getProfile } from "../../auth/profileService";
@@ -13,10 +13,9 @@ import ToastStack      from "../../components/shared/ToastStack";
 import useToasts       from "../../components/shared/useToasts";
 import NotificationPreferences from "../../components/notifications/NotificationPreferences";
 import PageHeading     from "../../components/shared/PageHeading";
+import HeaderBar       from "../../components/layout/HeaderBar";
 
 
-import logo    from "../../assets/bugmind2.png";
-import favicon from "../../assets/favicon.png";
 
 // ── Nav config ─────────────────────────────────────────────────────────────
 const TABS = [
@@ -33,7 +32,6 @@ const TABS = [
  * Sidebar nav with animated slide-in panel per section.
  */
 export default function ProfilePage() {
-  const navigate = useNavigate();
   const location = useLocation();
   const { toasts, showToast } = useToasts();
   
@@ -80,45 +78,20 @@ export default function ProfilePage() {
   return (
     <div className="workspace-atmosphere min-h-screen">
       
-      {/* Clean Solid Header */}
-      <header className="sticky top-0 z-50 border-b border-hairline bg-white">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3 sm:px-8 sm:py-3.5 relative">
-          
-          {/* Left: Back Button */}
-          <div className="flex-1 flex items-center justify-start">
-            <button
-              type="button"
-              onClick={() => navigate("/")}
-              className="group flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium text-muted transition-colors hover:text-ink"
-            >
-              <ArrowLeft size={15} />
-              <span className="hidden sm:inline">Back</span>
-            </button>
-          </div>
+      <HeaderBar
+        actions={
+          <button
+            type="button"
+            className="flex h-[34px] w-[34px] items-center justify-center rounded-lg text-muted transition-colors hover:bg-ink/[0.05] hover:text-ink lg:hidden"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Open settings sections"
+          >
+            <Menu size={17} />
+          </button>
+        }
+      />
 
-          {/* Center: Logo */}
-          <div className="flex-shrink-0 flex cursor-pointer items-center gap-2.5 transition-opacity hover:opacity-90 absolute left-1/2 -translate-x-1/2" onClick={() => navigate("/")}>
-            <img src={favicon} alt="BugMind" className="h-7 w-7 object-contain" />
-            <img src={logo} alt="BugMind AI" className="h-8 w-auto object-contain hidden sm:block" />
-          </div>
-
-          {/* Right: Hamburger / Title */}
-          <div className="flex-1 flex items-center justify-end gap-3">
-            <span className="text-sm font-medium text-ink hidden sm:block">Profile Settings</span>
-            
-            {/* Hamburger Menu Toggle (Mobile only) */}
-            <button 
-              className="lg:hidden flex items-center justify-center h-8 w-8 rounded-md text-muted hover:bg-paper hover:text-ink transition-colors"
-              onClick={() => setMobileMenuOpen(true)}
-            >
-              <Menu size={18} />
-            </button>
-          </div>
-
-        </div>
-      </header>
-
-      <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-8">
+      <div className="mx-auto w-full max-w-7xl px-4 pb-16 pt-8 sm:px-6 sm:pt-10">
 
         {loading ? (
           <div className="flex items-center justify-center py-32 gap-3 text-muted">
@@ -135,7 +108,7 @@ export default function ProfilePage() {
             {/* ── Sidebar nav (Left on desktop) ────────────────────────────────────────── */}
             <aside className="hidden lg:flex flex-col gap-1 w-56 shrink-0 sticky top-24">
               {/* User badge at top */}
-              <div className="mb-4 flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white border border-hairline shadow-sm">
+              <div className="mb-4 flex items-center gap-3 rounded-xl border border-hairline bg-surface px-3 py-2.5">
                 <div
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full overflow-hidden text-sm font-bold text-white"
                   style={{ background: `hsl(${((profile?.id ?? 0) * 53) % 360},55%,48%)` }}

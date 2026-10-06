@@ -17,10 +17,10 @@ onTestEnvironmentChange,
 }) {
   if (isCollapsed) {
     return (
-      <div className="mx-auto max-w-4xl mt-3 sm:mt-4 rounded-xl sm:rounded-2xl border border-hairline/60 bg-surface/70 px-3 py-2.5 shadow-xs backdrop-blur-xl sm:px-5 sm:py-4">
+      <div className="glass mx-auto mt-3 max-w-4xl rounded-xl px-3 py-2.5 sm:mt-4 sm:px-4 sm:py-3">
         <div className="flex items-center justify-between gap-2.5">
           <div className="flex min-w-0 items-center gap-2.5 text-xs sm:text-sm text-muted">
-            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg sm:rounded-xl bg-signal-soft shrink-0">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-signal-soft">
               <Route size={15} className="text-signal" />
             </div>
 
@@ -29,7 +29,7 @@ onTestEnvironmentChange,
                 {workflow || "Workflow not added yet"}
               </span>
 
-              <span className="hidden text-[11px] font-semibold uppercase tracking-wider text-muted sm:block">
+              <span className="hidden text-[12px] text-muted sm:block">
                 {analysisOutdated
                   ? "Modified after last analysis"
                   : "Analysis up to date"}
@@ -40,10 +40,10 @@ onTestEnvironmentChange,
           <button
             type="button"
             onClick={onExpand}
-            className="inline-flex shrink-0 items-center gap-1.5 sm:gap-2 rounded-lg sm:rounded-xl border border-hairline bg-white/80 px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-[13px] font-bold text-ink shadow-2xs transition-all duration-200 hover:border-signal/30 hover:bg-white hover:text-signal"
+            className="btn-secondary shrink-0"
           >
             <Pencil size={13} />
-            <span>Edit Scope</span>
+            <span>Edit scope</span>
           </button>
         </div>
       </div>
@@ -52,30 +52,14 @@ onTestEnvironmentChange,
 
   return (
     <div className={`px-2 sm:px-5 ${hasResult ? "py-4 sm:py-6" : "py-5 sm:py-8"}`}>
-      <div className="mx-auto max-w-5xl rounded-2xl sm:rounded-[1.5rem] border border-hairline/70 bg-white p-3.5 sm:p-5 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+      <div className="mx-auto max-w-4xl rounded-xl border border-hairline bg-surface p-4 shadow-[var(--shadow-card)] sm:p-6 md:p-8">
         {!hasResult && (
-          <div className="hero-glow hero-glow-soft relative mb-6 sm:mb-8 overflow-hidden rounded-2xl border border-[#3454d1]/15 bg-gradient-to-br from-[#f0f4ff] via-white to-[#eef2ff] p-4 text-center sm:p-8">
-
-            {/* Floating background orbs */}
-            <div className="workflow-orb-1 pointer-events-none absolute -left-8 -top-8 h-40 w-40 rounded-full bg-[#3454d1]/10 blur-2xl" />
-            <div className="workflow-orb-2 pointer-events-none absolute -right-8 -bottom-6 h-48 w-48 rounded-full bg-[#60a5fa]/10 blur-2xl" />
-            <div className="workflow-orb-3 pointer-events-none absolute left-1/2 top-0 h-24 w-24 -translate-x-1/2 rounded-full bg-[#1e3a8a]/08 blur-xl" />
-
-            {/* Pulsing dots row */}
-            <div className="mb-4 flex items-center justify-center gap-2">
-              <span className="workflow-dot h-1.5 w-1.5 rounded-full bg-[#3454d1]" />
-              <span className="workflow-dot h-1.5 w-1.5 rounded-full bg-[#3454d1]" />
-              <span className="workflow-dot h-1.5 w-1.5 rounded-full bg-[#3454d1]" />
-            </div>
-
-            <h1 className="workflow-hero-title relative text-2xl font-extrabold tracking-tight sm:text-4xl">
+          <div className="mb-8 border-b border-hairline pb-6">
+            <p className="eyebrow">New analysis</p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-[-0.025em] text-ink sm:text-[1.75rem]">
               Describe the workflow to test
             </h1>
-
-            {/* Subtle underline accent */}
-            <div className="mx-auto mt-3 h-0.5 w-20 rounded-full bg-gradient-to-r from-transparent via-[#3454d1]/40 to-transparent" />
-
-            <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
+            <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-muted">
               Enter your application flow and any observed steps. BugMind will
               break it into modules, generate a test checklist, and produce
               ready-to-execute test cases.
@@ -83,33 +67,35 @@ onTestEnvironmentChange,
           </div>
         )}
 
-        <div className="space-y-7">
+        <div className="space-y-6">
           <div>
-            <label className="mb-2 block text-sm font-semibold text-ink">
-              Application Workflow
+            <label htmlFor="wf-workflow" className="mb-1.5 block text-[13px] font-medium text-ink">
+              Application workflow
             </label>
 
             <textarea
               value={workflow}
               onChange={(event) => onWorkflowChange(event.target.value)}
               placeholder="E.g., User logs in → Navigates to Dashboard → Opens Messages → Sends a new message"
-              rows={2}
-              className="w-full resize-none rounded-xl border-2 border-hairline/60 bg-surface px-4 py-3.5 text-sm text-ink placeholder:text-muted/60 transition-all duration-200 focus:border-signal focus:bg-white focus:outline-none focus:ring-4 focus:ring-signal/10"
+              id="wf-workflow"
+              rows={3}
+              className="field resize-none"
             />
           </div>
 
           <div>
-            <label className="mb-3 block text-sm font-semibold text-ink">
-              Test Environment
-            </label>
+            <p className="mb-3 text-[13px] font-medium text-ink">
+              Test environment
+            </p>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-2 block text-xs font-medium text-muted">
+                <label htmlFor="wf-platform" className="mb-1.5 block text-[12px] text-muted">
                   Platform
                 </label>
 
                 <select
+                  id="wf-platform"
                   value={testEnvironment.platform}
                   onChange={(e) =>
                     onTestEnvironmentChange({
@@ -117,7 +103,7 @@ onTestEnvironmentChange,
                       platform: e.target.value,
                     })
                   }
-                  className="w-full rounded-xl border border-hairline bg-surface px-4 py-3 text-sm transition-all duration-200 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/10"
+                  className="field"
                 >
                   <option value="">Select Platform</option>
                   <option value="Android">Android</option>
@@ -128,12 +114,13 @@ onTestEnvironmentChange,
               </div>
 
               <div>
-                <label className="mb-2 block text-xs font-medium text-muted">
-                  OS Version
+                <label htmlFor="wf-os" className="mb-1.5 block text-[12px] text-muted">
+                  OS version
                 </label>
 
                 <input
                   type="text"
+                  id="wf-os"
                   placeholder="Android 15"
                   value={testEnvironment.osVersion}
                   onChange={(e) =>
@@ -142,17 +129,18 @@ onTestEnvironmentChange,
                       osVersion: e.target.value,
                     })
                   }
-                  className="w-full rounded-xl border border-hairline bg-surface px-4 py-3 text-sm transition-all duration-200 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/10"
+                  className="field"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-xs font-medium text-muted">
-                  App Build
+                <label htmlFor="wf-build" className="mb-1.5 block text-[12px] text-muted">
+                  App build
                 </label>
 
                 <input
                   type="text"
+                  id="wf-build"
                   placeholder="1.4.2 (145)"
                   value={testEnvironment.build}
                   onChange={(e) =>
@@ -161,17 +149,18 @@ onTestEnvironmentChange,
                       build: e.target.value,
                     })
                   }
-                  className="w-full rounded-xl border border-hairline bg-surface px-4 py-3 text-sm transition-all duration-200 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/10"
+                  className="field"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-xs font-medium text-muted">
+                <label htmlFor="wf-device" className="mb-1.5 block text-[12px] text-muted">
                   Device
                 </label>
 
                 <input
                   type="text"
+                  id="wf-device"
                   placeholder="Pixel 8 Pro"
                   value={testEnvironment.device}
                   onChange={(e) =>
@@ -180,40 +169,39 @@ onTestEnvironmentChange,
                       device: e.target.value,
                     })
                   }
-                  className="w-full rounded-xl border border-hairline bg-surface px-4 py-3 text-sm transition-all duration-200 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/10"
+                  className="field"
                 />
               </div>
             </div>
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-semibold text-ink">
-              Observed Steps
-              <span className="ml-1 text-xs font-normal text-muted">
-                (Optional)
-              </span>
+            <label htmlFor="wf-observed" className="mb-1.5 block text-[13px] font-medium text-ink">
+              Observed steps
+              <span className="ml-1 font-normal text-muted">(optional)</span>
             </label>
 
             <textarea
               value={observedSteps}
               onChange={(event) => onObservedStepsChange(event.target.value)}
               placeholder={"1. Open App\n2. Tap Login\n3. Enter Email"}
+              id="wf-observed"
               rows={4}
-              className="w-full resize-none rounded-xl border border-hairline bg-surface px-4 py-3 font-mono text-sm text-ink placeholder:text-muted transition-all duration-200 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/10"
+              className="field resize-none font-mono text-[13px]"
             />
           </div>
 
           {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            <div className="auth-error" role="alert">
               {error}
             </div>
           )}
-          <div className="mt-4 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3">
+          <div className="flex flex-col-reverse items-stretch justify-end gap-2.5 border-t border-hairline pt-5 sm:flex-row sm:items-center">
             {hasResult && (
               <button
                 type="button"
                 onClick={onExpand}
-                className="btn-secondary justify-center px-4 py-2.5 sm:py-2 text-sm"
+                className="btn-secondary"
               >
                 Cancel
               </button>
@@ -223,17 +211,17 @@ onTestEnvironmentChange,
               type="button"
               onClick={onAnalyze}
               disabled={isAnalyzing}
-              className="btn-primary justify-center py-2.5 sm:py-2"
+              className="btn-primary"
             >
               {isAnalyzing && (
-                <Loader2 size={15} className="animate-spin" />
+                <Loader2 size={15} className="spin" aria-hidden="true" />
               )}
 
               {isAnalyzing
-                ? "Analyzing workflow..."
+                ? "Analyzing workflow…"
                 : analysisOutdated
-                ? "Re-analyze Workflow"
-                : "Analyze Workflow"}
+                ? "Re-analyze workflow"
+                : "Analyze workflow"}
             </button>
           </div>
         </div>

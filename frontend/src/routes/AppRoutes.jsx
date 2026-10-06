@@ -2,7 +2,9 @@ import {
   Routes,
   Route,
   Navigate,
+  Link,
   useLocation,
+  useParams,
 } from "react-router-dom";
 import { useEffect, lazy, Suspense } from "react";
 
@@ -14,6 +16,7 @@ import RegisterPage from "../pages/RegisterPage";
 import ForgotPasswordPage from "../pages/ForgotPasswordPage";
 import ResetPasswordPage from "../pages/ResetPasswordPage";
 import LandingPage from "../pages/LandingPage";
+import HeaderBar from "../components/layout/HeaderBar";
 
 // Lazy-loaded heavy application routes for code-splitting
 const ProjectsPage = lazy(() => import("../pages/ProjectsPage"));
@@ -28,24 +31,51 @@ const TeamDashboardPage = lazy(() => import("../pages/TeamDashboardPage"));
 
 function PageLoader() {
   return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+    <div className="flex min-h-[60vh] items-center justify-center" role="status" aria-label="Loading">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-hairline border-t-signal" />
+    </div>
+  );
+}
+
+// Standalone project dashboard: the page component is also embedded in the
+// workspace tabs, so the app chrome is added here rather than inside it.
+function StandaloneProjectDashboard() {
+  const { projectId } = useParams();
+  return (
+    <div className="min-h-screen bg-surface">
+      <HeaderBar />
+      <main className="mx-auto w-full max-w-7xl px-4 pb-16 pt-8 sm:px-6 sm:pt-10">
+        <Link
+          to={`/project/${projectId}/workspace`}
+          className="-ml-2 mb-6 inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[13px] font-medium text-muted transition-colors hover:bg-ink/[0.04] hover:text-ink"
+        >
+          <span aria-hidden="true">←</span> Back to project
+        </Link>
+        <ProjectDashboardPage />
+      </main>
     </div>
   );
 }
 
 function ScrollToTop() {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
 
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
-  }, [pathname]);
+    if (hash) {
+      // Wait a frame so the target section has rendered
+      const id = requestAnimationFrame(() => {
+        document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: "smooth" });
+      });
+      return () => cancelAnimationFrame(id);
+    }
+    window.scrollTo({ top: 0, left: 0 });
+  }, [pathname, hash]);
 
   return null;
 }
 
 export default function AppRoutes() {
-  const { authenticated } = useAuth();
+  const { authenticated, loading } = useAuth();
   const location = useLocation();
 
   return (
@@ -95,7 +125,9 @@ export default function AppRoutes() {
       <Route
         path="/"
         element={
-          authenticated ? (
+          loading ? (
+            <PageLoader />
+          ) : authenticated ? (
             <ProtectedRoute>
               <ProjectsPage />
             </ProtectedRoute>
@@ -223,7 +255,7 @@ export default function AppRoutes() {
         path="/project/:projectId/dashboard"
         element={
           <ProtectedRoute>
-            <ProjectDashboardPage />
+            <StandaloneProjectDashboard />
           </ProtectedRoute>
         }
       />
@@ -254,4 +286,4 @@ export default function AppRoutes() {
     </div>
   );
 }
-
+

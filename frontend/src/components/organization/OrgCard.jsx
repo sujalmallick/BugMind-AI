@@ -23,7 +23,7 @@ export default function OrgCard({ org, onClick }) {
         <div className="flex items-center gap-3">
           {/* Logo or initial */}
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg
-                          bg-gradient-to-br from-signal to-indigo-500 text-white shadow-sm">
+                          bg-signal-soft text-signal">
             {org.logo_url
               ? <img src={org.logo_url} alt={org.name} className="h-full w-full rounded-lg object-cover" />
               : <Building2 size={18} />

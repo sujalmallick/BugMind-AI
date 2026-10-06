@@ -87,7 +87,7 @@ export default function OrgMemberList({ members, currentUserId, myRole, onRoleCh
             <li key={m.user_id} className="flex items-center justify-between gap-3 py-3">
               {/* Avatar + info */}
               <div className="flex items-center gap-3 min-w-0">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-signal to-indigo-500 text-xs font-bold text-white overflow-hidden">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-signal-soft text-signal text-xs font-bold overflow-hidden">
                   {m.user?.avatar_url
                     ? <img src={getAvatarUrl(m.user.avatar_url)} alt="" className="h-full w-full object-cover" />
                     : (m.user?.name || "?").charAt(0).toUpperCase()

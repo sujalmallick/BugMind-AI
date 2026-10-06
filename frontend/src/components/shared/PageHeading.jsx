@@ -1,12 +1,11 @@
 /**
  * PageHeading — canonical page/section heading component.
  *
- * Font:    IBM Plex Sans (font-sans, inherited from :root)
- * Size:    15px (text-[15px])
+ * Font:    Instrument Sans (font-sans, inherited from :root)
+ * Size:    h1 → 24/26px page title; h2/h3 → 15px section heading
  * Weight:  600 (font-semibold)
  * Case:    sentence case — never uppercase or title-case in code
  * Color:   text-ink
- * Spacing: -0.005em letter-spacing
  *
  * Props:
  *   as        – HTML element to render ("h1" | "h2" | "h3"). Default: "h1".
@@ -22,12 +21,19 @@ export default function PageHeading({
   className = "",
   children,
 }) {
+  const isPage = Tag === "h1";
   return (
-    <div className={`flex flex-col gap-0.5 ${className}`}>
-      <Tag className="flex items-center gap-[7px] text-[15px] font-semibold leading-snug tracking-[-0.005em] text-ink">
+    <div className={`flex flex-col ${isPage ? "gap-1.5" : "gap-0.5"} ${className}`}>
+      <Tag
+        className={`flex items-center gap-[7px] font-semibold text-ink ${
+          isPage
+            ? "text-2xl leading-tight tracking-[-0.025em] sm:text-[1.625rem]"
+            : "text-[15px] leading-snug tracking-[-0.005em]"
+        }`}
+      >
         {Icon && (
           <Icon
-            size={15}
+            size={isPage ? 20 : 15}
             aria-hidden="true"
             className="shrink-0 text-muted"
           />
@@ -35,8 +41,8 @@ export default function PageHeading({
         {children}
       </Tag>
       {meta && (
-        <p className="text-[12px] leading-relaxed text-muted"
-           style={{ paddingLeft: Icon ? "22px" : undefined }}>
+        <p className={`${isPage ? "max-w-2xl text-[14px]" : "text-[12px]"} leading-relaxed text-muted`}
+           style={{ paddingLeft: Icon ? (isPage ? "27px" : "22px") : undefined }}>
           {meta}
         </p>
       )}

@@ -103,7 +103,7 @@ export default function SecuritySection({ showToast }) {
 function PasswordField({ label, value, onChange, show, onToggle, autoComplete }) {
   return (
     <div>
-      <label className="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">
+      <label className="block text-[13px] font-medium text-ink mb-1.5">
         {label}
       </label>
       <div className="relative">

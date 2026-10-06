@@ -39,7 +39,7 @@ export default function TeamMemberList({ members, currentUserId, canManage, onRe
             <li key={m.user_id} className="flex items-center justify-between gap-3 py-2.5">
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full
-                                bg-gradient-to-br from-signal to-indigo-500 text-[11px] font-bold text-white overflow-hidden">
+                                bg-signal-soft text-signal text-[11px] font-bold overflow-hidden">
                   {m.user?.avatar_url
                     ? <img src={getAvatarUrl(m.user.avatar_url)} alt="" className="h-full w-full object-cover" />
                     : (m.user?.name || "?").charAt(0).toUpperCase()

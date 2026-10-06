@@ -70,7 +70,7 @@ export default function TestCaseTable({
                 {testCase.category ? (
                   <button 
                     onClick={() => onFilterCategory?.(testCase.category)}
-                    className="hover:text-purple-600 hover:underline transition-colors"
+                    className="hover:text-signal hover:underline transition-colors"
                   >
                     {testCase.category}
                   </button>

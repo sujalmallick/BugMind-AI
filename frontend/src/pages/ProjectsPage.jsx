@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   CircleCheckBig,
-  Clock3,
   FilePenLine,
   FileSpreadsheet,
   FolderKanban,
@@ -245,181 +244,156 @@ const filterChips = [
 
   return (
     <>
-      <ProjectsHeader
-        onCreateProject={() => setShowModal(true)}
-      />
+      <ProjectsHeader />
 
       <div className="projects-atmosphere">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8">
-          <section className="hero-glow base-card bg-white/95 p-6 backdrop-blur md:p-8 section-enter section-enter-1">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <PageHeading meta="All your QA projects in one place. Resume work, review coverage, and track what needs attention.">
-                  Projects
-                </PageHeading>
-              </div>
+        <div className="mx-auto max-w-7xl px-4 pb-16 pt-8 sm:px-6 sm:pt-10">
+          <section className="section-enter section-enter-1 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <PageHeading meta="All your QA projects in one place. Resume work, review coverage, and track what needs attention.">
+              Projects
+            </PageHeading>
 
-
-              <div className="flex gap-3 self-start lg:self-auto">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(true)}
-                  className="btn-primary"
-                >
-                  <Plus size={16} />
-                  New Project
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowImportModal(true)}
-                  className="flex items-center gap-2 rounded-xl border border-hairline bg-white px-4 py-2 text-sm font-semibold text-ink hover:border-signal hover:text-signal transition"
-                >
-                  <FileSpreadsheet size={15} />
-                  Import from CSV
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <article className="dashboard-stat-card dashboard-stat-total dashboard-stat-enter">
-                <p className="dashboard-stat-label">
-                  <FolderKanban size={13} className="dashboard-stat-icon" />
-                  Total Projects
-                </p>
-                <p className="dashboard-stat-value">{totalProjects}</p>
-                <p className="dashboard-stat-subtext">All testing projects</p>
-              </article>
-
-              <article className="dashboard-stat-card dashboard-stat-analyzed dashboard-stat-enter delay-1">
-                <p className="dashboard-stat-label">
-                  <CircleCheckBig size={13} className="dashboard-stat-icon" />
-                  Analyzed
-                </p>
-                <p className="dashboard-stat-value text-verified">{analyzedProjects}</p>
-                <p className="dashboard-stat-subtext">Ready to execute</p>
-              </article>
-
-              <article className="dashboard-stat-card dashboard-stat-draft dashboard-stat-enter delay-2">
-                <p className="dashboard-stat-label">
-                  <FilePenLine size={13} className="dashboard-stat-icon" />
-                  Draft
-                </p>
-                <p className="dashboard-stat-value text-ochre">{draftProjects}</p>
-                <p className="dashboard-stat-subtext">Incomplete workflow</p>
-              </article>
-
-              <article className="dashboard-stat-card dashboard-stat-stale dashboard-stat-enter delay-3">
-                <p className="dashboard-stat-label">
-                  <AlertTriangle size={13} className="dashboard-stat-icon" />
-                  Stale
-                </p>
-                <p className="dashboard-stat-value text-flagged">{staleProjects}</p>
-                <p className="dashboard-stat-subtext">Inactive 3+ days</p>
-              </article>
+            <div className="flex gap-2 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setShowImportModal(true)}
+                className="btn-secondary"
+              >
+                <FileSpreadsheet size={15} aria-hidden="true" />
+                Import CSV
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowModal(true)}
+                className="btn-primary"
+              >
+                <Plus size={16} aria-hidden="true" />
+                New project
+              </button>
             </div>
           </section>
 
+          <section className="section-enter section-enter-2 mt-6 grid gap-3 grid-cols-2 xl:grid-cols-4" aria-label="Project summary">
+            <article className="dashboard-stat-card dashboard-stat-total">
+              <p className="dashboard-stat-label">
+                <FolderKanban size={13} className="dashboard-stat-icon" aria-hidden="true" />
+                Total projects
+              </p>
+              <p className="dashboard-stat-value">{totalProjects}</p>
+              <p className="dashboard-stat-subtext">All testing projects</p>
+            </article>
+
+            <article className="dashboard-stat-card dashboard-stat-analyzed">
+              <p className="dashboard-stat-label">
+                <CircleCheckBig size={13} className="dashboard-stat-icon" aria-hidden="true" />
+                Analyzed
+              </p>
+              <p className="dashboard-stat-value">{analyzedProjects}</p>
+              <p className="dashboard-stat-subtext">Ready to execute</p>
+            </article>
+
+            <article className="dashboard-stat-card dashboard-stat-draft">
+              <p className="dashboard-stat-label">
+                <FilePenLine size={13} className="dashboard-stat-icon" aria-hidden="true" />
+                Draft
+              </p>
+              <p className="dashboard-stat-value">{draftProjects}</p>
+              <p className="dashboard-stat-subtext">Incomplete workflow</p>
+            </article>
+
+            <article className="dashboard-stat-card dashboard-stat-stale">
+              <p className="dashboard-stat-label">
+                <AlertTriangle size={13} className="dashboard-stat-icon" aria-hidden="true" />
+                Stale
+              </p>
+              <p className="dashboard-stat-value">{staleProjects}</p>
+              <p className="dashboard-stat-subtext">Inactive 3+ days</p>
+            </article>
+          </section>
+
           {spotlightProject && (
-            <section className="mt-6 base-card bg-linear-to-r from-white via-sky-50 to-emerald-50 p-5 section-enter section-enter-2">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                    Spotlight Project
-                  </p>
-
-                  <h2 className="mt-1 text-xl font-semibold text-ink">
-                    {spotlightProject.name}
-                  </h2>
-
-                  <p className="mt-1 text-sm text-muted">
-                    Updated {formatRelativeTime(spotlightProject.updatedAt)} •
-                    Status {spotlightProject.status || "Draft"}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 md:justify-end">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-semibold text-muted shadow-sm">
-                    <FolderKanban size={13} />
-                    {spotlightProject.moduleCount ?? 0} Modules
-                  </span>
-
-                  <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-semibold text-muted shadow-sm">
-                    <CircleCheckBig size={13} />
-                    {spotlightProject.testCaseCount ?? 0} Test Cases
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() => handleOpen(spotlightProject.id)}
-                    className="btn-secondary px-4 py-2 text-sm md:ml-2"
-                  >
-                    Resume
-                  </button>
-                </div>
+            <section className="section-enter section-enter-3 mt-6 base-card flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0">
+                <p className="eyebrow">Continue where you left off</p>
+                <h2 className="mt-1.5 truncate text-lg font-semibold tracking-[-0.01em] text-ink">
+                  {spotlightProject.name}
+                </h2>
+                <p className="mt-1 text-[13px] text-muted">
+                  Updated {formatRelativeTime(spotlightProject.updatedAt)} · {spotlightProject.status || "Draft"}
+                  {" · "}{spotlightProject.moduleCount ?? 0} modules · {spotlightProject.testCaseCount ?? 0} test cases
+                </p>
               </div>
+
+              <button
+                type="button"
+                onClick={() => handleOpen(spotlightProject.id)}
+                className="btn-secondary shrink-0 self-start md:self-auto"
+              >
+                Resume
+              </button>
             </section>
           )}
 
-          <section className="mt-6 base-card p-4 md:p-5 section-enter section-enter-3">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="relative w-full md:max-w-md">
-                <Search
-                  size={16}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
-                />
-
-                <input
-                  value={searchQuery}
-                  onChange={(event) =>
-                    setSearchQuery(event.target.value)
-                  }
-                  placeholder="Search by project name or description"
-                  className="w-full rounded-lg border border-hairline bg-paper py-2.5 pl-9 pr-3 text-sm transition focus:border-signal focus:outline-none"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Clock3 size={15} className="text-muted" />
-
-                <select
-                  value={sortBy}
-                  onChange={(e) =>
-                    setSortBy(e.target.value)
-                  }
-                  className="rounded-lg border border-hairline bg-white px-3 py-2 text-sm transition focus:border-signal focus:outline-none"
-                >
-                  <option value="updated">Recently Updated</option>
-                  <option value="newest">Newest</option>
-                  <option value="oldest">Oldest</option>
-                  <option value="az">A → Z</option>
-                  <option value="za">Z → A</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-2">
+          <section className="section-enter section-enter-3 mt-8 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div
+              role="tablist"
+              aria-label="Filter projects"
+              className="scroll-thin -mx-1 flex gap-1 overflow-x-auto px-1"
+            >
               {filterChips.map((chip) => {
                 const active = filterBy === chip.key;
-
                 return (
                   <button
                     key={chip.key}
                     type="button"
+                    role="tab"
+                    aria-selected={active}
                     onClick={() => setFilterBy(chip.key)}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                      active
-                        ? "border-signal bg-signal text-white"
-                        : "border-hairline bg-white text-muted hover:border-signal hover:text-ink"
+                    className={`shrink-0 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                      active ? "bg-ink/[0.06] text-ink" : "text-muted hover:bg-ink/[0.04] hover:text-ink"
                     }`}
                   >
-                    {chip.label} ({chip.count})
+                    {chip.label}
+                    <span className="ml-1.5 font-mono text-[11px] text-muted">{chip.count}</span>
                   </button>
                 );
               })}
             </div>
+
+            <div className="flex gap-2">
+              <div className="relative min-w-0 flex-1 lg:w-72 lg:flex-none">
+                <Search
+                  size={15}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+                />
+                <input
+                  type="search"
+                  aria-label="Search projects"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search projects"
+                  className="field !pl-9"
+                />
+              </div>
+
+              <label className="sr-only" htmlFor="project-sort">Sort projects</label>
+              <select
+                id="project-sort"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="field !w-auto"
+              >
+                <option value="updated">Recently updated</option>
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="az">A → Z</option>
+                <option value="za">Z → A</option>
+              </select>
+            </div>
           </section>
 
-          <section className="mt-6 section-enter section-enter-4">
+          <section className="mt-4 section-enter section-enter-4">
             <ProjectGrid
               projects={sortedProjects}
           onOpenProject={handleOpen}

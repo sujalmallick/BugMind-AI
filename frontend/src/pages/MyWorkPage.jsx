@@ -121,7 +121,7 @@ export default function MyWorkPage() {
 
           <section>
             <div className="flex items-center gap-2 mb-4 border-b border-hairline pb-2">
-              <Briefcase size={18} className="text-indigo-500" />
+              <Briefcase size={18} className="text-signal" />
               <h2 className="text-lg font-bold text-ink">My Recent Activity</h2>
             </div>
             <div className="bg-white p-4 rounded-xl border border-hairline shadow-sm">

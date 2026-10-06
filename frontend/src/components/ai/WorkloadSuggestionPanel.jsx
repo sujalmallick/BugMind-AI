@@ -77,7 +77,7 @@ export default function WorkloadSuggestionPanel({
   return (
     <div className="fixed inset-y-0 right-0 w-[450px] bg-surface shadow-2xl border-l border-hairline z-50 flex flex-col transform transition-transform duration-300 ease-in-out">
       <div className="flex items-center justify-between p-6 border-b border-hairline bg-white">
-        <div className="flex items-center gap-2 text-indigo-600">
+        <div className="flex items-center gap-2 text-signal">
           <Sparkles size={20} />
           <h2 className="text-lg font-bold text-ink">AI Auto-Assign Plan</h2>
         </div>
@@ -126,7 +126,7 @@ export default function WorkloadSuggestionPanel({
                         </div>
                         
                         <p className="text-sm font-medium text-ink mt-2 mb-2">
-                          Assign to: <span className="text-indigo-600 font-bold">{userName}</span>
+                          Assign to: <span className="text-signal font-bold">{userName}</span>
                         </p>
                         
                         <div className="bg-paper p-3 rounded-lg border border-hairline">

@@ -128,7 +128,7 @@ export default function ProjectDashboardPage() {
           <button
             onClick={handleAutoAssign}
             disabled={aiLoading}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition shadow-sm disabled:opacity-60"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-signal text-white text-sm font-semibold hover:bg-signal-strong transition shadow-sm disabled:opacity-60"
           >
             {aiLoading ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
             {aiLoading ? "Analyzing..." : "AI Auto-Assign"}
@@ -195,7 +195,7 @@ export default function ProjectDashboardPage() {
                     <tr key={user.user_id}>
                       <td className="whitespace-nowrap px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-signal to-indigo-500 text-[10px] font-bold text-white uppercase">
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-signal-soft text-signal text-[10px] font-bold uppercase">
                             {user.avatar_url ? (
                               <img src={getAvatarUrl(user.avatar_url)} alt="" className="h-full w-full rounded-full object-cover" />
                             ) : (

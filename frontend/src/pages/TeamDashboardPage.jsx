@@ -127,7 +127,7 @@ export default function TeamDashboardPage() {
                 <div key={member.user_id} className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-signal to-indigo-500 text-xs font-bold text-white uppercase">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-signal-soft text-signal text-xs font-bold uppercase">
                         {member.avatar_url ? (
                           <img src={getAvatarUrl(member.avatar_url)} alt="" className="h-full w-full rounded-full object-cover" />
                         ) : (

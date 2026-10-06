@@ -19,13 +19,13 @@ import {
 
 const VERB_META = {
   created_test_case: { icon: ListPlus, color: "text-blue-500 bg-blue-500/10 border-blue-500/20", label: "created test case" },
-  updated_test_case: { icon: Pencil, color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20", label: "updated test case" },
+  updated_test_case: { icon: Pencil, color: "text-signal bg-signal/10 border-signal/20", label: "updated test case" },
   deleted_test_case: { icon: Trash2, color: "text-red-500 bg-red-500/10 border-red-500/20", label: "deleted test case" },
-  assigned_test_case: { icon: UserPlus, color: "text-violet-500 bg-violet-500/10 border-violet-500/20", label: "assigned test case" },
+  assigned_test_case: { icon: UserPlus, color: "text-ochre bg-ochre/10 border-ochre/20", label: "assigned test case" },
   unassigned_test_case: { icon: UserMinus, color: "text-slate-500 bg-slate-500/10 border-slate-500/20", label: "unassigned test case" },
   changed_test_case_status: { icon: RefreshCw, color: "text-teal-500 bg-teal-500/10 border-teal-500/20", label: "updated status" },
   created_issue: { icon: Bug, color: "text-red-500 bg-red-500/10 border-red-500/20", label: "logged issue" },
-  assigned_issue: { icon: UserPlus, color: "text-violet-500 bg-violet-500/10 border-violet-500/20", label: "assigned issue" },
+  assigned_issue: { icon: UserPlus, color: "text-ochre bg-ochre/10 border-ochre/20", label: "assigned issue" },
   unassigned_issue: { icon: UserMinus, color: "text-slate-500 bg-slate-500/10 border-slate-500/20", label: "unassigned issue" },
   changed_issue_status: { icon: RefreshCw, color: "text-teal-500 bg-teal-500/10 border-teal-500/20", label: "updated issue status" },
   member_joined: { icon: UserCheck, color: "text-green-500 bg-green-500/10 border-green-500/20", label: "joined" },
@@ -34,7 +34,7 @@ const VERB_META = {
   accepted_invitation: { icon: MailCheck, color: "text-green-500 bg-green-500/10 border-green-500/20", label: "accepted invitation" },
   sent_invitation: { icon: Mail, color: "text-blue-500 bg-blue-500/10 border-blue-500/20", label: "sent invitation" },
   created_project: { icon: FolderPlus, color: "text-blue-500 bg-blue-500/10 border-blue-500/20", label: "created project" },
-  updated_project: { icon: FolderEdit, color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20", label: "updated project" },
+  updated_project: { icon: FolderEdit, color: "text-signal bg-signal/10 border-signal/20", label: "updated project" },
 };
 
 function formatTimeAgo(dateString) {

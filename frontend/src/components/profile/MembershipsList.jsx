@@ -81,7 +81,7 @@ export default function MembershipsList({ memberships }) {
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg
-                                    bg-gradient-to-br from-signal to-indigo-500 text-white text-sm font-bold">
+                                    bg-signal-soft text-signal text-sm font-bold">
                       {m.org.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
