@@ -141,5 +141,5 @@ def test_other_provider_errors_are_not_masked_by_json_fallback(recorder):
 
     result = run_agent({"agent": "module"})
 
-    assert result == {"success": False, "error": "Invalid or missing API Key."}
+    assert result == {"success": False, "error": "Invalid or missing API Key.", "code": "auth"}
     assert len(recorder.calls) == 1

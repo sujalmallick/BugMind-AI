@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 import litellm
 from litellm import completion
 
+from services.llm_usage import extract_usage
+
 logger = logging.getLogger("BugMind")
 
 # Ensure .env is loaded from the workspace root regardless of working directory.
@@ -82,14 +84,17 @@ class LiteLLMProvider:
 
     @staticmethod
     def _complete(**kwargs):
-        """completion(), retried once without response_format if the provider rejects JSON mode."""
+        """
+        completion(), retried once without response_format if the provider rejects JSON mode.
+        Returns (response, model actually called) so fallbacks are visible in usage logs.
+        """
         try:
-            return completion(**kwargs)
+            return completion(**kwargs), kwargs["model"]
         except Exception as err:
             if "response_format" in kwargs and any(k in str(err).lower() for k in _JSON_MODE_ERRORS):
                 logger.warning(f"Model {kwargs.get('model')} rejected JSON mode. Retrying without it...")
                 kwargs.pop("response_format")
-                return completion(**kwargs)
+                return completion(**kwargs), kwargs["model"]
             raise
 
     @staticmethod
@@ -104,6 +109,12 @@ class LiteLLMProvider:
         ]
 
     def generate(self, prompt: str, system: str | None = None, json_mode: bool = False) -> str:
+        return self.generate_with_usage(prompt, system=system, json_mode=json_mode)[0]
+
+    def generate_with_usage(
+        self, prompt: str, system: str | None = None, json_mode: bool = False
+    ) -> tuple[str, dict]:
+        """Returns (content, usage) where usage has token counts, cost estimate and the model used."""
         api_key = self._resolve_api_key()
         messages = self._build_messages(prompt, system)
 
@@ -142,7 +153,7 @@ class LiteLLMProvider:
                 "HTTP-Referer": "https://bugmind.ai",
                 "X-Title": "BugMind AI",
             }
-            response = self._complete(
+            response, used_model = self._complete(
                 model=model_name,
                 api_key=api_key,
                 **json_kwargs,
@@ -154,7 +165,7 @@ class LiteLLMProvider:
             if system and any(k in err_str for k in ["system role", "system message", "developer instruction", "system_instruction", "system prompt is not supported"]):
                 # Some models (e.g. Gemma) reject system messages; keep the policy as a prefix of the user turn.
                 logger.warning(f"Model {model_name} rejected the system role. Retrying with a merged prompt...")
-                response = self._complete(
+                response, used_model = self._complete(
                     model=model_name,
                     api_key=api_key,
                     **json_kwargs,
@@ -163,7 +174,7 @@ class LiteLLMProvider:
                 )
             elif prov == "gemini" and model_name != "gemini/gemini-1.5-flash" and any(k in err_str for k in ["not found", "404", "does not exist", "unsupported"]):
                 logger.warning(f"Model {model_name} failed with '{err}'. Falling back to gemini/gemini-1.5-flash...")
-                response = self._complete(
+                response, used_model = self._complete(
                     model="gemini/gemini-1.5-flash",
                     api_key=api_key,
                     **json_kwargs,
@@ -171,7 +182,7 @@ class LiteLLMProvider:
                 )
             elif prov == "groq" and model_name != "groq/llama-3.3-70b-versatile" and any(k in err_str for k in ["not found", "404", "does not exist"]):
                 logger.warning(f"Model {model_name} failed with '{err}'. Falling back to groq/llama-3.3-70b-versatile...")
-                response = self._complete(
+                response, used_model = self._complete(
                     model="groq/llama-3.3-70b-versatile",
                     api_key=api_key,
                     **json_kwargs,
@@ -180,7 +191,7 @@ class LiteLLMProvider:
             elif prov == "openrouter" and model_name != _OPENROUTER_FREE_ROUTER and model_name.endswith(":free") and any(k in err_str for k in ["not found", "404", "does not exist", "no endpoints"]):
                 # OpenRouter retires :free models often; the free router always picks an available one.
                 logger.warning(f"Model {model_name} failed with '{err}'. Falling back to {_OPENROUTER_FREE_ROUTER}...")
-                response = self._complete(
+                response, used_model = self._complete(
                     model=_OPENROUTER_FREE_ROUTER,
                     api_key=api_key,
                     **json_kwargs,
@@ -190,4 +201,6 @@ class LiteLLMProvider:
             else:
                 raise err
 
-        return response.choices[0].message.content
+        usage = extract_usage(response, model=used_model)
+        usage["model"] = used_model
+        return response.choices[0].message.content, usage

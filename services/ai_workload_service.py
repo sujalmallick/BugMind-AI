@@ -30,6 +30,7 @@ from database.models.test_case import TestCase
 from database.models.issue import Issue
 from database.models.user import User
 from database.models.workspace import Workspace
+from services.llm_errors import LLMError, LLMRateLimitError
 from services.llm_factory import build_llm_manager
 
 logger = logging.getLogger("BugMind")
@@ -342,6 +343,9 @@ Output ONLY the JSON and nothing else. No markdown wrappers.
         response_text = llm.generate(prompt, agent=AGENT)
     except GuardrailViolation as e:
         raise HTTPException(status_code=500, detail=e.user_message)
+    except LLMError as e:
+        status_code = 429 if isinstance(e, LLMRateLimitError) else 502
+        raise HTTPException(status_code=status_code, detail=e.user_message)
     if not response_text:
         raise HTTPException(status_code=500, detail="AI returned an empty response.")
     
