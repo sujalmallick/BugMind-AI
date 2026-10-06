@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 
-from auth.jwt import verify_access_token
+from auth.jwt import verify_access_token, verify_purpose_token
 from jose import JWTError, ExpiredSignatureError
 from database.session import get_db
 from database.models.user import User
@@ -17,9 +17,17 @@ def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User:
+    return user_from_token(token, db)
 
+
+def user_from_token(token: str, db: Session, purpose: str | None = None) -> User:
+    """
+    Resolve a token to an active user, applying every check (signature,
+    expiry, token type, soft-delete, revocation). With `purpose`, only a token
+    minted for that purpose (e.g. "sse") is accepted instead of a session token.
+    """
     try:
-        payload = verify_access_token(token)
+        payload = verify_purpose_token(token, purpose) if purpose else verify_access_token(token)
     except ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -1,10 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AISettingsUpdate(BaseModel):
-    provider: str
-    model: str
-    api_key: str | None = None
+    provider: str = Field(max_length=32)
+    model: str = Field(max_length=128)
+    api_key: str | None = Field(None, max_length=512)
 
 
 class AISettingsResponse(BaseModel):
@@ -14,6 +14,6 @@ class AISettingsResponse(BaseModel):
 
 
 class AISettingsTestKeyRequest(BaseModel):
-    provider: str
-    model: str | None = None
-    api_key: str | None = None
+    provider: str = Field(max_length=32)
+    model: str | None = Field(None, max_length=128)
+    api_key: str | None = Field(None, max_length=512)

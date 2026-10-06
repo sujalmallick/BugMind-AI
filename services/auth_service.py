@@ -10,6 +10,8 @@ from auth.security import (
     verify_password,
 )
 from auth.jwt import create_access_token
+from auth.security import burn_password_check, validate_new_password
+from auth.throttle import failed_logins, password_reset_requests
 from auth.password_reset import (
     PASSWORD_RESET_EXPIRE_MINUTES,
     create_password_reset_token,
@@ -37,11 +39,7 @@ def register_user(
         .first()
     )
 
-    if not request.password or len(request.password) < 8:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must be at least 8 characters long",
-        )
+    validate_new_password(request.password)
 
     if existing_user:
         raise HTTPException(
@@ -70,11 +68,20 @@ def login_user(
     password: str,
 ):
 
+    if failed_logins.is_blocked(email):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many failed sign-in attempts. Please wait a few minutes and try again.",
+        )
+
     user = (
         db.query(User)
         .filter(User.email == email.lower().strip())
         .first()
     )
+
+    if user is None:
+        burn_password_check(password)
 
     if (
         not user
@@ -83,10 +90,13 @@ def login_user(
             user.password_hash,
         )
     ):
+        failed_logins.record(email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
+
+    failed_logins.reset(email)
 
     if user.deleted_at is not None:
         raise HTTPException(
@@ -125,6 +135,11 @@ def request_password_reset(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No account found with that email address.",
         )
+
+    # Cap reset emails per account so the endpoint can't flood an inbox.
+    if password_reset_requests.is_blocked(email):
+        return generic_response
+    password_reset_requests.record(email)
 
     token = create_password_reset_token(user.id, user.password_hash)
     frontend_url = os.getenv("FRONTEND_URL", "https://black-smoke-05d3e7e00.5.azurestaticapps.net")
@@ -176,11 +191,7 @@ def reset_password(
     ):
         raise invalid_link
 
-    if not new_password or len(new_password) < 8:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must be at least 8 characters long",
-        )
+    validate_new_password(new_password)
 
     user.password_hash = hash_password(new_password)
     # Log out every existing session; see change_password in routes/user.py

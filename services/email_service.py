@@ -1,4 +1,5 @@
 import os
+import html
 import logging
 import threading
 
@@ -33,6 +34,16 @@ def _log_delivery_status(poller, kind: str, to_email: str) -> None:
     threading.Thread(target=wait, name=f"email-status-{kind}", daemon=True).start()
 
 
+def _esc(value) -> str:
+    """Escape user-controlled text for the HTML body (names are attacker-chosen)."""
+    return html.escape(str(value), quote=True)
+
+
+def _one_line(value, limit: int = 120) -> str:
+    """Subjects must be a single short line."""
+    return " ".join(str(value).split())[:limit]
+
+
 def send_invitation_email(
     to_email: str,
     invite_url: str,
@@ -50,8 +61,8 @@ def send_invitation_email(
 
     if not connection_string or not sender_address:
         logger.info(
-            f"Email dispatch skipped (AZURE_COMMUNICATION_CONNECTION_STRING or SENDER_EMAIL not configured). "
-            f"Invite link: {invite_url}"
+            # SECURITY: never log the invite link; its token grants access.
+            "Email dispatch skipped (AZURE_COMMUNICATION_CONNECTION_STRING or SENDER_EMAIL not configured)."
         )
         return False
 
@@ -60,21 +71,21 @@ def send_invitation_email(
 
         client = EmailClient.from_connection_string(connection_string)
 
-        subject = f"You've been invited to join {target_name} on BugMind AI"
+        subject = f"You've been invited to join {_one_line(target_name)} on BugMind AI"
         html_content = f"""
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px;">
             <h2 style="color: #0f172a; margin-bottom: 16px;">BugMind AI Collaboration</h2>
             <p style="color: #334155; font-size: 15px; line-height: 1.5;">Hello,</p>
             <p style="color: #334155; font-size: 15px; line-height: 1.5;">
-                <strong>{inviter_name}</strong> has invited you to collaborate on <strong>{target_name}</strong> ({target_type}) as <strong>{role}</strong>.
+                <strong>{_esc(inviter_name)}</strong> has invited you to collaborate on <strong>{_esc(target_name)}</strong> ({_esc(target_type)}) as <strong>{_esc(role)}</strong>.
             </p>
             <div style="margin: 28px 0;">
-                <a href="{invite_url}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                <a href="{_esc(invite_url)}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
                     Accept Invitation
                 </a>
             </div>
             <p style="color: #64748b; font-size: 13px;">Or copy and paste this link into your browser:</p>
-            <p style="color: #2563eb; font-size: 12px; word-break: break-all;">{invite_url}</p>
+            <p style="color: #2563eb; font-size: 12px; word-break: break-all;">{_esc(invite_url)}</p>
         </div>
         """
 
@@ -129,18 +140,18 @@ def send_password_reset_email(
         html_content = f"""
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px;">
             <h2 style="color: #0f172a; margin-bottom: 16px;">Reset your password</h2>
-            <p style="color: #334155; font-size: 15px; line-height: 1.5;">Hello {user_name},</p>
+            <p style="color: #334155; font-size: 15px; line-height: 1.5;">Hello {_esc(user_name)},</p>
             <p style="color: #334155; font-size: 15px; line-height: 1.5;">
                 We received a request to reset the password for your BugMind AI account.
-                This link expires in <strong>{expire_minutes} minutes</strong> and can be used once.
+                This link expires in <strong>{_esc(expire_minutes)} minutes</strong> and can be used once.
             </p>
             <div style="margin: 28px 0;">
-                <a href="{reset_url}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                <a href="{_esc(reset_url)}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
                     Reset Password
                 </a>
             </div>
             <p style="color: #64748b; font-size: 13px;">Or copy and paste this link into your browser:</p>
-            <p style="color: #2563eb; font-size: 12px; word-break: break-all;">{reset_url}</p>
+            <p style="color: #2563eb; font-size: 12px; word-break: break-all;">{_esc(reset_url)}</p>
             <p style="color: #64748b; font-size: 13px; margin-top: 24px;">
                 If you didn't request this, you can safely ignore this email. Your password won't change.
             </p>

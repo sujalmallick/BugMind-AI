@@ -1,10 +1,17 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from auth.permissions import get_project_role, require_project_role
+from auth.permissions import (
+    assert_project_role_grantable,
+    get_project_role,
+    project_role_satisfies,
+    require_project_role,
+)
+from database.models.organization_member import OrganizationMember
 from database.models.project import Project
 from database.models.project_member import ProjectMember
 from database.models.project_team_access import ProjectTeamAccess
+from database.models.team import Team
 from database.models.team_member import TeamMember
 from database.models.user import User
 
@@ -100,7 +107,8 @@ def add_project_member(
     role: str,
     requester_id: int,
 ) -> dict:
-    require_project_role(db, requester_id, project_id, "admin")
+    requester_role = require_project_role(db, requester_id, project_id, "admin")
+    assert_project_role_grantable(requester_role, role)
 
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
@@ -108,6 +116,24 @@ def add_project_member(
 
     if target_user_id == project.owner_id:
         raise HTTPException(status_code=400, detail="Cannot modify access for the project owner.")
+    if target_user_id == requester_id:
+        raise HTTPException(status_code=400, detail="You cannot change your own access.")
+
+    # Direct adds are limited to people already in the project's organization;
+    # anyone else must be invited (and accept). Otherwise any user could add
+    # arbitrary user ids and read their emails from the response.
+    if not project.organization_id or not (
+        db.query(OrganizationMember)
+        .filter(
+            OrganizationMember.organization_id == project.organization_id,
+            OrganizationMember.user_id == target_user_id,
+        )
+        .first()
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Only members of the project's organization can be added directly. Send an invitation instead.",
+        )
 
     existing = (
         db.query(ProjectMember)
@@ -115,6 +141,8 @@ def add_project_member(
         .first()
     )
     if existing:
+        if requester_role != "owner" and not project_role_satisfies(requester_role, existing.role):
+            raise HTTPException(status_code=403, detail="Cannot modify a member with a higher role.")
         existing.role = role
         existing.granted_by = requester_id
         db.commit()
@@ -153,6 +181,11 @@ def remove_project_member(
     if not member:
         raise HTTPException(status_code=404, detail="User does not have direct access to this project.")
 
+    if requester_id != target_user_id:
+        requester_role = get_project_role(db, requester_id, project_id)
+        if requester_role != "owner" and not project_role_satisfies(requester_role, member.role):
+            raise HTTPException(status_code=403, detail="Cannot remove a member with a higher role.")
+
     db.delete(member)
     db.commit()
 
@@ -164,7 +197,8 @@ def add_team_to_project(
     role: str,
     requester_id: int,
 ) -> dict:
-    require_project_role(db, requester_id, project_id, "admin")
+    requester_role = require_project_role(db, requester_id, project_id, "admin")
+    assert_project_role_grantable(requester_role, role)
 
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
@@ -172,6 +206,14 @@ def add_team_to_project(
 
     if not project.organization_id:
         raise HTTPException(status_code=400, detail="Cannot add teams to a personal project. Assign it to an organization first.")
+
+    team = (
+        db.query(Team)
+        .filter(Team.id == target_team_id, Team.organization_id == project.organization_id)
+        .first()
+    )
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found in this project's organization.")
 
     existing = (
         db.query(ProjectTeamAccess)

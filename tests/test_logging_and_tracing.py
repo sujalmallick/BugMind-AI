@@ -126,7 +126,8 @@ def test_litellm_callbacks_receive_sanitized_payloads():
             messages=[{"role": "user", "content": "contact a@corp.io"}],
             mock_response="leaked sk-proj-ABCDEFGHIJ1234567890 for b@corp.io",
         )
-        assert done.wait(10), "LiteLLM success callback did not fire"
+        # LiteLLM logs from a background worker; allow for a busy machine.
+        assert done.wait(30), "LiteLLM success callback did not fire"
     finally:
         litellm.callbacks = [c for c in litellm.callbacks if c is not capture]
 

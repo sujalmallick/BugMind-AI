@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from database.session import get_db
 from database.models.user import User
 from auth.dependencies import get_current_user
 from auth.permissions import require_project_role
+from limiter import limiter
 from schemas.ai_workload import AIAssignmentSuggestionResponse, ApplySuggestionsRequest
 from services.ai_workload_service import (
     generate_suggestions,
@@ -16,7 +17,9 @@ from services.ai_workload_service import (
 router = APIRouter(prefix="/projects/{project_id}/ai", tags=["ai_workload"])
 
 @router.post("/suggest-assignments", response_model=AIAssignmentSuggestionResponse)
+@limiter.limit("5/minute")
 def suggest_assignments_route(
+    request: Request,
     project_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),

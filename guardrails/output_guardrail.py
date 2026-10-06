@@ -26,10 +26,7 @@ from guardrails.models import Decision, GuardrailResult
 from guardrails.policy_engine import Stage, policy
 from guardrails.prompt_safety import CANARY, SECURITY_PREAMBLE, instruction_portion
 
-_REASONING_BLOCK = re.compile(
-    r"<(think|thinking|reasoning|scratchpad|inner_monologue)>[\s\S]*?</\1>\s*", re.IGNORECASE
-)
-_UNCLOSED_REASONING = re.compile(r"<(think|thinking|reasoning|scratchpad)>[\s\S]*\Z", re.IGNORECASE)
+_REASONING_OPEN = re.compile(r"<(think|thinking|reasoning|scratchpad|inner_monologue)>", re.IGNORECASE)
 
 _DANGEROUS_COMMAND = re.compile(
     r"\brm\s+-[a-z]*r[a-z]*f?[a-z]*\s+(?:--no-preserve-root\s+)?(?:/|~|\*|/\*)(?=\s|$|[\"'`])"
@@ -66,8 +63,27 @@ _PREAMBLE_SHINGLES = _instruction_shingles(SECURITY_PREAMBLE)
 
 
 def strip_reasoning(text: str) -> str:
-    text = _REASONING_BLOCK.sub("", text)
-    return _UNCLOSED_REASONING.sub("", text)
+    """
+    Remove <think>…</think>-style blocks; an unclosed block drops the rest of
+    the text. Linear scan (a lazy-match regex is quadratic on repeated openers).
+    """
+    lowered = text.lower()
+    out: list[str] = []
+    pos = 0
+    while True:
+        m = _REASONING_OPEN.search(text, pos)
+        if not m:
+            out.append(text[pos:])
+            break
+        out.append(text[pos:m.start()])
+        closing = f"</{m.group(1).lower()}>"
+        end = lowered.find(closing, m.end())
+        if end == -1:
+            break  # unclosed reasoning: withhold everything after it
+        pos = end + len(closing)
+        while pos < len(text) and text[pos].isspace():
+            pos += 1
+    return "".join(out)
 
 
 class OutputGuardrail:

@@ -24,6 +24,8 @@ from database.models.user import User
 from fastapi import Depends, Request
 from limiter import limiter
 from slowapi import _rate_limit_exceeded_handler
+from slowapi.middleware import SlowAPIASGIMiddleware
+from body_limit import StreamingBodyLimitMiddleware
 from slowapi.errors import RateLimitExceeded
 from middlewares import (
     RequestIDMiddleware,
@@ -37,7 +39,17 @@ from routes.ai_settings import (
 from routes.ai_workload import router as ai_workload_router
 from guardrails import Source, input_guardrail, masker, output_guardrail
 
-app = FastAPI()
+# API docs are a full endpoint map; only serve them outside production.
+_is_development = os.getenv("ENVIRONMENT", "production").lower() in ("development", "dev", "local")
+app = FastAPI(
+    docs_url="/docs" if _is_development else None,
+    redoc_url="/redoc" if _is_development else None,
+    openapi_url="/openapi.json" if _is_development else None,
+)
+
+# Registered first so it sits innermost, right next to the router: its 413 must
+# reach FastAPI's body parser directly, not through BaseHTTPMiddleware task groups.
+app.add_middleware(StreamingBodyLimitMiddleware)
 
 app.include_router(
     ai_settings_router
@@ -62,6 +74,8 @@ app.add_middleware(MaxBodySizeMiddleware)
 app.add_middleware(TimeoutMiddleware)
 
 app.state.limiter = limiter
+# Applies limiter.default_limits to every route without its own @limiter.limit.
+app.add_middleware(SlowAPIASGIMiddleware)
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 from fastapi.responses import JSONResponse
@@ -71,17 +85,22 @@ app_logger = logging.getLogger("BugMind")
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    app_logger.error(f"Unhandled Exception on {request.method} {request.url.path}: {exc}", exc_info=True)
-    origin = request.headers.get("origin", "*")
+    request_id = getattr(request.state, "request_id", None)
+    app_logger.error(f"[{request_id}] Unhandled Exception on {request.method} {request.url.path}: {exc}", exc_info=True)
+    # This handler runs outside CORSMiddleware, so add CORS headers here so the
+    # frontend can read the error -- but only for allowlisted origins.
+    headers = {}
+    origin = request.headers.get("origin")
+    if origin and origin in allowed_origins:
+        headers = {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Vary": "Origin",
+        }
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal Server Error", "error": output_guardrail.sanitize_error(exc)},
-        headers={
-            "Access-Control-Allow-Origin": origin if origin else "*",
-            "Access-Control-Allow-Credentials": "true",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
-        },
+        content={"detail": "Internal Server Error", "error": "An unexpected error occurred.", "request_id": request_id},
+        headers=headers,
     )
 
 app.include_router(project_router)
@@ -134,7 +153,9 @@ def health_check():
     try:
         db.execute(text("SELECT 1"))
     except Exception as e:
-        db_status = f"error: {e}"
+        # Unauthenticated endpoint: never return driver errors (host/user names).
+        app_logger.error(f"Health check database error: {e}")
+        db_status = "error"
     finally:
         db.close()
 

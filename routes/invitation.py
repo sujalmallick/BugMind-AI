@@ -4,15 +4,16 @@ routes/invitation.py
 Phase 3 — Invitation endpoints.
 """
 
-from typing import Optional
+from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel, EmailStr
+from fastapi import APIRouter, Depends, Query, Request
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
 from auth.dependencies import get_current_user
 from database.models.user import User
 from database.session import get_db
+from limiter import limiter
 from services.invitation_service import (
     accept_invitation,
     create_invitation,
@@ -26,15 +27,17 @@ router = APIRouter(prefix="/invitations", tags=["Invitations"])
 
 
 class InviteCreate(BaseModel):
-    type: str                         # 'project' | 'organization'
+    type: Literal["project", "organization"]
     target_id: int
-    role: str = "viewer"
-    invited_email: Optional[str] = None
-    expiry_hours: int = 48
+    role: str = "viewer"              # validated per type in the service
+    invited_email: Optional[EmailStr] = None
+    expiry_hours: int = Field(48, ge=1, le=24 * 7)
 
 
 @router.post("/")
+@limiter.limit("10/minute;50/day")
 def create_invite(
+    request: Request,
     body: InviteCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

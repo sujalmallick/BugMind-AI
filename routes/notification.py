@@ -1,14 +1,13 @@
 import asyncio
 import json
 from typing import List
-from fastapi import APIRouter, Depends, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from jose import JWTError, ExpiredSignatureError
 
-from auth.dependencies import get_current_user
-from auth.jwt import verify_access_token
-from database.session import get_db
+from auth.dependencies import get_current_user, user_from_token
+from auth.jwt import create_stream_ticket
+from database.session import SessionLocal, get_db
 from database.models.user import User
 from database.models.notification import Notification
 from services.sse_manager import sse_manager
@@ -105,7 +104,8 @@ def trigger_test_notification_route(
 ):
     """(Development only) Trigger a test notification for the current user via create_notification so SSE fires."""
     import os
-    if os.getenv("ENVIRONMENT", "development").lower() == "production":
+    # Disabled unless the environment is explicitly marked as development.
+    if os.getenv("ENVIRONMENT", "production").lower() not in ("development", "dev", "local"):
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="Test endpoints are disabled in production.")
 
@@ -125,9 +125,16 @@ def trigger_test_notification_route(
     return {"detail": "Test notification created."}
 
 
+@router.post("/stream-ticket")
+def create_notification_stream_ticket(current_user: User = Depends(get_current_user)):
+    """Mint a 60-second ticket that only opens the notification stream."""
+    return {"ticket": create_stream_ticket(current_user.id)}
+
+
 @router.get("/stream")
 async def notification_stream(
-    token: str = Query(..., description="JWT access token (EventSource cannot set custom headers)"),
+    ticket: str | None = Query(None, description="Ticket from POST /stream-ticket"),
+    token: str | None = Query(None, description="Deprecated: full access token; use ticket"),
 ):
     """
     Server-Sent Events endpoint for real-time notification signals.
@@ -141,21 +148,24 @@ async def notification_stream(
       streaming client (e.g. @microsoft/fetch-event-source) so the token
       can be sent in an Authorization header, eliminating log exposure.
     """
-    # --- Authenticate via query-param token ---
+    # --- Authenticate via query-param token (same checks as every other endpoint,
+    # including soft-deleted accounts and sessions revoked by a password change) ---
+    db = SessionLocal()
     try:
-        payload = verify_access_token(token)
-    except (JWTError, ExpiredSignatureError):
+        if ticket:
+            user_id = user_from_token(ticket, db, purpose="sse").id
+        elif token:
+            # Kept for one release so a backend deploy ahead of the frontend
+            # doesn't break notifications. Remove once clients send tickets.
+            user_id = user_from_token(token, db).id
+        else:
+            raise HTTPException(status_code=401, detail="Missing stream ticket")
+    except HTTPException:
         async def _error():
             yield "data: {\"error\": \"unauthorized\"}\n\n"
         return StreamingResponse(_error(), media_type="text/event-stream", status_code=401)
-
-    user_id_str = payload.get("sub")
-    if not user_id_str:
-        async def _error():
-            yield "data: {\"error\": \"invalid token\"}\n\n"
-        return StreamingResponse(_error(), media_type="text/event-stream", status_code=401)
-
-    user_id = int(user_id_str)
+    finally:
+        db.close()
 
     # --- SSE event generator ---
     async def event_generator():

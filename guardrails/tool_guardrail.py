@@ -174,17 +174,15 @@ class ToolGuardrail:
         name = tool_name.strip() if isinstance(tool_name, str) else ""
         spec = self.registry.get(name)
 
-        if not settings.enabled or not settings.tool_guardrails_enabled:
-            audit.event(self.name, "allow", tool=name, agent=agent, reasons=["tool_guardrail_disabled"])
-            return ToolAuthorizationResult(
-                tool_name=name, decision=Decision.ALLOW, reasons=["tool_guardrail_disabled"],
-                sanitized_arguments=arguments if isinstance(arguments, dict) else None,
-            )
+        # The kill-switch only turns off content scanning of arguments. The
+        # allowlist, schema, role, resource and confirmation checks are
+        # authorization, not detection, and always run.
+        scan_content = settings.enabled and settings.tool_guardrails_enabled
 
         timer = Timer()
         try:
             result = self._authorize(name, spec, arguments, user_context, confirmed,
-                                     confirmation_token, resources or {}, agent)
+                                     confirmation_token, resources or {}, agent, scan_content)
         except Exception:
             risk = spec.risk if spec else None
             closed = policy.fail_closed(risk) or spec is None
@@ -202,7 +200,7 @@ class ToolGuardrail:
         return result
 
     def _authorize(self, name, spec, arguments, user_context, confirmed,
-                   confirmation_token, resources, agent) -> ToolAuthorizationResult:
+                   confirmation_token, resources, agent, scan_content=True) -> ToolAuthorizationResult:
         def deny(*reasons: str) -> ToolAuthorizationResult:
             return ToolAuthorizationResult(
                 tool_name=name, decision=Decision.DENY, risk=spec.risk if spec else None,
@@ -226,7 +224,7 @@ class ToolGuardrail:
             ])
 
         clean_args = parsed.model_dump()
-        for path, value in list(_iter_strings(clean_args)):
+        for path, value in (list(_iter_strings(clean_args)) if scan_content else []):
             top = _top_level(path)
             if top not in spec.secret_allowed_args and masker.detect(value, kinds=(SECRET,)):
                 return deny(f"secret_in_argument:{top}")
@@ -258,7 +256,7 @@ class ToolGuardrail:
                 return [mask_args(v, f"{path}[{i}]") for i, v in enumerate(value)]
             return value
 
-        safe_args = mask_args(clean_args)
+        safe_args = mask_args(clean_args) if scan_content else clean_args
 
         if policy.requires_confirmation(spec.risk, spec.requires_confirmation or spec.destructive):
             if confirmed:

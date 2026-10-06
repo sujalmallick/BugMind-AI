@@ -12,17 +12,21 @@ from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
+    Request,
     UploadFile,
     File,
     status,
 )
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from limiter import limiter
+
 from auth.dependencies import get_current_user
 from auth.jwt import create_access_token
-from auth.security import hash_password, verify_password
+from auth.security import hash_password, validate_new_password, verify_password
 from database.models.user import User
 from database.session import get_db
 from services.organization_service import get_memberships_for_user
@@ -141,8 +145,38 @@ def patch_me(
 # ──────────────────────────────────────────────────
 # POST /api/me/avatar  — upload avatar (MIME-validated, EXIF-stripped)
 # ──────────────────────────────────────────────────
+MAX_AVATAR_DIMENSION = 4096
+
+
+class _AvatarTooLarge(Exception):
+    pass
+
+
+def _reencode_avatar(contents: bytes) -> bytes:
+    import io
+    import warnings
+    from PIL import Image
+
+    # Only the formats the magic-byte check allowed; never let Pillow pick
+    # another parser (EPS, JPEG2000, ...) for a polyglot file.
+    img = Image.open(io.BytesIO(contents), formats=["JPEG", "PNG", "WEBP"])
+    # Header dimensions are known before decoding: reject decompression bombs
+    # (a tiny compressed PNG can decode to gigabytes).
+    width, height = img.size
+    if width > MAX_AVATAR_DIMENSION or height > MAX_AVATAR_DIMENSION:
+        raise _AvatarTooLarge()
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", Image.DecompressionBombWarning)
+        img_rgb = img.convert("RGBA") if img.mode in ("RGBA", "LA") else img.convert("RGB")
+    buf = io.BytesIO()
+    img_rgb.save(buf, format="WEBP", quality=90)  # normalise everything to webp
+    return buf.getvalue()
+
+
 @router.post("/avatar")
+@limiter.limit("10/minute")
 async def upload_avatar(
+    request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -164,18 +198,15 @@ async def upload_avatar(
             detail="Only JPEG, PNG, and WebP images are accepted.",
         )
 
-    # Strip EXIF metadata (GPS, device info, etc.) using Pillow.
+    # Strip EXIF metadata (GPS, device info, etc.) by re-encoding with Pillow.
+    # Decoding is CPU/memory heavy, so it runs off the event loop.
     try:
-        from PIL import Image
-        import io
-
-        img = Image.open(io.BytesIO(contents))
-        # Convert to RGB to drop all metadata channels; re-encode cleanly.
-        output_format = "WEBP"  # Normalise everything to webp for efficiency
-        img_rgb = img.convert("RGBA") if img.mode in ("RGBA", "LA") else img.convert("RGB")
-        buf = io.BytesIO()
-        img_rgb.save(buf, format=output_format, quality=90)
-        clean_contents = buf.getvalue()
+        clean_contents = await run_in_threadpool(_reencode_avatar, contents)
+    except _AvatarTooLarge:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Avatar images must be at most {MAX_AVATAR_DIMENSION}x{MAX_AVATAR_DIMENSION} pixels.",
+        )
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -239,11 +270,7 @@ def change_password(
             detail="New password must differ from current password.",
         )
 
-    if len(body.new_password) < 8:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="New password must be at least 8 characters.",
-        )
+    validate_new_password(body.new_password)
 
     current_user.password_hash = hash_password(body.new_password)
     # Bump credentials_updated_at. The auth middleware will now reject any
