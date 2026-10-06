@@ -24,6 +24,7 @@ from agents.test_case_agent import generate_test_cases_agent
 from agents.test_plan_agent import AGENT as PLAN_AGENT, plan_tests_agent
 from auth.permissions import require_project_role
 from config import DEFAULT_MODEL
+from constants import TEST_CASE_STATUSES
 from database.models.test_case import TestCase
 from database.models.test_plan import TestPlan, TestPlanPhase
 from database.models.workspace import Workspace
@@ -455,7 +456,7 @@ def _generate(db, user_id, project_id, plan, phase, workspace, existing_in_phase
             test_case_id=f"P{phase.id}-TC-{index:03d}",
             description=str(tc.get("description") or "")[:5000], module=str(tc.get("module") or "General")[:100],
             category=str(tc.get("category") or "Functional")[:50], priority=str(tc.get("priority") or "Medium")[:20],
-            status="Not Executed", preconditions=str(tc.get("preconditions") or ""),
+            status=TEST_CASE_STATUSES["NOT_EXECUTED"], preconditions=str(tc.get("preconditions") or ""),
             steps="\n".join(str(s).strip() for s in tc.get("steps") or [] if str(s).strip()),
             expected_result=str(tc.get("expectedResult") or ""), actual_result="", notes="",
             grounding=sanitize_grounding(tc.get("grounding")), custom_fields={},

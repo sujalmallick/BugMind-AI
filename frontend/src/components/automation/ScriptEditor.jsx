@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import {
-  AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, Info, Loader2, Plus, Trash2, Undo2,
+  AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, Download, Info, Loader2, Plus, Trash2, Undo2,
 } from 'lucide-react'
 import Pill from '../shared/Pill'
 import SkeletonBlock from '../shared/SkeletonBlock'
 import ConfirmDialog from '../shared/ConfirmDialog'
-import { apiErrorMessage, deleteScript, getScript, updateScript } from '../../services/automationApi'
+import { apiErrorMessage, deleteScript, exportScript, getScript, updateScript } from '../../services/automationApi'
 
 // Mirrors services/automation_actions.py (the server validates every step).
 const ACTIONS = {
@@ -280,6 +280,13 @@ export default function ScriptEditor({ projectId, scriptId, environments, onBack
           <Trash2 size={15} />
         </button>
         <div className="ml-auto flex flex-wrap gap-2">
+          {script.status === 'approved' && !dirty && (
+            <button type="button" className="btn-secondary" title="Download as a Playwright test file"
+                    onClick={() => exportScript(projectId, scriptId).catch((error) =>
+                      showToast(apiErrorMessage(error, 'Could not export the script.'), 'error'))}>
+              <Download size={14} /> Export test
+            </button>
+          )}
           <button type="button" className="btn-secondary" disabled={!dirty || saving} onClick={() => save()}>
             Save
           </button>

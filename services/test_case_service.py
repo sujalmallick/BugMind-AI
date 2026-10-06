@@ -133,7 +133,10 @@ def _apply_fields(row: TestCase, tc: dict, display_id: str) -> None:
         if key is None:
             continue  # not sent: keep what's stored
         value = tc.get(key)
-        setattr(row, attr, _normalize_steps(value) if attr == "steps" else str(value or ""))
+        value = _normalize_steps(value) if attr == "steps" else str(value or "")
+        if attr == "status" and row.status and value != row.status:
+            row.automation = None  # a person set the status: no longer the automated result
+        setattr(row, attr, value)
     if "custom_fields" in tc:
         row.custom_fields = dict(tc.get("custom_fields") or {})
     if "grounding" in tc:
@@ -348,6 +351,8 @@ def update_test_case(db: Session, project_id: int, tc_id: int, current_user_id: 
         elif key in EDITABLE_TEST_CASE_FIELDS:
             if key in _GROUNDED_CONTENT_FIELDS and value != getattr(tc, key):
                 tc.grounding = None  # the grounding check was about the old content
+            if key == "status" and value != tc.status:
+                tc.automation = None  # a person set the status: no longer the automated result
             setattr(tc, key, value)
 
     db.commit()

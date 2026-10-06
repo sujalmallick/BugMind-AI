@@ -224,6 +224,7 @@ useEffect(() => {
             grounding: tc.grounding || null,
             origin: tc.origin || null,
             plan_phase_id: tc.plan_phase_id ?? null,
+            automation: tc.automation || null,
           };
         });
         setTestCases(loadedCases);
@@ -423,9 +424,10 @@ function handleAnalyze() {
 }
 async function handleStatusChange(id, status) {
 
+  // A person set the status, so it's no longer the automated result (the server clears it too).
   const updated = testCases.map((tc) =>
     tc.id === id
-      ? { ...tc, status }
+      ? { ...tc, status, automation: null }
       : tc
   );
 

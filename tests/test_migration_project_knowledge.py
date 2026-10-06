@@ -151,3 +151,35 @@ def test_automation_migration(tmp_path):
         with Operations.context(MigrationContext.configure(conn)):
             migration.downgrade()
     assert not {"automation_environments", "automation_scripts"} & set(sa.inspect(engine).get_table_names())
+
+
+def test_automation_runs_migration(tmp_path):
+    """automation_runs matches the model; test_cases gains `automation`; downgrade is clean."""
+    from database.models.automation import AutomationRun
+    from database.models.project import Project
+    from database.models.user import User
+
+    spec = importlib.util.spec_from_file_location("m_a3c6e8f0b124", MIGRATION.parent / "a3c6e8f0b124_add_automation_runs.py")
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    migration.context = SimpleNamespace(is_offline_mode=lambda: False)
+
+    engine = sa.create_engine(f"sqlite:///{(tmp_path / 'r.db').as_posix()}")
+    for model in (User, Project):
+        model.__table__.create(engine)
+    sa.Table("test_cases", sa.MetaData(), sa.Column("id", sa.Integer, primary_key=True)).create(engine)
+
+    with engine.begin() as conn:
+        with Operations.context(MigrationContext.configure(conn)):
+            migration.upgrade()
+            migration.upgrade()  # idempotent
+    inspector = sa.inspect(engine)
+    assert {c["name"] for c in inspector.get_columns("automation_runs")} == {c.name for c in AutomationRun.__table__.columns}
+    assert "automation" in {c["name"] for c in inspector.get_columns("test_cases")}
+
+    with engine.begin() as conn:
+        with Operations.context(MigrationContext.configure(conn)):
+            migration.downgrade()
+    inspector = sa.inspect(engine)
+    assert "automation_runs" not in inspector.get_table_names()
+    assert "automation" not in {c["name"] for c in inspector.get_columns("test_cases")}

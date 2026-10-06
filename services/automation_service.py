@@ -5,8 +5,9 @@ services/automation_service.py — E2E automation: environments and scripts.
                  and test variables (secret ones encrypted, never returned).
     Script:      structured steps (services/automation_actions.py), written by
                  hand or drafted by AI from a test case. Only an approved
-                 script can run (next phase), and any change to its steps or
-                 environment sends it back to draft for another review.
+                 script can be exported and run (automation_runs_service.py),
+                 and any change to its steps or environment sends it back to
+                 draft for another review.
 """
 
 import logging
@@ -355,6 +356,9 @@ def delete_script(db: Session, user_id: int, project_id: int, script_id: int) ->
 
 def delete_project_automation(db: Session, project_id: int) -> None:
     """For project deletion (caller commits)."""
+    from database.models.automation import AutomationRun
+
+    db.query(AutomationRun).filter(AutomationRun.project_id == project_id).delete(synchronize_session=False)
     db.query(AutomationScript).filter(AutomationScript.project_id == project_id).delete(synchronize_session=False)
     db.query(AutomationEnvironment).filter(AutomationEnvironment.project_id == project_id).delete(
         synchronize_session=False)

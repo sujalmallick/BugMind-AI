@@ -56,3 +56,25 @@ class AutomationScript(Base):
     approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class AutomationRun(Base):
+    """
+    One run of exported scripts (on the user's machine or their own CI), recorded
+    from the uploaded Playwright JSON report. BugMind itself never runs a browser.
+    """
+
+    __tablename__ = "automation_runs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), index=True)
+    uploaded_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    source: Mapped[str] = mapped_column(String(20), default="upload", nullable=False)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # {"passed", "failed", "flaky", "skipped", "unknown"} counts.
+    totals: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    # [{"scriptId", "scriptName", "exportedVersion", "currentVersion", "status", "error", "durationMs",
+    #   "testCaseId", "testCaseCode", "applied"}]
+    results: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

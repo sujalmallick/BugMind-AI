@@ -78,6 +78,8 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    # Lets the browser read download filenames (automation exports).
+    expose_headers=["Content-Disposition"],
 )
 
 app.add_middleware(RequestIDMiddleware)

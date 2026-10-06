@@ -1,7 +1,7 @@
 import os
 from typing import Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -9,7 +9,9 @@ from auth.dependencies import get_current_user
 from database.models.user import User
 from database.session import get_db
 from limiter import limiter
+from services import automation_runs_service as runs
 from services import automation_service as automation
+from services.automation_results import MAX_REPORT_BYTES
 
 
 def _automation_enabled():
@@ -141,3 +143,48 @@ def update_script(project_id: int, script_id: int, body: ScriptPatch, db: Sessio
 def delete_script(project_id: int, script_id: int, db: Session = Depends(get_db),
                   current_user: User = Depends(get_current_user)):
     automation.delete_script(db, current_user.id, project_id, script_id)
+
+
+# ── Export and results (tests run on the user's machine or their own CI) ─────
+
+def _download(content, filename: str, media_type: str) -> Response:
+    # Always an attachment; the name is built from a slug and an id, so it is header-safe.
+    return Response(content=content, media_type=media_type, headers={
+        "Content-Disposition": f'attachment; filename="{filename}"', "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
+    })
+
+
+@router.get("/scripts/{script_id}/export")
+@limiter.limit("30/minute")
+def export_script(request: Request, project_id: int, script_id: int, db: Session = Depends(get_db),
+                  current_user: User = Depends(get_current_user)):
+    filename, source = runs.export_script(db, current_user.id, project_id, script_id)
+    return _download(source, filename, "text/plain; charset=utf-8")
+
+
+@router.get("/environments/{env_id}/export")
+@limiter.limit("10/minute")
+def export_project(request: Request, project_id: int, env_id: int, db: Session = Depends(get_db),
+                   current_user: User = Depends(get_current_user)):
+    data = runs.export_project(db, current_user.id, project_id, env_id)
+    return _download(data, f"bugmind-e2e-project-{project_id}.zip", "application/zip")
+
+
+@router.get("/runs")
+def list_runs(project_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return runs.list_runs(db, current_user.id, project_id)
+
+
+@router.get("/runs/{run_id}")
+def get_run(project_id: int, run_id: int, db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user)):
+    return runs.get_run(db, current_user.id, project_id, run_id)
+
+
+@router.post("/runs/import", status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
+def import_results(request: Request, project_id: int, file: UploadFile = File(...), db: Session = Depends(get_db),
+                   current_user: User = Depends(get_current_user)):
+    data = file.file.read(MAX_REPORT_BYTES + 1)
+    return runs.import_results(db, current_user.id, project_id, data)

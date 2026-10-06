@@ -120,6 +120,9 @@ class TestCase(Base):
     # "plan" for cases generated from a test plan phase. Those are never removed by the
     # analysis sync in save_test_cases (they aren't part of an analysis result).
     origin: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Last status set by an automated run: {"runId", "scriptId", "result", "at"}. Shown as a
+    # "changed by automation" badge; cleared when a person sets the status.
+    automation: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     plan_phase_id: Mapped[int | None] = mapped_column(
         ForeignKey("test_plan_phases.id", ondelete="SET NULL"), nullable=True, index=True,
     )
