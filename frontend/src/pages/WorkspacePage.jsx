@@ -57,6 +57,8 @@ const EMPTY_ISSUE_FORM = { observation: '', expected: '', actual: '', mode: 'fai
 export default function WorkspacePage() {
   const { projectId } = useParams();
   const location = useLocation();
+  // A tab another page asked for (navigate(..., { state: { tab } })), read once on arrival.
+  const requestedTabRef = useRef(location.state?.tab);
 const navigate = useNavigate();
 const [analysisMeta, setAnalysisMeta] = useState(null);
 const [analysisOutdated, setAnalysisOutdated] = useState(false);
@@ -250,6 +252,11 @@ useEffect(() => {
       setActiveTab("bug_tracker");
     } else if (loadedCases.length > 0) {
       setActiveTab("testcases");
+    }
+    // Links from other pages (e.g. Automation → "Open in Issues Tracker") can ask for a tab.
+    const requestedTab = requestedTabRef.current;
+    if (requestedTab && TABS.some((tab) => tab.key === requestedTab)) {
+      setActiveTab(requestedTab);
     }
 
     if (hasContent) {

@@ -202,3 +202,13 @@ def heal_script(request: Request, project_id: int, script_id: int, body: HealReq
     from services.automation_heal import heal_script as suggest
 
     return suggest(db, current_user.id, project_id, script_id, body.run_id)
+
+
+@router.post("/runs/{run_id}/results/{script_id}/issue")
+@limiter.limit("20/minute")
+def create_issue_from_result(request: Request, project_id: int, run_id: int, script_id: int,
+                             db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """A bug report from a failed result (once per failure; asking again returns the same report)."""
+    from services.automation_issues import create_issue_from_result as create
+
+    return create(db, current_user.id, project_id, run_id, script_id)
