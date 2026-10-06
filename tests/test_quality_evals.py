@@ -179,3 +179,11 @@ def test_pause_between_runs_but_not_before_first(scripted_llm, monkeypatch):
     cases = [{"id": f"c{i}", "workflow": "User logs in and pays by card.", "expect": EXPECT} for i in range(3)]
     evaluate(cases, pause_seconds=60)
     assert sleeps == [60, 60]
+
+
+def test_save_outputs_keeps_the_pipeline_result(scripted_llm):
+    case = {"id": "login_pay", "workflow": "User logs in and pays by card.", "expect": EXPECT}
+    assert "output" not in evaluate([case])["runs"][0]
+    run = evaluate([case], save_outputs=True)["runs"][0]
+    assert run["output"]["success"] is True
+    assert len(run["output"]["testCases"]) == 2

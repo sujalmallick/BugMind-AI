@@ -30,6 +30,11 @@ class WorkflowState(TypedDict, total=False):
     checklist: list[dict] | dict | None
     test_cases: list[dict] | dict | None
 
+    # Coverage loop
+    coverage: dict
+    coverage_initial: dict
+    coverage_rounds: int
+
 class IssueInput(BaseModel):
     workflow: str
 

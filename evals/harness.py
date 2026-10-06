@@ -71,12 +71,15 @@ def run_pipeline(workflow: str, observed_steps: list[str] | None = None) -> dict
     return {"success": True, "workflow": workflow, **generated}
 
 
-def evaluate(cases: list[dict], repeat: int = 1, on_result=None, pause_seconds: float = 0) -> dict:
+def evaluate(
+    cases: list[dict], repeat: int = 1, on_result=None, pause_seconds: float = 0, save_outputs: bool = False
+) -> dict:
     """
     Run every case `repeat` times. Returns per-run scores plus aggregates.
 
     pause_seconds waits between runs so per-minute token limits (e.g. Groq's
     free tier) reset; a full analysis can exceed one minute's budget on its own.
+    save_outputs keeps each run's full pipeline result in the report for diagnosis.
     """
     from services.llm_usage import finish_request_collection, start_request_collection
 
@@ -103,6 +106,8 @@ def evaluate(cases: list[dict], repeat: int = 1, on_result=None, pause_seconds: 
                 "cost_usd": usage.get("cost_usd"),
                 **score_result(result, case["expect"]),
             }
+            if save_outputs:
+                run["output"] = result
             runs.append(run)
             if on_result:
                 on_result(run)
