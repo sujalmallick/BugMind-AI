@@ -212,3 +212,11 @@ def create_issue_from_result(request: Request, project_id: int, run_id: int, scr
     from services.automation_issues import create_issue_from_result as create
 
     return create(db, current_user.id, project_id, run_id, script_id)
+
+
+@router.get("/summary")
+def automation_summary(project_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Dashboard numbers: pass-rate trend, most failing / flaky scripts, test cases not automated yet."""
+    from services.automation_summary import automation_summary as summary
+
+    return summary(db, current_user.id, project_id)

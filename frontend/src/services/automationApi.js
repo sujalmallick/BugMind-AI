@@ -122,3 +122,8 @@ export async function healScript(projectId, scriptId, runId) {
 export async function createIssueFromResult(projectId, runId, scriptId) {
   return (await api.post(`${base(projectId)}/runs/${runId}/results/${scriptId}/issue`)).data;
 }
+
+// Dashboard numbers (pass-rate trend, failing / flaky scripts, not-automated test cases).
+export async function getAutomationSummary(projectId) {
+  return (await api.get(`${base(projectId)}/summary`)).data;
+}
