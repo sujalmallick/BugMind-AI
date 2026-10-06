@@ -38,8 +38,14 @@ default_llm_manager = LLMManager(
 _call_count = 0
 
 
-# Backoff (seconds) before each retry of a retryable failure (rate limits).
+# Backoff (seconds) before each retry of a retryable failure (rate limits),
+# used when the provider doesn't say how long to wait.
 RETRY_BACKOFF_SECONDS = (1, 2, 4)
+# When it does say (Retry-After / "try again in 7.66s"), we wait that long, but
+# within these caps so an analysis (3-4 calls) stays inside the 180s request
+# timeout. A longer wait (e.g. a daily limit) fails fast with the wait in the message.
+MAX_RETRY_WAIT_SECONDS = 20
+MAX_TOTAL_RETRY_WAIT_SECONDS = 30
 
 
 def call_llm(
@@ -58,6 +64,7 @@ def call_llm(
     the caller must still validate the result (it is a hint, not a guarantee).
     """
     global _call_count
+    waited = 0.0
 
     for attempt in range(len(RETRY_BACKOFF_SECONDS) + 1):
         _call_count += 1
@@ -88,10 +95,20 @@ def call_llm(
             err = classify_llm_error(e)
 
             if err.retryable and attempt < len(RETRY_BACKOFF_SECONDS):
-                backoff = RETRY_BACKOFF_SECONDS[attempt]
-                logger.warning(f"LLM {err.code} | agent={agent}. Waiting {backoff}s before retry {attempt + 1}...")
-                time.sleep(backoff)
-                continue
+                hinted = getattr(err, "retry_after", None)
+                wait = RETRY_BACKOFF_SECONDS[attempt] if hinted is None else max(hinted, 0.25)
+                if wait <= MAX_RETRY_WAIT_SECONDS and waited + wait <= MAX_TOTAL_RETRY_WAIT_SECONDS:
+                    source = "backoff" if hinted is None else "provider hint"
+                    logger.warning(
+                        f"LLM {err.code} | agent={agent}. Waiting {wait:.2f}s ({source}) before retry {attempt + 1}..."
+                    )
+                    time.sleep(wait)
+                    waited += wait
+                    continue
+                logger.warning(
+                    f"LLM {err.code} | agent={agent}. Provider asks for {wait:.0f}s; over the in-request "
+                    f"retry budget, failing fast."
+                )
 
             if err.code == "unknown":
                 logger.error(f"LLM call failed with unhandled exception: {err.user_message}", exc_info=True)

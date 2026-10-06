@@ -1,5 +1,6 @@
 import json
 import logging
+import math
 from datetime import datetime, timezone
 from typing import Literal
 
@@ -344,8 +345,10 @@ Output ONLY the JSON and nothing else. No markdown wrappers.
     except GuardrailViolation as e:
         raise HTTPException(status_code=500, detail=e.user_message)
     except LLMError as e:
-        status_code = 429 if isinstance(e, LLMRateLimitError) else 502
-        raise HTTPException(status_code=status_code, detail=e.user_message)
+        if isinstance(e, LLMRateLimitError):
+            headers = {"Retry-After": str(math.ceil(e.retry_after))} if e.retry_after is not None else None
+            raise HTTPException(status_code=429, detail=e.user_message, headers=headers)
+        raise HTTPException(status_code=502, detail=e.user_message)
     if not response_text:
         raise HTTPException(status_code=500, detail="AI returned an empty response.")
     

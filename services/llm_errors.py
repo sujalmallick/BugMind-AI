@@ -9,6 +9,9 @@ instead of by substring.
 The user_message strings are shown in the UI; keep them stable.
 """
 
+import math
+import re
+
 import litellm.exceptions as litellm_errors
 
 
@@ -30,6 +33,13 @@ class LLMRateLimitError(LLMError):
     code = "rate_limited"
     user_message = "AI Quota exceeded. Please try again later."
     retryable = True
+
+    def __init__(self, detail: str = "", retry_after: float | None = None):
+        super().__init__(detail)
+        # Seconds the provider asked us to wait, when it said (header or message).
+        self.retry_after = retry_after
+        if retry_after is not None:
+            self.user_message = f"AI Quota exceeded. Please try again in {_humanize_wait(retry_after)}."
 
 
 class LLMAuthError(LLMError):
@@ -98,6 +108,62 @@ _KEYWORD_MAP: list[tuple[tuple[str, ...], type[LLMError]]] = [
 ]
 
 
+_DURATION_PART = re.compile(r"(\d+(?:\.\d+)?)\s*(ms|h|m|s)", re.IGNORECASE)
+_UNIT_SECONDS = {"ms": 0.001, "s": 1, "m": 60, "h": 3600}
+_TRY_AGAIN = re.compile(r"try again in\s+([0-9hms.\s]+)", re.IGNORECASE)
+
+
+def parse_duration(text: str) -> float | None:
+    """'7.66s', '2m59.56s', '1h2m3s', '450ms' -> seconds. None when nothing parses."""
+    parts = _DURATION_PART.findall(str(text or ""))
+    if not parts:
+        return None
+    return sum(float(value) * _UNIT_SECONDS[unit.lower()] for value, unit in parts)
+
+
+def _retry_after_seconds(err: Exception) -> float | None:
+    """
+    How long the provider asked us to wait: the Retry-After header, else the
+    "Please try again in 7.66s" hint in Groq-style messages, else the longest
+    x-ratelimit-reset-* header. None when the provider gave no hint.
+    """
+    headers = getattr(err, "litellm_response_headers", None) or getattr(getattr(err, "response", None), "headers", None)
+    try:
+        headers = {str(k).lower(): str(v) for k, v in dict(headers or {}).items()}
+    except (TypeError, ValueError):
+        headers = {}
+
+    try:
+        if "retry-after" in headers:
+            return max(0.0, float(headers["retry-after"]))
+    except ValueError:
+        pass
+
+    match = _TRY_AGAIN.search(str(err))
+    if match and (seconds := parse_duration(match.group(1))) is not None:
+        return seconds
+
+    resets = [parse_duration(headers[h]) for h in ("x-ratelimit-reset-tokens", "x-ratelimit-reset-requests") if h in headers]
+    resets = [r for r in resets if r is not None]
+    return max(resets) if resets else None
+
+
+def _humanize_wait(seconds: float) -> str:
+    if seconds < 60:
+        return f"{max(1, math.ceil(seconds))} seconds"
+    if seconds < 3600:
+        minutes = math.ceil(seconds / 60)
+        return f"about {minutes} minute{'s' if minutes != 1 else ''}"
+    hours = round(seconds / 3600)
+    return f"about {hours} hour{'s' if hours != 1 else ''}"
+
+
+def _build(error_cls: type[LLMError], err: Exception, detail: str) -> LLMError:
+    if error_cls is LLMRateLimitError:
+        return LLMRateLimitError(detail, retry_after=_retry_after_seconds(err))
+    return error_cls(detail)
+
+
 def classify_llm_error(err: Exception) -> LLMError:
     if isinstance(err, LLMError):
         return err
@@ -106,12 +172,12 @@ def classify_llm_error(err: Exception) -> LLMError:
 
     for types, error_cls in _TYPE_MAP:
         if isinstance(err, types):
-            return error_cls(detail)
+            return _build(error_cls, err, detail)
 
     lowered = detail.lower()
     for keywords, error_cls in _KEYWORD_MAP:
         if any(kw in lowered for kw in keywords):
-            return error_cls(detail)
+            return _build(error_cls, err, detail)
 
     from guardrails import output_guardrail
 
