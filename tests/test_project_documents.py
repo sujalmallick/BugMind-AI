@@ -310,3 +310,79 @@ def test_body_limit_is_raised_only_for_document_uploads(env):
     assert upload(env, "big.txt", big).status_code == 201
     res = env.client.post("/analyze-workflow", content=b"{" + big + b"}", headers={"content-type": "application/json"})
     assert res.status_code == 413
+
+
+# ── Hardening (phase review) ─────────────────────────────────────────────────
+
+
+def test_document_deleted_mid_processing_leaves_no_chunks(env, monkeypatch):
+    """The delete can land while the job is parsing; the job must not write chunks afterwards."""
+    import services.documents as documents
+    from database.session import SessionLocal
+
+    doc_id = upload(env, "notes.txt", TXT).json()["id"]
+    real_extract = documents.extract_isolated
+
+    def extract_then_get_deleted(file_type, data):
+        with SessionLocal() as other:  # the user deletes it from another request meanwhile
+            other.query(ProjectDocument).filter(ProjectDocument.id == doc_id).update(
+                {ProjectDocument.deleted_at: documents.datetime.utcnow()})
+            other.commit()
+        return real_extract(file_type, data)
+
+    monkeypatch.setattr(documents, "extract_isolated", extract_then_get_deleted)
+    process(env)
+    assert chunks(env, doc_id) == []
+    assert env.db.get(ProjectDocument, doc_id).status != "ready"
+
+
+def test_deleting_a_project_removes_its_documents_and_files(env):
+    from services.project_service import delete_project
+
+    doc_id = upload(env, "notes.txt", TXT).json()["id"]
+    process(env)
+    assert [p for p in env.storage.rglob("*") if p.is_file()]
+
+    delete_project(env.db, project_id=1, user_id=1)
+    env.db.expire_all()
+    assert env.db.get(ProjectDocument, doc_id) is None
+    assert chunks(env, doc_id) == []
+    assert not [p for p in env.storage.rglob("*") if p.is_file()]
+
+
+def test_maintenance_purges_old_jobs_and_orphaned_chunks(env):
+    from datetime import datetime, timedelta
+
+    from database.models.job import Job
+    from services.documents import purge_deleted_document_chunks
+    from services.jobs import purge_finished_jobs
+
+    old = datetime.utcnow() - timedelta(days=30)
+    env.db.add_all([
+        Job(kind="x", payload={}, status="succeeded", run_after=old, finished_at=old),
+        Job(kind="x", payload={}, status="failed", run_after=old, finished_at=old),
+        Job(kind="x", payload={}, status="succeeded", run_after=old, finished_at=datetime.utcnow()),
+        Job(kind="x", payload={}, status="queued", run_after=old),
+    ])
+    env.db.commit()
+    assert purge_finished_jobs(env.db) == 2
+    assert {j.status for j in env.db.query(Job).all()} == {"succeeded", "queued"}
+
+    doc_id = upload(env, "notes.txt", TXT).json()["id"]
+    process(env)
+    env.db.query(ProjectDocument).filter(ProjectDocument.id == doc_id).update(
+        {ProjectDocument.deleted_at: datetime.utcnow()})
+    env.db.commit()
+    assert purge_deleted_document_chunks(env.db) == 1
+    assert chunks(env, doc_id) == []
+
+
+def test_chunks_per_document_are_capped(env, monkeypatch):
+    import services.documents as documents
+
+    monkeypatch.setattr(documents, "MAX_CHUNKS_PER_DOCUMENT", 2)
+    md = b"".join(b"# Section %d\nSome text for section number %d here.\n" % (i, i) for i in range(6))
+    doc_id = upload(env, "many.md", md).json()["id"]
+    process(env)
+    assert env.client.get(f"/projects/1/documents/{doc_id}").json()["chunkCount"] == 2
+    assert len(chunks(env, doc_id)) == 2

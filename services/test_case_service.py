@@ -34,12 +34,18 @@ def save_test_cases(
     """
     Syncs the AI-generated test cases to `test_cases`; manual test cases are untouched.
 
-    Rows are matched by (display id, description). A match is updated in place, so
-    its database id, assignee, custom fields and linked issues survive. This is
-    what a status change re-sends. Unmatched incoming cases are inserted. Stored
-    AI cases that are no longer in the list (a re-analysis replaced them) are
-    deleted after their issues move to the IMPORT-DEFAULT placeholder, so no
-    bug report is lost or blocks the save.
+    The list arrives in two shapes: fresh from an analysis ({"id": "TC-001",
+    "expectedResult": ...}), or reloaded from the database ({"id": 17, "db_id": 17,
+    "test_case_id": "TC-001", "expected_result": ..., "is_manual": ...}).
+
+    - Manual cases in the list are skipped; they have their own endpoints.
+    - Rows are matched by db_id first, then by (display id, description). A match
+      is updated in place, so its database id, assignee, custom fields and linked
+      issues survive. Only fields present in the payload are overwritten.
+    - Unmatched incoming cases are inserted.
+    - Stored AI cases that matched nothing (a re-analysis replaced them) are
+      deleted after their issues move to the IMPORT-DEFAULT placeholder, so no bug
+      report is lost or blocks the save.
     """
     require_project_role(db, current_user_id, project_id, "editor")
     workspace = _get_workspace(db, project_id)
@@ -50,31 +56,35 @@ def save_test_cases(
         .order_by(TestCase.id)
         .all()
     )
-    unmatched: dict[tuple[str, str], TestCase] = {}
+    by_id = {row.id: row for row in existing}
+    by_key: dict[tuple[str, str], list[TestCase]] = {}
     for row in existing:
-        unmatched.setdefault(_match_key(row.test_case_id, row.description), row)
+        by_key.setdefault(_match_key(row.test_case_id, row.description), []).append(row)
+    matched: set[int] = set()
+
+    def take(row: TestCase | None) -> TestCase | None:
+        if row is None or row.id in matched:
+            return None
+        matched.add(row.id)
+        return row
 
     for tc in test_cases:
-        row = unmatched.pop(_match_key(tc.get("id", ""), tc.get("description", "")), None)
+        if not isinstance(tc, dict) or tc.get("is_manual"):
+            continue
+        display_id = _display_id(tc)
+        db_id = tc.get("db_id")
+        row = take(by_id.get(db_id)) if isinstance(db_id, int) and not isinstance(db_id, bool) else None
         if row is None:
-            row = TestCase(workspace_id=workspace.id, is_manual=False)
+            candidates = by_key.get(_match_key(display_id, tc.get("description", "")), [])
+            row = next((r for r in map(take, candidates) if r is not None), None)
+        if row is None:
+            row = TestCase(workspace_id=workspace.id, is_manual=False, test_case_id=display_id,
+                           description="", module="", category="", priority="", status="Not Executed",
+                           preconditions="", steps="", expected_result="", actual_result="", notes="")
             db.add(row)
-        row.test_case_id = tc.get("id", "")
-        row.description = tc.get("description", "")
-        row.module = tc.get("module", "")
-        row.category = tc.get("category", "")
-        row.priority = tc.get("priority", "")
-        row.status = tc.get("status", "Not Executed")
-        row.preconditions = str(tc.get("preconditions", "") or "")
-        row.steps = _normalize_steps(tc.get("steps", ""))
-        row.expected_result = str(tc.get("expectedResult", "") or "")
-        row.actual_result = str(tc.get("actualResult", "") or "")
-        row.notes = str(tc.get("notes", "") or "")
-        if "custom_fields" in tc:
-            row.custom_fields = dict(tc.get("custom_fields") or {})
+        _apply_fields(row, tc, display_id)
 
-    kept_ids = {row.id for row in existing} - {row.id for row in unmatched.values()}
-    stale_ids = [row.id for row in existing if row.id not in kept_ids]
+    stale_ids = [row.id for row in existing if row.id not in matched]
     if stale_ids:
         _move_issues_to_placeholder(db, workspace, stale_ids)
         db.query(TestCase).filter(TestCase.id.in_(stale_ids)).delete(synchronize_session=False)
@@ -88,6 +98,42 @@ PLACEHOLDER_TEST_CASE_ID = "IMPORT-DEFAULT"
 
 def _match_key(display_id, description) -> tuple[str, str]:
     return (str(display_id or "").strip(), str(description or "").strip())
+
+
+def _display_id(tc: dict) -> str:
+    """The TC-### code: `test_case_id` when reloaded, `id` when fresh from an analysis."""
+    value = tc.get("test_case_id")
+    if not value:
+        value = tc.get("id")
+    return str(value or "").strip()
+
+
+# (model attribute, accepted payload keys): fresh analysis results use camelCase,
+# rows reloaded from the database use snake_case.
+_FIELD_KEYS = (
+    ("description", ("description",)),
+    ("module", ("module",)),
+    ("category", ("category",)),
+    ("priority", ("priority",)),
+    ("status", ("status",)),
+    ("preconditions", ("preconditions",)),
+    ("steps", ("steps",)),
+    ("expected_result", ("expectedResult", "expected_result")),
+    ("actual_result", ("actualResult", "actual_result")),
+    ("notes", ("notes",)),
+)
+
+
+def _apply_fields(row: TestCase, tc: dict, display_id: str) -> None:
+    row.test_case_id = display_id
+    for attr, keys in _FIELD_KEYS:
+        key = next((k for k in keys if k in tc), None)
+        if key is None:
+            continue  # not sent: keep what's stored
+        value = tc.get(key)
+        setattr(row, attr, _normalize_steps(value) if attr == "steps" else str(value or ""))
+    if "custom_fields" in tc:
+        row.custom_fields = dict(tc.get("custom_fields") or {})
 
 
 def get_or_create_placeholder_test_case(db: Session, workspace: Workspace) -> TestCase:

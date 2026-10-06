@@ -159,3 +159,67 @@ def test_placeholder_with_issues_cannot_be_deleted(project):
         delete_test_case(db, 1, placeholder_id, 1)
     assert exc.value.status_code == 409
     assert db.get(Issue, issue.id) is not None
+
+
+# ── Payload shapes the real frontend sends (phase review findings) ───────────
+
+
+def reloaded(row):
+    """What WorkspacePage.jsx sends for a case loaded from GET /test-cases (after a page reload)."""
+    return {"id": row.id, "db_id": row.id, "test_case_id": row.test_case_id, "description": row.description,
+            "module": row.module, "category": row.category, "priority": row.priority, "status": row.status,
+            "preconditions": row.preconditions, "steps": row.steps, "expected_result": row.expected_result,
+            "actual_result": row.actual_result, "notes": row.notes, "is_manual": row.is_manual,
+            "custom_fields": row.custom_fields or {}}
+
+
+def test_status_change_after_reload_keeps_identity_links_and_results(project):
+    from services.test_case_service import save_test_cases
+
+    db, ws = project
+    save_test_cases(db, 1, 1, [ai_case("TC-001", "Login works"), ai_case("TC-002", "Logout works")])
+    tc1, tc2 = ai_rows(db, ws)
+    tc1.assignee_id = 2
+    db.commit()
+    issue = link_issue(db, tc1)
+    ids_before = [(r.id, r.test_case_id) for r in ai_rows(db, ws)]
+
+    payload = [reloaded(r) for r in ai_rows(db, ws)]
+    payload[0]["status"] = "fail"
+    save_test_cases(db, 1, 1, payload)
+
+    db.expire_all()
+    rows = ai_rows(db, ws)
+    assert [(r.id, r.test_case_id) for r in rows] == ids_before
+    assert rows[0].status == "fail" and rows[0].assignee_id == 2
+    assert rows[0].expected_result == "OK"  # snake_case field was not wiped
+    assert db.get(Issue, issue.id).test_case_id == ids_before[0][0]
+
+
+def test_manual_cases_in_the_payload_are_not_copied_as_ai_rows(project):
+    from services.test_case_service import save_test_cases
+
+    db, ws = project
+    manual = make(db, TestCase, workspace_id=ws.id, test_case_id="MANUAL-1", description="Hand-written",
+                  is_manual=True)
+    db.commit()
+    save_test_cases(db, 1, 1, [ai_case("TC-001", "Login works")])
+    for _ in range(4):  # four status changes after reload
+        everything = (db.query(TestCase).filter(TestCase.workspace_id == ws.id)
+                      .order_by(TestCase.id).all())
+        save_test_cases(db, 1, 1, [reloaded(r) for r in everything])
+        db.expire_all()
+    assert [r.test_case_id for r in ai_rows(db, ws)] == ["TC-001"]
+    assert db.query(TestCase).filter(TestCase.is_manual == True).count() == 1  # noqa: E712
+    assert db.get(TestCase, manual.id).description == "Hand-written"
+
+
+def test_duplicate_keys_do_not_multiply_rows(project):
+    from services.test_case_service import save_test_cases
+
+    db, ws = project
+    dupes = [ai_case("TC-001", "Same"), ai_case("TC-001", "Same")]
+    for _ in range(3):
+        save_test_cases(db, 1, 1, dupes)
+        db.expire_all()
+    assert len(ai_rows(db, ws)) == 2

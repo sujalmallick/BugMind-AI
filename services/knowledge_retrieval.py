@@ -46,6 +46,8 @@ def retrieve(
 ) -> list[dict]:
     """Best-matching excerpts for `query`, most relevant first, within the token budget."""
     require_project_role(db, user_id, project_id, "viewer")
+    if os.getenv("PROJECT_KNOWLEDGE_ENABLED", "true").strip().lower() == "false":
+        return []  # switching the feature off also keeps existing documents out of prompts
     budget = context_token_budget() if token_budget is None else token_budget
     query_terms = keywords(query)
     if not query_terms or budget <= 0:
@@ -62,6 +64,7 @@ def retrieve(
             ProjectDocument.ai_enabled.is_(True),
             DocumentChunk.flagged.is_(False),
         )
+        .order_by(DocumentChunk.document_id, DocumentChunk.ordinal)
         .limit(MAX_CHUNKS_SCANNED)
         .all()
     )

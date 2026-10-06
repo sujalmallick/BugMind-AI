@@ -42,5 +42,6 @@ export async function downloadDocument(projectId, doc) {
   link.href = url;
   link.download = doc.filename;
   link.click();
-  URL.revokeObjectURL(url);
+  // Revoking immediately can cancel the download in Firefox/Safari.
+  setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }

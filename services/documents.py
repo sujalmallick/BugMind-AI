@@ -29,17 +29,18 @@ from guardrails.detection import SECRET
 from guardrails.models import Decision
 from guardrails.policy_engine import policy
 from services import document_storage, jobs
+from services.document_extraction import ExtractionError, Section, decode_text, extract_isolated
 
 logger = logging.getLogger("BugMind")
 
 JOB_KIND = "document.process"
 
 MAX_DOCUMENTS_PER_PROJECT = 20
-MAX_PDF_PAGES = 300
-MAX_DOCX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024  # zip-bomb guard
 MAX_EXTRACTED_CHARS = 500_000
 MIN_TEXT_CHARS = 20
 CHUNK_TARGET_CHARS = 1800
+# Many tiny headings could otherwise explode the chunk count (and retrieval scans).
+MAX_CHUNKS_PER_DOCUMENT = 400
 
 FILE_TYPES = {
     ".pdf": ("pdf", "application/pdf"),
@@ -73,12 +74,10 @@ def sanitize_filename(name: str | None) -> str:
 
 
 def _decode_text(data: bytes) -> str:
-    if b"\x00" in data[:8192]:
-        raise DocumentError(400, "This file looks binary, not text.")
     try:
-        return data.decode("utf-8-sig")
-    except UnicodeDecodeError:
-        raise DocumentError(400, "Text files must be UTF-8 encoded.")
+        return decode_text(data)
+    except ExtractionError as exc:
+        raise DocumentError(400, str(exc))
 
 
 def detect_file_type(filename: str, data: bytes) -> tuple[str, str]:
@@ -100,88 +99,6 @@ def detect_file_type(filename: str, data: bytes) -> tuple[str, str]:
     if file_type in ("txt", "md"):
         _decode_text(data)
     return file_type, content_type
-
-
-# ── Extraction ───────────────────────────────────────────────────────────────
-
-Section = tuple[str | None, str]  # (heading, text)
-
-
-def _extract_pdf(data: bytes) -> tuple[list[Section], int]:
-    from pypdf import PdfReader
-    from pypdf.errors import PdfReadError
-
-    try:
-        reader = PdfReader(io.BytesIO(data))
-        if reader.is_encrypted and not reader.decrypt(""):
-            raise jobs.PermanentJobError("Password-protected PDFs aren't supported.")
-        page_count = len(reader.pages)
-        if page_count > MAX_PDF_PAGES:
-            raise jobs.PermanentJobError(f"This PDF has {page_count} pages; the limit is {MAX_PDF_PAGES}.")
-        sections = [(f"Page {i}", page.extract_text() or "") for i, page in enumerate(reader.pages, start=1)]
-    except PdfReadError:
-        raise jobs.PermanentJobError("This PDF couldn't be read; it may be damaged.")
-    return sections, page_count
-
-
-def _extract_docx(data: bytes) -> list[Section]:
-    import docx
-    from docx.table import Table
-
-    with zipfile.ZipFile(io.BytesIO(data)) as zf:
-        if sum(info.file_size for info in zf.infolist()) > MAX_DOCX_UNCOMPRESSED_BYTES:
-            raise jobs.PermanentJobError("This Word document is too large once uncompressed.")
-
-    document = docx.Document(io.BytesIO(data))
-    sections: list[Section] = []
-    heading, lines = None, []
-    for block in document.iter_inner_content():
-        if isinstance(block, Table):
-            for row in block.rows:
-                cells = [c.text.strip() for c in row.cells if c.text.strip()]
-                if cells:
-                    lines.append(" | ".join(cells))
-            continue
-        text = block.text.strip()
-        style = (block.style.name if block.style is not None else "") or ""
-        if text and (style.startswith("Heading") or style == "Title"):
-            if lines:
-                sections.append((heading, "\n\n".join(lines)))
-            heading, lines = text[:255], []
-        elif text:
-            lines.append(text)
-    if lines:
-        sections.append((heading, "\n\n".join(lines)))
-    return sections
-
-
-_MD_HEADING = re.compile(r"^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$")
-
-
-def _extract_markdown(text: str) -> list[Section]:
-    sections: list[Section] = []
-    heading, lines = None, []
-    for line in text.splitlines():
-        match = _MD_HEADING.match(line)
-        if match:
-            if any(l.strip() for l in lines):
-                sections.append((heading, "\n".join(lines)))
-            heading, lines = match.group(1)[:255], []
-        else:
-            lines.append(line)
-    if any(l.strip() for l in lines):
-        sections.append((heading, "\n".join(lines)))
-    return sections
-
-
-def extract_sections(file_type: str, data: bytes) -> tuple[list[Section], int | None]:
-    """Raw bytes → [(heading, text)] and the page count (PDF only)."""
-    if file_type == "pdf":
-        return _extract_pdf(data)
-    if file_type == "docx":
-        return _extract_docx(data), None
-    text = _decode_text(data)
-    return (_extract_markdown(text) if file_type == "md" else [(None, text)]), None
 
 
 # ── Normalize + chunk ────────────────────────────────────────────────────────
@@ -241,9 +158,10 @@ def process_document(db: Session, job: Job) -> None:
 
     data = document_storage.get(doc.storage_path)
     try:
-        sections, page_count = extract_sections(doc.file_type, data)
-    except DocumentError as exc:  # unreadable content: retrying can't help
-        raise jobs.PermanentJobError(exc.detail)
+        # Parsing runs in an isolated, time-limited process: hostile files can't hang the worker.
+        sections, page_count = extract_isolated(doc.file_type, data)
+    except ExtractionError as exc:  # unreadable content: retrying can't help
+        raise jobs.PermanentJobError(str(exc))
 
     total, kept = 0, []
     for heading, text in sections:
@@ -261,27 +179,39 @@ def process_document(db: Session, job: Job) -> None:
             "No readable text found. Scanned documents need OCR, which isn't supported yet."
         )
 
-    db.query(DocumentChunk).filter(DocumentChunk.document_id == doc.id).delete(synchronize_session=False)
-    chunks = chunk_sections(kept)
-    flagged_count = 0
-    for ordinal, (heading, text) in enumerate(chunks):
+    # Prepare every chunk before touching the table (the CPU work stays outside the row lock).
+    prepared = []
+    for ordinal, (heading, text) in enumerate(chunk_sections(kept)[:MAX_CHUNKS_PER_DOCUMENT]):
         # Secrets never reach the chunk table; PII is masked again on the way to the LLM.
         text = masker.mask(text, kinds=(SECRET,), stage="ingest").text
         report = injection_detector.assess(text, source=Source.RETRIEVED)
         flagged = policy.injection_decision(Source.RETRIEVED, report.score) != Decision.ALLOW
-        flagged_count += flagged
-        db.add(DocumentChunk(document_id=doc.id, project_id=doc.project_id, ordinal=ordinal,
-                             heading=heading, text=text, token_estimate=max(1, len(text) // 4),
-                             flagged=flagged))
+        prepared.append(DocumentChunk(document_id=doc.id, project_id=doc.project_id, ordinal=ordinal,
+                                      heading=heading, text=text, token_estimate=max(1, len(text) // 4),
+                                      flagged=flagged))
 
+    # Row lock: a concurrent run of this job, or a delete, waits instead of interleaving
+    # with the chunk replacement (no duplicated chunks, no text outliving a delete).
+    doc = (
+        db.query(ProjectDocument)
+        .filter(ProjectDocument.id == doc.id)
+        .with_for_update()
+        .populate_existing()  # fresh values, not the cached object from the start of the job
+        .one()
+    )
+    if doc.deleted_at is not None:
+        db.rollback()
+        return
+    db.query(DocumentChunk).filter(DocumentChunk.document_id == doc.id).delete(synchronize_session=False)
+    db.add_all(prepared)
     doc.status = "ready"
     doc.page_count = page_count
     doc.char_count = total
-    doc.chunk_count = len(chunks)
-    doc.flagged_chunk_count = flagged_count
+    doc.chunk_count = len(prepared)
+    doc.flagged_chunk_count = sum(1 for c in prepared if c.flagged)
     doc.processed_at = datetime.utcnow()
     db.commit()
-    logger.info(f"Document {doc.id} processed: {doc.chunk_count} chunks, {flagged_count} flagged")
+    logger.info(f"Document {doc.id} processed: {doc.chunk_count} chunks, {doc.flagged_chunk_count} flagged")
 
 
 def _mark_failed(db: Session, job: Job, exc: Exception) -> None:
@@ -295,6 +225,23 @@ def _mark_failed(db: Session, job: Job, exc: Exception) -> None:
 
 
 jobs.register(JOB_KIND, process_document, on_final_failure=_mark_failed)
+
+
+def purge_deleted_document_chunks(db: Session) -> int:
+    """Backstop for the delete/process race: no chunk text outlives its document."""
+    from sqlalchemy import select
+
+    deleted_ids = select(ProjectDocument.id).where(ProjectDocument.deleted_at.isnot(None))
+    count = (
+        db.query(DocumentChunk)
+        .filter(DocumentChunk.document_id.in_(deleted_ids))
+        .delete(synchronize_session=False)
+    )
+    db.commit()
+    return count
+
+
+jobs.register_maintenance(purge_deleted_document_chunks)
 
 
 # ── CRUD ─────────────────────────────────────────────────────────────────────

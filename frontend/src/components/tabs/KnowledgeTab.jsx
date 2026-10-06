@@ -122,13 +122,29 @@ export default function KnowledgeTab({ projectId, showToast }) {
   const [dragging, setDragging] = useState(false)
   const inputRef = useRef(null)
 
-  const refresh = useCallback(async () => {
+  // The project this tab currently shows: responses for another project are ignored.
+  const projectRef = useRef(projectId)
+  useEffect(() => {
+    projectRef.current = projectId
+  }, [projectId])
+  // Background polling reports a failure once, not on every tick.
+  const pollErrorShown = useRef(false)
+
+  const refresh = useCallback(async ({ background = false } = {}) => {
+    const requestedFor = projectId
     try {
-      setDocuments(await listDocuments(projectId))
+      const docs = await listDocuments(requestedFor)
+      if (projectRef.current !== requestedFor) return
+      setDocuments(docs)
+      pollErrorShown.current = false
     } catch (error) {
-      showToast(errorMessage(error, 'Could not load project documents.'), 'error')
+      if (projectRef.current !== requestedFor) return
+      if (!background || !pollErrorShown.current) {
+        showToast(errorMessage(error, 'Could not load project documents.'), 'error')
+        pollErrorShown.current = background
+      }
     } finally {
-      setLoading(false)
+      if (projectRef.current === requestedFor) setLoading(false)
     }
   }, [projectId, showToast])
 
@@ -145,7 +161,7 @@ export default function KnowledgeTab({ projectId, showToast }) {
   const hasPending = documents.some((d) => d.status === 'uploaded' || d.status === 'processing')
   useEffect(() => {
     if (!hasPending) return undefined
-    const timer = setInterval(refresh, POLL_MS)
+    const timer = setInterval(() => refresh({ background: true }), POLL_MS)
     return () => clearInterval(timer)
   }, [hasPending, refresh])
 
@@ -202,6 +218,10 @@ export default function KnowledgeTab({ projectId, showToast }) {
           <p className="mt-0.5 max-w-xl text-[13px] leading-relaxed text-muted">
             Upload specs, PRDs or notes. The AI uses only the relevant parts as extra context;
             your workflow description stays the main source of truth.
+          </p>
+          <p className="mt-1 max-w-xl text-[12px] leading-relaxed text-muted">
+            Relevant excerpts from documents marked “Use in AI” are sent to your AI provider during analysis.
+            Secrets like API keys and passwords are removed first. Turn a document off to keep it out of AI requests.
           </p>
         </div>
         <button type="button" className="btn-primary" onClick={() => inputRef.current?.click()} disabled={uploading}>

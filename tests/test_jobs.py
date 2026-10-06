@@ -129,3 +129,16 @@ def test_worker_respects_the_disable_flag(monkeypatch):
     monkeypatch.setattr(jobs, "_worker", None)
     jobs.start_worker()
     assert jobs._worker is None
+
+
+def test_a_reclaimed_job_ignores_the_original_workers_result(queue):
+    """Fencing: once another worker took over an expired lease, the first one can't record an outcome."""
+    jobs, db, calls, _ = queue
+    job_id = add(jobs, db)
+    job = jobs.claim_next(db, "worker-a")
+    db.query(Job).filter(Job.id == job_id).update({Job.locked_by: "worker-b"})  # lease expired, B reclaimed
+    db.commit()
+
+    jobs.run_job(db, job, worker_id="worker-a")
+    job = db.get(Job, job_id)
+    assert (job.status, job.locked_by) == ("running", "worker-b")
