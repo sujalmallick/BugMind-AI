@@ -59,6 +59,18 @@ const PROVIDERS = [
       { id: "deepseek/deepseek-chat", label: "DeepSeek Chat" },
     ],
   },
+  {
+    id: "openrouter",
+    label: "OpenRouter",
+    color: "#6366f1",
+    models: [
+      { id: "openrouter/openrouter/free",                         label: "Auto — Best Free Model (Recommended)" },
+      { id: "openrouter/google/gemma-4-31b-it:free",              label: "Gemma 4 31B (Free)" },
+      { id: "openrouter/nvidia/nemotron-3-super-120b-a12b:free",  label: "Nemotron 3 Super 120B (Free)" },
+      { id: "openrouter/deepseek/deepseek-chat",                  label: "DeepSeek V3 (Paid)" },
+      { id: "openrouter/meta-llama/llama-3.3-70b-instruct",       label: "Llama 3.3 70B (Paid)" },
+    ],
+  },
 ];
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
@@ -307,7 +319,7 @@ export default function AISettingsModal({ open, onClose, onKeySaved, onKeyDelete
                 <label className="mb-2.5 block text-xs font-semibold uppercase tracking-wide text-muted">
                   Provider
                 </label>
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
                   {PROVIDERS.map((p) => (
                     <ProviderButton
                       key={p.id}

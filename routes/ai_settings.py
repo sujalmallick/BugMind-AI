@@ -16,6 +16,19 @@ from database.models.user import User
 from database.models.user_ai_settings import UserAISettings
 
 logger = logging.getLogger("BugMind")
+
+# Where users top up credits for each provider (used in "insufficient balance" errors).
+PROVIDER_BILLING_URLS = {
+    "openai": "https://platform.openai.com/settings/organization/billing",
+    "anthropic": "https://console.anthropic.com/settings/billing",
+    "deepseek": "https://platform.deepseek.com/top_up",
+    "gemini": "https://aistudio.google.com/apikey",
+    "groq": "https://console.groq.com/settings/billing",
+    "openrouter": "https://openrouter.ai/settings/credits",
+}
+
+# Providers that reject traffic from the backend's Azure East Asia region.
+GEO_BLOCKED_PROVIDERS = {"gemini", "groq"}
 encryption_service = EncryptionService()
 
 router = APIRouter(
@@ -66,6 +79,7 @@ def update_ai_settings(
         "anthropic",
         "deepseek",
         "groq",
+        "openrouter",
     ]
 
     allowed_models = {
@@ -89,6 +103,13 @@ def update_ai_settings(
         "groq": [
             "groq/llama-3.3-70b-versatile",
             "groq/llama-3.1-8b-instant",
+        ],
+        "openrouter": [
+            "openrouter/openrouter/free",
+            "openrouter/google/gemma-4-31b-it:free",
+            "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+            "openrouter/deepseek/deepseek-chat",
+            "openrouter/meta-llama/llama-3.3-70b-instruct",
         ],
     }
 
@@ -194,6 +215,7 @@ def test_provider_key(
             "anthropic": "anthropic/claude-sonnet-4-20250514",
             "deepseek": "deepseek/deepseek-chat",
             "groq": "groq/llama-3.3-70b-versatile",
+            "openrouter": "openrouter/openrouter/free",
         }
         model = default_model_map.get(provider, "groq/llama-3.3-70b-versatile")
 
@@ -217,6 +239,13 @@ def test_provider_key(
             "error": "Invalid Groq API key format. Groq API keys always start with 'gsk_'. Please ensure you copied the key from https://console.groq.com/keys.",
         }
 
+    # Format check for OpenRouter keys to give instant feedback
+    if provider == "openrouter" and not api_key.startswith("sk-or-"):
+        return {
+            "success": False,
+            "error": "Invalid OpenRouter API key format. OpenRouter API keys always start with 'sk-or-v1-'. Please copy your key from https://openrouter.ai/keys.",
+        }
+
     from providers.litellm_provider import LiteLLMProvider
     try:
         tester = LiteLLMProvider(
@@ -235,11 +264,28 @@ def test_provider_key(
         err_msg = str(e)
         logger.error(f"Test key failure for user={current_user.id} provider={provider} model={model}: {err_msg}", exc_info=True)
         err_lower = err_msg.lower()
-        if "forbidden" in err_lower or "403" in err_lower:
+        if "insufficient" in err_lower or "balance" in err_lower:
+            billing_url = PROVIDER_BILLING_URLS.get(provider)
+            where = f"at {billing_url}" if billing_url else "in your provider dashboard"
             clean_err = (
-                f"{provider.capitalize()} returned Forbidden (403). "
-                f"Please check: (1) Try selecting 'Llama 3.1 8B (Ultra Fast)' in the Model dropdown, or "
-                f"(2) Log into https://console.groq.com and check if your account requires phone verification or if model permissions are restricted for your API key."
+                f"{provider.capitalize()} error: Insufficient balance or credits in your account. "
+                f"Please add credits {where} or switch to OpenRouter's free models."
+            )
+        elif "forbidden" in err_lower or "403" in err_lower:
+            if provider in GEO_BLOCKED_PROVIDERS:
+                clean_err = (
+                    f"{provider.capitalize()} returned Forbidden (403). This provider blocks requests from our "
+                    f"server's region (Azure East Asia). Please switch to OpenRouter or DeepSeek, which work from this region."
+                )
+            else:
+                clean_err = (
+                    f"{provider.capitalize()} returned Forbidden (403). Your API key may not have access to "
+                    f"'{model}'. Try another model or check your key's permissions in the {provider.capitalize()} dashboard."
+                )
+        elif "location is not supported" in err_lower:
+            clean_err = (
+                f"{provider.capitalize()} does not serve requests from our server's region (Azure East Asia). "
+                f"Please switch to OpenRouter or DeepSeek, which work from this region."
             )
         elif any(kw in err_lower for kw in ["401", "unauthorized", "authentication", "invalid_api_key"]):
             clean_err = f"Authentication failed: Invalid {provider.capitalize()} API key. Please check your key at the {provider.capitalize()} dashboard."

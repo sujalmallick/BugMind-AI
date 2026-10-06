@@ -33,6 +33,9 @@ _PROVIDER_KEY_MAP = {
     "together":   "TOGETHERAI_API_KEY",
 }
 
+# OpenRouter's "Free Models Router" — a stable id that routes to any currently free model.
+_OPENROUTER_FREE_ROUTER = "openrouter/openrouter/free"
+
 
 class LiteLLMProvider:
 
@@ -93,6 +96,8 @@ class LiteLLMProvider:
         try:
             extra_headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "HTTP-Referer": "https://bugmind.ai",
+                "X-Title": "BugMind AI",
             }
             response = completion(
                 model=model_name,
@@ -130,6 +135,20 @@ class LiteLLMProvider:
                             "content": prompt,
                         }
                     ],
+                )
+            elif prov == "openrouter" and model_name != _OPENROUTER_FREE_ROUTER and model_name.endswith(":free") and any(k in err_str for k in ["not found", "404", "does not exist", "no endpoints"]):
+                # OpenRouter retires :free models often; the free router always picks an available one.
+                logger.warning(f"Model {model_name} failed with '{err}'. Falling back to {_OPENROUTER_FREE_ROUTER}...")
+                response = completion(
+                    model=_OPENROUTER_FREE_ROUTER,
+                    api_key=api_key,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": prompt,
+                        }
+                    ],
+                    extra_headers=extra_headers,
                 )
             else:
                 raise err

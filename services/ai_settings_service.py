@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from database.models.user_ai_settings import UserAISettings
 from services.encryption_service import EncryptionService
 
-KNOWN_PROVIDERS = ["gemini", "openai", "anthropic", "groq", "deepseek"]
+KNOWN_PROVIDERS = ["gemini", "openai", "anthropic", "groq", "deepseek", "openrouter"]
 
 
 class AISettingsService:
