@@ -11,11 +11,15 @@ from schemas.auth import (
     LoginRequest,
     TokenResponse,
     UserResponse,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
 )
 
 from services.auth_service import (
     register_user,
     login_user,
+    request_password_reset,
+    reset_password,
 )
 
 from database.models.user import User
@@ -55,6 +59,33 @@ def login(
         db=db,
         email=form_data.username,
         password=form_data.password,
+    )
+
+
+@router.post("/forgot-password")
+@limiter.limit("3/minute")
+def forgot_password(
+    request: Request,
+    request_data: ForgotPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    return request_password_reset(
+        db=db,
+        email=request_data.email,
+    )
+
+
+@router.post("/reset-password")
+@limiter.limit("5/minute")
+def reset_password_route(
+    request: Request,
+    request_data: ResetPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    return reset_password(
+        db=db,
+        token=request_data.token,
+        new_password=request_data.new_password,
     )
 
 from pathlib import Path

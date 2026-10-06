@@ -67,3 +67,75 @@ def send_invitation_email(
     except Exception as e:
         logger.warning(f"Error sending invite email to {to_email}: {e}")
         return False
+
+
+def send_password_reset_email(
+    to_email: str,
+    reset_url: str,
+    user_name: str,
+    expire_minutes: int,
+) -> bool:
+    """
+    Sends a password reset email via Azure Communication Services Email.
+    Safely degrades if connection string or sender address is not configured.
+    """
+    connection_string = os.getenv("AZURE_COMMUNICATION_CONNECTION_STRING")
+    sender_address = os.getenv("AZURE_COMMUNICATION_SENDER_EMAIL")
+
+    if not connection_string or not sender_address:
+        # SECURITY: never log the reset link itself; it grants account access.
+        logger.info(
+            f"Password reset email skipped for {to_email} "
+            f"(AZURE_COMMUNICATION_CONNECTION_STRING or SENDER_EMAIL not configured)."
+        )
+        return False
+
+    try:
+        from azure.communication.email import EmailClient
+
+        client = EmailClient.from_connection_string(connection_string)
+
+        subject = "Reset your BugMind AI password"
+        html_content = f"""
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px;">
+            <h2 style="color: #0f172a; margin-bottom: 16px;">Reset your password</h2>
+            <p style="color: #334155; font-size: 15px; line-height: 1.5;">Hello {user_name},</p>
+            <p style="color: #334155; font-size: 15px; line-height: 1.5;">
+                We received a request to reset the password for your BugMind AI account.
+                This link expires in <strong>{expire_minutes} minutes</strong> and can be used once.
+            </p>
+            <div style="margin: 28px 0;">
+                <a href="{reset_url}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                    Reset Password
+                </a>
+            </div>
+            <p style="color: #64748b; font-size: 13px;">Or copy and paste this link into your browser:</p>
+            <p style="color: #2563eb; font-size: 12px; word-break: break-all;">{reset_url}</p>
+            <p style="color: #64748b; font-size: 13px; margin-top: 24px;">
+                If you didn't request this, you can safely ignore this email. Your password won't change.
+            </p>
+        </div>
+        """
+
+        message = {
+            "content": {
+                "subject": subject,
+                "plainText": (
+                    f"Hello {user_name},\n\nReset your BugMind AI password using this link "
+                    f"(expires in {expire_minutes} minutes): {reset_url}\n\n"
+                    f"If you didn't request this, ignore this email."
+                ),
+                "html": html_content,
+            },
+            "recipients": {
+                "to": [{"address": to_email}],
+            },
+            "senderAddress": sender_address,
+        }
+
+        client.begin_send(message)
+        logger.info(f"Password reset email sent to {to_email}")
+        return True
+    except Exception as e:
+        logger.warning(f"Error sending password reset email to {to_email}: {e}")
+        return False
