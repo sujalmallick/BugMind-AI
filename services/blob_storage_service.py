@@ -1,4 +1,5 @@
-﻿import os
+import os
+import uuid
 import logging
 from typing import Optional
 from azure.storage.blob import BlobServiceClient, ContentSettings
@@ -27,14 +28,16 @@ def get_blob_service_client() -> Optional[BlobServiceClient]:
 
 def upload_avatar_blob(user_id: int, file_bytes: bytes, content_type: str = "image/webp") -> Optional[str]:
     """
-    Uploads avatar bytes to Azure Blob Storage under avatars/{user_id}/avatar.webp.
+    Uploads avatar bytes to Azure Blob Storage under avatars/{user_id}/{random}.webp.
+    A fresh random name per upload keeps avatar URLs unguessable (no enumerating
+    every user's photo by id); the caller deletes the previous blob.
     Returns the public URL of the uploaded blob, or None if Azure Storage is not configured.
     """
     client = get_blob_service_client()
     if not client:
         return None
 
-    blob_name = f"avatars/{user_id}/avatar.webp"
+    blob_name = f"avatars/{user_id}/{uuid.uuid4().hex}.webp"
     try:
         container_client = client.get_container_client(AZURE_STORAGE_CONTAINER)
         blob_client = container_client.get_blob_client(blob_name)

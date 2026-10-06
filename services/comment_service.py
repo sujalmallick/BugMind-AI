@@ -11,8 +11,13 @@ from schemas.comment import CommentCreate, CommentUpdate
 from services.notification_service import create_notification
 from schemas.notification import NotificationBase
 
-def parse_mentions(db: Session, text: str) -> List[int]:
-    """Extracts @usernames from text and returns their user IDs."""
+def parse_mentions(db: Session, text: str, project_id: int | None = None) -> List[int]:
+    """
+    Extracts @usernames from text and returns their user IDs. With a
+    project_id, only users who can access that project are returned, so a
+    comment can't be used to notify (or confirm the existence of) arbitrary
+    accounts.
+    """
     if not text:
         return []
     
@@ -22,8 +27,12 @@ def parse_mentions(db: Session, text: str) -> List[int]:
         return []
     
     # Query database for these usernames
-    users = db.execute(select(User.id).where(User.username.in_(usernames))).scalars().all()
-    return list(set(users))
+    users = db.execute(select(User.id).where(User.username.in_(usernames[:50]))).scalars().all()
+    user_ids = set(users)
+    if project_id is not None:
+        from auth.permissions import get_project_role
+        user_ids = {uid for uid in user_ids if get_project_role(db, uid, project_id)}
+    return list(user_ids)
 
 def _verify_entity_project_access(db: Session, entity_type: str, entity_id: int, user_id: int, min_role: str = "viewer"):
     from auth.permissions import require_project_role
@@ -55,7 +64,18 @@ def _verify_entity_project_access(db: Session, entity_type: str, entity_id: int,
     return project_id
 
 def create_comment(db: Session, comment_data: CommentCreate, author_id: int) -> Comment:
-    _verify_entity_project_access(db, comment_data.entity_type, comment_data.entity_id, author_id, "viewer")
+    project_id = _verify_entity_project_access(db, comment_data.entity_type, comment_data.entity_id, author_id, "viewer")
+
+    # A reply must hang off a live comment on the same item.
+    if comment_data.parent_id is not None:
+        parent = db.get(Comment, comment_data.parent_id)
+        if (
+            not parent
+            or parent.deleted_at
+            or parent.entity_type != comment_data.entity_type
+            or parent.entity_id != comment_data.entity_id
+        ):
+            raise HTTPException(status_code=400, detail="Invalid parent comment")
     
     # 1. Create the base comment
     new_comment = Comment(
@@ -69,7 +89,7 @@ def create_comment(db: Session, comment_data: CommentCreate, author_id: int) -> 
     db.flush() # flush to get the ID
 
     # 2. Parse and create mentions
-    mentioned_user_ids = parse_mentions(db, comment_data.body)
+    mentioned_user_ids = parse_mentions(db, comment_data.body, project_id)
     for user_id in mentioned_user_ids:
         mention = Mention(comment_id=new_comment.id, mentioned_user_id=user_id)
         db.add(mention)
@@ -133,6 +153,9 @@ def update_comment(db: Session, comment_id: int, user_id: int, update_data: Comm
     
     if comment.author_id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to edit this comment")
+
+    # Authors removed from the project lose the ability to edit.
+    project_id = _verify_entity_project_access(db, comment.entity_type, comment.entity_id, user_id, "viewer")
     
     comment.body = update_data.body
     comment.is_edited = True
@@ -146,7 +169,7 @@ def update_comment(db: Session, comment_id: int, user_id: int, update_data: Comm
     db.execute(Mention.__table__.delete().where(Mention.comment_id == comment.id))
     db.flush()
     
-    new_mentions = parse_mentions(db, comment.body)
+    new_mentions = parse_mentions(db, comment.body, project_id)
     for m_u_id in new_mentions:
         db.add(Mention(comment_id=comment.id, mentioned_user_id=m_u_id))
         if m_u_id != user_id:
@@ -183,6 +206,9 @@ def add_reaction(db: Session, comment_id: int, user_id: int, emoji: str):
     comment = db.get(Comment, comment_id)
     if not comment or comment.deleted_at:
         raise HTTPException(status_code=404, detail="Comment not found")
+
+    # Only people who can see the item may react to its comments.
+    _verify_entity_project_access(db, comment.entity_type, comment.entity_id, user_id, "viewer")
     
     # Check if reaction exists
     existing = db.execute(

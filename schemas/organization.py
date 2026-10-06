@@ -50,6 +50,17 @@ class OrgUpdate(BaseModel):
     description: Optional[str] = None
     logo_url: Optional[str] = None
 
+    @field_validator("logo_url")
+    @classmethod
+    def https_logo(cls, v: Optional[str]) -> Optional[str]:
+        # Rendered as <img src> for every org member: only plain https URLs.
+        if v is None or not v.strip():
+            return None
+        v = v.strip()
+        if len(v) > 512 or not re.match(r"^https://[^\s\"'<>]+$", v):
+            raise ValueError("Logo URL must be an https:// URL (max 512 characters).")
+        return v
+
 
 class OrgMemberRoleUpdate(BaseModel):
     role: str

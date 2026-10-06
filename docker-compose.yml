@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-bugmind}
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"  # dev DB with default credentials: never expose to the LAN
     volumes:
       - pgdata:/var/lib/postgresql
     healthcheck:
@@ -28,7 +28,7 @@ services:
       dockerfile: Dockerfile.backend.dev
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-bugmind}
       DATABASE_HOST: db
@@ -65,7 +65,7 @@ services:
       dockerfile: Dockerfile.dev
     restart: unless-stopped
     ports:
-      - "5173:5173"
+      - "127.0.0.1:5173:5173"
     environment:
       VITE_API_URL: http://localhost:8000
     volumes:

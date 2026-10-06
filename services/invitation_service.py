@@ -182,6 +182,12 @@ def accept_invitation(db: Session, token: str, user_id: int) -> dict:
             )
 
     # Grant access
+    # The target may have been deleted since the link was issued.
+    if not _target_exists(db, inv.type, inv.target_id):
+        inv.status = "revoked"
+        db.commit()
+        raise HTTPException(status_code=410, detail="This invitation is no longer valid.")
+
     if inv.type == "project":
         _grant_project_access(db, inv.target_id, user_id, inv.role, inv.invited_by)
     elif inv.type == "organization":
@@ -298,6 +304,21 @@ def _assert_role_grantable(invite_type: str, requester_role: str, role: str) -> 
         assert_project_role_grantable(requester_role, role)
     else:
         assert_org_role_grantable(requester_role, role)
+
+
+def _target_exists(db: Session, invite_type: str, target_id: int) -> bool:
+    if invite_type == "project":
+        from database.models.project import Project
+        return db.query(Project).filter(Project.id == target_id).first() is not None
+    if invite_type == "organization":
+        from database.models.organization import Organization
+        return (
+            db.query(Organization)
+            .filter(Organization.id == target_id, Organization.deleted_at.is_(None))
+            .first()
+            is not None
+        )
+    return False
 
 
 def _get_target_name(db: Session, invite_type: str, target_id: int) -> str:

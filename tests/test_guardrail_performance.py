@@ -11,7 +11,9 @@ import pytest
 from guardrails import Source, input_guardrail, masker, output_guardrail
 
 SIZE = 20_000
-BUDGET_SECONDS = 1.0
+# Linear checks finish in well under a second; the quadratic regexes this guards
+# against took 7-15s at this size. 3s leaves headroom for a busy CI machine.
+BUDGET_SECONDS = 3.0
 
 ADVERSARIAL = {
     "newlines": "\n" * SIZE,
