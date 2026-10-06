@@ -35,6 +35,7 @@ from routes.ai_settings import (
     router as ai_settings_router
 )
 from routes.ai_workload import router as ai_workload_router
+from guardrails import Source, input_guardrail, masker, output_guardrail
 
 app = FastAPI()
 
@@ -70,11 +71,11 @@ app_logger = logging.getLogger("BugMind")
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    app_logger.error(f"Unhandled Exception on {request.method} {request.url}: {exc}", exc_info=True)
+    app_logger.error(f"Unhandled Exception on {request.method} {request.url.path}: {exc}", exc_info=True)
     origin = request.headers.get("origin", "*")
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal Server Error", "error": str(exc)},
+        content={"detail": "Internal Server Error", "error": output_guardrail.sanitize_error(exc)},
         headers={
             "Access-Control-Allow-Origin": origin if origin else "*",
             "Access-Control-Allow-Credentials": "true",
@@ -148,6 +149,21 @@ def health_check():
 @limiter.limit("10/minute")
 def analyze_workflow(request: Request, data: WorkflowInput,  current_user: User = Depends(get_current_user)):
 
+    # ── Input guardrail: injection check + PII/secret masking before any agent runs ──
+    workflow_check = input_guardrail.validate(data.workflow, source=Source.USER, field="workflow")
+    if workflow_check.blocked:
+        return workflow_check.error_response()
+
+    observed_steps, steps_block = input_guardrail.validate_many(
+        data.observed_steps, source=Source.USER, field="observed_steps"
+    )
+    if steps_block:
+        return steps_block.error_response()
+
+    # Not sent to the LLM today, but they enter graph state (and traces).
+    existing_checklist, _ = masker.mask_obj(data.existing_checklist)
+    existing_test_cases, _ = masker.mask_obj(data.existing_test_cases)
+
     run_config = {
         "run_name": f"Workflow Analysis - User {current_user.id}",
         "tags": ["workflow-analysis", f"user:{current_user.id}"],
@@ -161,10 +177,10 @@ def analyze_workflow(request: Request, data: WorkflowInput,  current_user: User 
     result = workflow_graph.invoke(
         {
             "user_id": current_user.id,
-            "workflow": data.workflow,
-            "observed_steps": data.observed_steps,
-            "existing_checklist": data.existing_checklist,
-            "existing_test_cases": data.existing_test_cases,
+            "workflow": workflow_check.sanitized_text,
+            "observed_steps": observed_steps,
+            "existing_checklist": existing_checklist,
+            "existing_test_cases": existing_test_cases,
         },
         config=run_config,
     )
@@ -183,11 +199,8 @@ def analyze_workflow(request: Request, data: WorkflowInput,  current_user: User 
     if isinstance(test_cases, dict) and test_cases.get("success") is False:
         return test_cases
 
-    return {
-
-        "success": True,
-
-        "workflow": result.get("workflow"),
+    # ── Output guardrail on everything the agents generated ──
+    generated, output_check = output_guardrail.validate_obj({
 
         "confirmedModules":
             modules.get("confirmed_modules", []),
@@ -207,7 +220,19 @@ def analyze_workflow(request: Request, data: WorkflowInput,  current_user: User 
         "testCases":
             test_cases if isinstance(test_cases, list) else []
 
+    }, agent="workflow_graph")
+
+    if output_check.blocked:
+        return output_check.error_response()
+
+    return {
+        "success": True,
+        # The caller's own input, echoed back unchanged (never the masked copy).
+        "workflow": data.workflow,
+        **generated,
     }
+
+
 @app.post("/analyze-issue")
 @limiter.limit("10/minute")
 def analyze_issue(
@@ -215,11 +240,24 @@ def analyze_issue(
     data: IssueInput,
     current_user: User = Depends(get_current_user),
 ):
-    return analyze_issue_agent(
-        workflow=data.workflow,
-        observation=data.observation,
-        expected_result=data.expected_result,
-        actual_result=data.actual_result,
+    sanitized = {}
+    for field in ("workflow", "observation", "expected_result", "actual_result"):
+        value = getattr(data, field)
+        if value is None:
+            sanitized[field] = None
+            continue
+        check = input_guardrail.validate(value, source=Source.USER, field=field)
+        if check.blocked:
+            return check.error_response()
+        sanitized[field] = check.sanitized_text
+
+    result = analyze_issue_agent(
         failed_test_case=data.failed_test_case,
         user_id=current_user.id,
+        **sanitized,
     )
+
+    safe_result, output_check = output_guardrail.validate_obj(result, agent="issue_agent")
+    if output_check.blocked:
+        return output_check.error_response()
+    return safe_result

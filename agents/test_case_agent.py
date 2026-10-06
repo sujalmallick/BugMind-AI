@@ -1,6 +1,9 @@
 from utils import call_llm, parse_json_response
 from utils import logger
 from constants import TEST_CASE_STATUSES
+from guardrails import Source, untrusted_block
+
+AGENT = "test_case_agent"
 
 def generate_test_cases_agent(
     workflow,
@@ -26,8 +29,8 @@ def generate_test_cases_agent(
                 for i, step in enumerate(steps_list)
             )
             steps_section = f"""
-Observed User Steps:
-{formatted_steps}
+Observed User Steps (user-provided data):
+{untrusted_block(formatted_steps, source=Source.USER, label="observed_steps", agent=AGENT)}
 
 Your execution steps for the test cases MUST be guided by these observed steps wherever applicable.
 """
@@ -45,19 +48,17 @@ Assume standard, logical execution steps required to navigate and complete actio
     prompt = f"""
 You are a Lead QA Engineer generating production-ready manual test cases.
 
-Application Workflow:
----
-{workflow}
----
+Application Workflow (user-provided data):
+{untrusted_block(workflow, source=Source.USER, label="workflow", agent=AGENT)}
 
-Confirmed Modules:
-{", ".join(confirmed_mods)}
+Confirmed Modules (from the module agent):
+{untrusted_block(", ".join(confirmed_mods), source=Source.LLM, label="confirmed_modules", agent=AGENT)}
 
-Critical Workflows:
-{", ".join(critical_workflows)}
+Critical Workflows (from the module agent):
+{untrusted_block(", ".join(critical_workflows), source=Source.LLM, label="critical_workflows", agent=AGENT)}
 
-High Risk Areas:
-{", ".join(high_risk_areas)}
+High Risk Areas (from the module agent):
+{untrusted_block(", ".join(high_risk_areas), source=Source.LLM, label="high_risk_areas", agent=AGENT)}
 
 {steps_section}
 
@@ -105,7 +106,7 @@ Rules:
 """
 
     logger.info("Running Test Case Agent")
-    response = call_llm(prompt, user_id=user_id)
+    response = call_llm(prompt, user_id=user_id, agent=AGENT)
 
     if response is None:
         return {
@@ -116,7 +117,7 @@ Rules:
     if isinstance(response, dict):
         test_cases = response
     else:
-        test_cases = parse_json_response(response, prompt, user_id=user_id)
+        test_cases = parse_json_response(response, prompt, user_id=user_id, agent=AGENT)
 
     if isinstance(test_cases, dict) and test_cases.get("success") is False:
         return test_cases

@@ -15,6 +15,12 @@ logging.basicConfig(
 
 logger = logging.getLogger("BugMind")
 
+import guardrails
+from guardrails import GuardrailViolation, output_guardrail
+
+# Redact secrets/PII from every log record and LangSmith/LiteLLM trace.
+guardrails.bootstrap()
+
 from services.llm_manager import LLMManager
 from database.session import SessionLocal
 from services.llm_factory import build_llm_manager
@@ -35,6 +41,7 @@ def call_llm(
     prompt: str,
     user_id: int | None = None,
     _retry_count: int = 0,
+    agent: str | None = None,
 ):
     """
     Sends a single request to the configured LLM provider.
@@ -54,12 +61,16 @@ def call_llm(
         else:
             manager = default_llm_manager
 
-        response = manager.generate(prompt)
+        response = manager.generate(prompt, agent=agent)
 
         if not response:
             return None
 
         return response
+
+    except GuardrailViolation as e:
+        logger.warning(f"LLM response blocked by guardrail '{e.guardrail}' | agent={agent}")
+        return {"success": False, "error": e.user_message, "guardrail": e.guardrail}
 
     except Exception as e:
         error_str = str(e).lower()
@@ -76,6 +87,7 @@ def call_llm(
                     prompt,
                     user_id=user_id,
                     _retry_count=_retry_count + 1,
+                    agent=agent,
                 )
             logger.error("Quota exceeded (after backoff retries).")
             return {"success": False, "error": "AI Quota exceeded. Please try again later."}
@@ -95,10 +107,10 @@ def call_llm(
             return {"success": False, "error": "AI Provider is currently offline or timed out. Please try again."}
 
         logger.error(f"LLM call failed with unhandled exception: {e}", exc_info=True)
-        return {"success": False, "error": f"AI service error: {str(e)}"}
+        return {"success": False, "error": f"AI service error: {output_guardrail.sanitize_error(e)}"}
 
 
-def parse_json_response(response, prompt=None, user_id=None):
+def parse_json_response(response, prompt=None, user_id=None, agent=None):
     if response is None:
         return {
             "success": False,
@@ -137,7 +149,7 @@ Your previous response failed JSON parsing with this error:
 Please correct the response and return ONLY valid JSON.
 Do not wrap it in markdown. Do not include explanations.
 """
-            retry_response = call_llm(retry_prompt, user_id=user_id)
+            retry_response = call_llm(retry_prompt, user_id=user_id, agent=agent)
 
             if retry_response:
                 if isinstance(retry_response, dict):
