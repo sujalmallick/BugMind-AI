@@ -7,6 +7,8 @@ else in the report is ignored. The file is untrusted input: size, nesting and
 counts are bounded and every string is truncated.
 """
 
+import base64
+import binascii
 import json
 import re
 from datetime import datetime
@@ -16,9 +18,12 @@ MAX_REPORT_BYTES = 4 * 1024 * 1024
 MAX_SUITE_DEPTH = 20
 MAX_TESTS = 2000
 MAX_ERROR_CHARS = 1500
+MAX_SNAPSHOT_CHARS = 30_000
+MAX_ATTACHMENT_B64 = 120_000
 
 _TAG = re.compile(r"\[BM-(\d{1,9}) v(\d{1,6})\]")
 _ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+_STEP = re.compile(r"^\[S(\d{1,3})\]")
 # Playwright test outcome → BugMind result.
 _OUTCOMES = {"expected": "passed", "unexpected": "failed", "flaky": "flaky", "skipped": "skipped"}
 
@@ -41,6 +46,39 @@ def _error(results: list) -> str | None:
         errors = result.get("errors")
         if isinstance(errors, list) and errors and isinstance(errors[0], dict) and errors[0].get("message"):
             return _text(errors[0]["message"], MAX_ERROR_CHARS)
+    return None
+
+
+def _failed_step(results: list) -> int | None:
+    """Number of the "[S<n>] ..." step that failed, from the last result's top-level steps."""
+    for result in reversed(results if isinstance(results, list) else []):
+        if not isinstance(result, dict):
+            continue
+        for step in (result.get("steps") or [])[:200]:
+            if isinstance(step, dict) and step.get("error"):
+                match = _STEP.match(str(step.get("title") or ""))
+                if match:
+                    return int(match.group(1))
+    return None
+
+
+def _page(results: list) -> dict | None:
+    """The "bugmind-page" attachment the exported tests add on failure: {"url", "snapshot"}."""
+    for result in reversed(results if isinstance(results, list) else []):
+        if not isinstance(result, dict):
+            continue
+        for attachment in (result.get("attachments") or [])[:50]:
+            if not isinstance(attachment, dict) or attachment.get("name") != "bugmind-page":
+                continue
+            body = attachment.get("body")
+            if not isinstance(body, str) or len(body) > MAX_ATTACHMENT_B64:
+                continue
+            try:
+                page = json.loads(base64.b64decode(body, validate=True).decode("utf-8"))
+            except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError, RecursionError):
+                continue
+            if isinstance(page, dict) and isinstance(page.get("snapshot"), str):
+                return {"url": _text(page.get("url"), 500), "snapshot": _text(page["snapshot"], MAX_SNAPSHOT_CHARS)}
     return None
 
 
@@ -92,6 +130,8 @@ def parse_report(data: bytes) -> dict:
                     "version": int(match.group(2)),
                     "status": status,
                     "error": _error(results) if status == "failed" else None,
+                    "failedStep": _failed_step(results) if status == "failed" else None,
+                    "page": _page(results) if status == "failed" else None,
                     "durationMs": _duration(results),
                 })
 
@@ -129,4 +169,6 @@ def merge_outcomes(tests: list[dict]) -> dict[int, dict]:
         if order[test["status"]] > order[current["status"]]:
             current["status"] = test["status"]
             current["error"] = test["error"] or current["error"]
+            current["failedStep"] = test.get("failedStep") or current.get("failedStep")
+            current["page"] = test.get("page") or current.get("page")
     return merged

@@ -20,6 +20,7 @@ from constants import TEST_CASE_STATUSES
 from database.models.automation import AutomationRun, AutomationScript
 from database.models.test_case import TestCase
 from database.models.workspace import Workspace
+from guardrails import masker
 from schemas.notification import NotificationBase
 from services.activity_service import Verb, log_activity
 from services.automation_results import ReportError, merge_outcomes, parse_report
@@ -104,6 +105,16 @@ def get_run(db: Session, user_id: int, project_id: int, run_id: int) -> dict:
     return serialize_run(run, detail=True)
 
 
+def _masked_page(page: dict | None) -> dict | None:
+    """
+    The failure snapshot shows the tested website's content. Test variables were already
+    redacted on the user's machine; personal data and secrets are masked before it's stored.
+    """
+    if not page:
+        return None
+    return {"url": masker.mask(page["url"]).text, "snapshot": masker.mask(page["snapshot"]).text}
+
+
 def import_results(db: Session, user_id: int, project_id: int, data: bytes) -> dict:
     """
     Records a run from an uploaded report and applies it to linked test cases.
@@ -138,6 +149,7 @@ def import_results(db: Session, user_id: int, project_id: int, data: bytes) -> d
             "currentVersion": script.version, "status": outcome["status"], "error": outcome["error"],
             "durationMs": outcome["durationMs"], "testCaseId": tc.id if tc else None,
             "testCaseCode": tc.test_case_id if tc else None, "applied": False,
+            "failedStep": outcome.get("failedStep"), "page": _masked_page(outcome.get("page")),
         })
 
     run = AutomationRun(project_id=project_id, uploaded_by=user_id, source="upload",

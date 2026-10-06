@@ -3,6 +3,7 @@ import { ArrowLeft, CheckCircle2, Download, History, Loader2, Upload, XCircle } 
 import EmptyState from '../shared/EmptyState'
 import Pill from '../shared/Pill'
 import SkeletonBlock from '../shared/SkeletonBlock'
+import HealPanel from './HealPanel'
 import { apiErrorMessage, exportProject, getRun, importResults, listRuns } from '../../services/automationApi'
 
 const MAX_REPORT_BYTES = 4 * 1024 * 1024
@@ -28,7 +29,7 @@ function Totals({ totals }) {
   )
 }
 
-function RunDetail({ projectId, runId, onBack, showToast }) {
+function RunDetail({ projectId, runId, onBack, onOpenScript, showToast }) {
   const [run, setRun] = useState(null)
 
   useEffect(() => {
@@ -79,8 +80,12 @@ function RunDetail({ projectId, runId, onBack, showToast }) {
                   </div>
                   {result.error && (
                     <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-lg border border-hairline bg-paper/60 p-2 font-mono text-[11.5px] text-flagged">
-                      {result.error}
+                      {result.failedStep ? `Step ${result.failedStep}: ` : ''}{result.error}
                     </pre>
+                  )}
+                  {result.status === 'failed' && !outdated && (
+                    <HealPanel projectId={projectId} runId={run.id} result={result}
+                               onApplied={onOpenScript} showToast={showToast} />
                   )}
                 </li>
               )
@@ -92,7 +97,7 @@ function RunDetail({ projectId, runId, onBack, showToast }) {
   )
 }
 
-export default function RunsSection({ projectId, environments, showToast, onImported }) {
+export default function RunsSection({ projectId, environments, showToast, onImported, onOpenScript }) {
   const [runs, setRuns] = useState(null)
   const [openRunId, setOpenRunId] = useState(null)
   const [uploading, setUploading] = useState(false)
@@ -146,7 +151,8 @@ export default function RunsSection({ projectId, environments, showToast, onImpo
   }
 
   if (openRunId) {
-    return <RunDetail projectId={projectId} runId={openRunId} onBack={() => setOpenRunId(null)} showToast={showToast} />
+    return <RunDetail projectId={projectId} runId={openRunId} onBack={() => setOpenRunId(null)}
+                      onOpenScript={onOpenScript} showToast={showToast} />
   }
 
   return (

@@ -188,3 +188,17 @@ def import_results(request: Request, project_id: int, file: UploadFile = File(..
                    current_user: User = Depends(get_current_user)):
     data = file.file.read(MAX_REPORT_BYTES + 1)
     return runs.import_results(db, current_user.id, project_id, data)
+
+
+class HealRequest(BaseModel):
+    run_id: int
+
+
+@router.post("/scripts/{script_id}/heal")
+@limiter.limit("10/minute")
+def heal_script(request: Request, project_id: int, script_id: int, body: HealRequest, db: Session = Depends(get_db),
+                current_user: User = Depends(get_current_user)):
+    """Suggested locator fixes for a failed run, verified against its page snapshot. Saves nothing."""
+    from services.automation_heal import heal_script as suggest
+
+    return suggest(db, current_user.id, project_id, script_id, body.run_id)

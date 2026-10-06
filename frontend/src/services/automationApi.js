@@ -112,3 +112,8 @@ export async function importResults(projectId, file) {
     headers: { "Content-Type": "multipart/form-data" },
   })).data;
 }
+
+// Suggested locator fixes for a failed result ({ success, verdict, summary, changes, rejected, steps }).
+export async function healScript(projectId, scriptId, runId) {
+  return (await api.post(`${base(projectId)}/scripts/${scriptId}/heal`, { run_id: runId })).data;
+}
