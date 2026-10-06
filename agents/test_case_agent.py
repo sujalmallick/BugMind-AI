@@ -1,6 +1,7 @@
 from utils import call_llm, parse_json_response
 from utils import logger
 from constants import TEST_CASE_STATUSES
+from agents.context_blocks import environment_section, knowledge_section
 from agents.coverage import is_near_duplicate
 from agents.output_schemas import GeneratedTestCase, parse_items, unwrap_list
 from guardrails import Source, untrusted_block
@@ -100,6 +101,8 @@ def generate_test_cases_agent(
     observed_steps,
     user_id=None,
     manual_test_cases=None,
+    knowledge=None,
+    environment=None,
 ):
     """
     manual_test_cases: the project's hand-written test cases (server-loaded). They are
@@ -153,7 +156,7 @@ High Risk Areas (from the module agent):
 {untrusted_block(", ".join(high_risk_areas), source=Source.LLM, label="high_risk_areas", agent=AGENT)}
 
 {steps_section}
-{_manual_test_cases_section(manual_test_cases)}
+{environment_section(environment, AGENT)}{knowledge_section(knowledge, AGENT)}{_manual_test_cases_section(manual_test_cases)}
 Task:
 Generate a list of execution-ready manual test cases covering Functional, Negative, Edge Case, Security, and Regression categories.
 

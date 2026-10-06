@@ -6,6 +6,7 @@ import {
   ArrowRight,
   ShieldCheck,
 } from "lucide-react";
+import KnowledgeSourcesNote from "./KnowledgeSourcesNote";
 
 function SummaryCard({ icon, title, value }) {
   return (
@@ -91,6 +92,7 @@ export default function AnalysisSummary({
           />
 
         </div>
+        <KnowledgeSourcesNote sources={analysis.knowledgeSources} className="mt-4" />
         <div className="mt-6 rounded-xl border border-hairline bg-paper p-5 md:p-6">
           <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">
             Test Environment

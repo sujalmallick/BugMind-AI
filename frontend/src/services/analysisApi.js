@@ -18,6 +18,10 @@ export async function analyzeWorkflow(payload) {
   if (payload.projectId) {
     body.project_id = payload.projectId;
   }
+  // Optional target environment (platform / OS / build / device) for the AI.
+  if (payload.environment) {
+    body.environment = payload.environment;
+  }
   if (payload.existingChecklist) {
     body.existing_checklist = payload.existingChecklist;
   }

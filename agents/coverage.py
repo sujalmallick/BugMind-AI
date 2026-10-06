@@ -28,9 +28,9 @@ def keywords(text: str) -> set[str]:
     for word in re.findall(r"[a-z0-9]+", str(text).lower()):
         if len(word) < 3 or word in _STOPWORDS:
             continue
-        # Light stemming so "payments"/"payment", "locked"/"lock" meet.
-        for suffix in ("ing", "ed", "es", "s"):
-            if word.endswith(suffix) and len(word) - len(suffix) >= 4:
+        # Light stemming so "payments"/"payment"/"pay" and "locked"/"lock" meet.
+        for suffix, min_stem in (("ments", 3), ("ment", 3), ("ing", 4), ("ed", 4), ("es", 4), ("s", 4)):
+            if word.endswith(suffix) and len(word) - len(suffix) >= min_stem:
                 word = word[: -len(suffix)]
                 break
         words.add(word)

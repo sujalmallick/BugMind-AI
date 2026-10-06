@@ -4,6 +4,7 @@ import ConfidenceChip from '../shared/ConfidenceChip'
 import EmptyState from '../shared/EmptyState'
 import SkeletonBlock from '../shared/SkeletonBlock'
 import AIThinking from "../shared/AIThinking";
+import KnowledgeSourcesNote from "../shared/KnowledgeSourcesNote";
 
 function ChipRow({ items, tone, confidence }) {
   if (!items.length) {
@@ -48,7 +49,8 @@ export default function ModulesTab({ analysis, isLoading }) {
   
 
   return (
-    
+    <div>
+    <KnowledgeSourcesNote sources={analysis.knowledgeSources} className="mx-3.5 mt-3.5 sm:mx-6 sm:mt-6" />
     <div className="grid grid-cols-1 gap-3.5 sm:gap-5 p-3.5 sm:p-6 sm:grid-cols-2">
       <Card icon={<ShieldCheck size={18} className="text-verified" />} title="Confirmed modules">
         <ChipRow items={analysis.confirmedModules} tone="verified" confidence="confirmed" />
@@ -65,6 +67,7 @@ export default function ModulesTab({ analysis, isLoading }) {
       <Card icon={<Flag size={18} className="text-signal" />} title="Critical workflows">
         <ChipRow items={analysis.criticalWorkflows} tone="signal" confidence="confirmed" />
       </Card>
+    </div>
     </div>
   )
 }

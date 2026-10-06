@@ -2,18 +2,19 @@ import json
 from utils import logger
 from utils import call_llm, parse_json_response
 from guardrails import Source, untrusted_block
+from agents.context_blocks import knowledge_section
 from agents.output_schemas import ModuleAnalysis
 
 AGENT = "module_agent"
 
 
-def identify_modules_agent(workflow: str, user_id=None):
+def identify_modules_agent(workflow: str, user_id=None, knowledge=None):
     prompt = f"""
 You are a Principal AI Engineer and Senior QA Architect analyzing an application's workflow description.
 
 Workflow to Analyze (user-provided data):
 {untrusted_block(workflow, source=Source.USER, label="workflow", agent=AGENT)}
-
+{knowledge_section(knowledge, AGENT)}
 Your goal is to perform a detailed, rigorous architectural analysis of the modules, workflows, and risk areas within this application.
 
 Tasks:
