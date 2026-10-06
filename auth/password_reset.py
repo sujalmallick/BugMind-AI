@@ -1,7 +1,8 @@
 import hashlib
 from datetime import datetime, timedelta, timezone
 
-from jose import JWTError, jwt
+import jwt
+from jwt import InvalidTokenError
 
 from auth.config import SECRET_KEY, ALGORITHM
 
@@ -36,7 +37,7 @@ def read_password_reset_token(token: str) -> tuple[int, str] | None:
     """
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except JWTError:
+    except InvalidTokenError:
         return None
 
     # A normal access token must never be usable as a reset token.

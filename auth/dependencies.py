@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 
 from auth.jwt import verify_access_token, verify_purpose_token
-from jose import JWTError, ExpiredSignatureError
+from jwt import ExpiredSignatureError, InvalidTokenError
 from database.session import get_db
 from database.models.user import User
 
@@ -33,7 +33,7 @@ def user_from_token(token: str, db: Session, purpose: str | None = None) -> User
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token expired",
         )
-    except JWTError:
+    except InvalidTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",
