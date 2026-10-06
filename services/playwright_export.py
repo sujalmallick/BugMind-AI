@@ -21,8 +21,11 @@ import zipfile
 
 from services.automation_actions import referenced_variables
 
-# 1.49+: locator.ariaSnapshot(), used to capture the page when a test fails.
-PLAYWRIGHT_VERSION = "^1.49.0"
+# Exact versions (no ranges): a run never silently picks up an unreviewed release.
+# Playwright 1.49+ is needed for locator.ariaSnapshot() (failure snapshots).
+PLAYWRIGHT_VERSION = "1.63.0"
+# dotenv 17+ prints a banner on every run; 16.x is quiet.
+DOTENV_VERSION = "16.6.1"
 MAX_SNAPSHOT_CHARS = 30_000
 _VAR_REF = re.compile(r"\{\{\s*vars\.([A-Za-z0-9_]+)\s*\}\}")
 
@@ -177,11 +180,23 @@ test.afterEach(async ({{ page }}, testInfo) => {{
 }});
 
 async function guardNavigation(page: Page): Promise<void> {{
-  // Block top-level navigation away from the allowed hosts.
-  await page.route('**/*', (route) => {{
+  // Block top-level navigation away from the allowed hosts, in this page and in any
+  // popup or new tab it opens (the route is on the whole browser context).
+  await page.context().route('**/*', (route) => {{
     const request = route.request();
-    if (request.isNavigationRequest() && request.frame() === page.mainFrame()
-        && !hostAllowed(new URL(request.url()).hostname)) {{
+    let topLevel = false;
+    try {{
+      topLevel = request.isNavigationRequest() && request.frame().parentFrame() === null;
+    }} catch {{
+      // Service-worker requests have no frame: they aren't page navigations.
+    }}
+    if (topLevel && !hostAllowed(new URL(request.url()).hostname)) {{
+      try {{
+        // Shown in the report and in BugMind, so the failure that follows is easy to understand.
+        test.info().annotations.push({{ type: 'bugmind-blocked-navigation', description: redact(request.url()) }});
+      }} catch {{
+        // Outside a running test: nothing to annotate.
+      }}
       return route.abort('blockedbyclient');
     }}
     return route.continue();
@@ -213,6 +228,8 @@ export default defineConfig({{
   reporter: [['list'], ['json', {{ outputFile: 'bugmind-results.json' }}], ['html', {{ open: 'never' }}]],
   use: {{
     baseURL: process.env.BASE_URL || {_js(environment['baseUrl'])},
+    // A step whose element isn't there fails after 15s instead of using the whole test timeout.
+    actionTimeout: 15_000,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   }},
@@ -226,7 +243,7 @@ def _package() -> str:
         "name": "bugmind-e2e-tests",
         "private": True,
         "scripts": {"test": "playwright test", "report": "playwright show-report"},
-        "devDependencies": {"@playwright/test": PLAYWRIGHT_VERSION, "dotenv": "^16.4.5"},
+        "devDependencies": {"@playwright/test": PLAYWRIGHT_VERSION, "dotenv": DOTENV_VERSION},
     }, indent=2) + "\n"
 
 
@@ -250,6 +267,9 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+# Least privilege: the job only reads the repository.
+permissions:
+  contents: read
 jobs:
   e2e:
     runs-on: ubuntu-latest
@@ -262,7 +282,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install
+      # Commit package-lock.json after your first local install: CI then installs exactly those versions.
+      - run: if [ -f package-lock.json ]; then npm ci; else npm install; fi
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test
       - uses: actions/upload-artifact@v4
@@ -285,7 +306,8 @@ def _readme(environment: dict, names: list[str], count: int) -> str:
 ## Run on your computer
 
 1. Install Node.js 20 or newer.
-2. In this folder: `npm install` then `npx playwright install chromium`.
+2. In this folder: `npm install` then `npx playwright install chromium`. Commit the
+   `package-lock.json` this creates, so every run (and CI) uses exactly the same versions.
 3. Copy `.env.example` to `.env` and fill in the values. Variables used:
 {variables}
 4. Run `npx playwright test`. `npx playwright show-report` opens the report.
@@ -293,7 +315,8 @@ def _readme(environment: dict, names: list[str], count: int) -> str:
 ## Run on GitHub Actions (free)
 
 Put this folder in a GitHub repository, add the variables above as repository secrets
-(Settings → Secrets and variables → Actions), optionally a `BASE_URL` variable, then run
+(Settings → Secrets and variables → Actions), optionally a `BASE_URL` variable (it must stay
+on one of the allowed domains: tests can't navigate anywhere else), then run
 the "BugMind E2E tests" workflow. Download the `bugmind-results` artifact when it finishes.
 
 ## Send the results to BugMind

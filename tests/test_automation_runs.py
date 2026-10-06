@@ -238,3 +238,33 @@ def test_absurdly_nested_json_is_a_clean_error():
 
     with pytest.raises(ReportError):
         parse_report(b"[" * 100_000 + b"]" * 100_000)
+
+
+# ── Hardening of the exported project ────────────────────────────────────────
+
+def test_export_pins_versions_limits_ci_permissions_and_guards_popups(ready):
+    archive = zipfile.ZipFile(io.BytesIO(ready.client.get(f"{BASE}/environments/{ready.ready['env']}/export").content))
+    package = json.loads(archive.read("bugmind-e2e/package.json"))
+    for version in package["devDependencies"].values():
+        assert version[0].isdigit(), version                       # exact versions, no ^ or ~ ranges
+    workflow = archive.read("bugmind-e2e/.github/workflows/bugmind-e2e.yml").decode()
+    assert "permissions:\n  contents: read" in workflow
+    assert "npm ci" in workflow
+    config = archive.read("bugmind-e2e/playwright.config.ts").decode()
+    assert "actionTimeout: 15_000" in config
+    spec = next(archive.read(n).decode() for n in archive.namelist() if n.endswith(".spec.ts"))
+    assert "page.context().route(" in spec and "parentFrame() === null" in spec   # popups and new tabs too
+    assert "'bugmind-blocked-navigation'" in spec
+
+
+def test_blocked_navigation_gets_a_clear_message():
+    from services.automation_results import parse_report
+
+    report = {"suites": [{"specs": [{"title": "x [BM-1 v1]", "tests": [{
+        "status": "unexpected",
+        "annotations": [{"type": "bugmind-blocked-navigation", "description": "https://todomvc.com/"}],
+        "results": [{"status": "failed", "error": {"message": "Error: expect(page).toHaveURL(expected) failed"}}],
+    }]}]}]}
+    error = parse_report(json.dumps(report).encode())["tests"][0]["error"]
+    assert error.startswith("Navigation to https://todomvc.com/ was blocked: it isn't one of the environment's")
+    assert "toHaveURL" in error

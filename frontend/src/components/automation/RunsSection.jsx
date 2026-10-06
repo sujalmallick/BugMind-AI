@@ -103,7 +103,7 @@ function RunDetail({ projectId, runId, onBack, onOpenScript, showToast }) {
   )
 }
 
-export default function RunsSection({ projectId, environments, showToast, onImported, onOpenScript }) {
+export default function RunsSection({ projectId, environments, showToast, onImported, onOpenScript, onDownloaded }) {
   const [runs, setRuns] = useState(null)
   const [openRunId, setOpenRunId] = useState(null)
   const [uploading, setUploading] = useState(false)
@@ -149,6 +149,7 @@ export default function RunsSection({ projectId, environments, showToast, onImpo
     setDownloading(true)
     try {
       await exportProject(projectId, envId)
+      onDownloaded?.()
     } catch (error) {
       showToast(apiErrorMessage(error, 'Could not export the tests.'), 'error')
     } finally {

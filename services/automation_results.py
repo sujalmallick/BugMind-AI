@@ -82,6 +82,17 @@ def _page(results: list) -> dict | None:
     return None
 
 
+def _blocked_navigation(test: dict) -> str | None:
+    """URL the exported navigation guard blocked (annotation on the test or its results)."""
+    sources = [test.get("annotations")] + [r.get("annotations") for r in test.get("results") or []
+                                           if isinstance(r, dict)]
+    for annotations in sources:
+        for note in (annotations if isinstance(annotations, list) else [])[:50]:
+            if isinstance(note, dict) and note.get("type") == "bugmind-blocked-navigation" and note.get("description"):
+                return _text(note["description"], 300)
+    return None
+
+
 def _duration(results: list) -> int:
     total = 0
     for result in results if isinstance(results, list) else []:
@@ -125,11 +136,16 @@ def parse_report(data: bytes) -> dict:
                 status = _OUTCOMES.get(test.get("status"))
                 if status is None:
                     continue
+                error = _error(results) if status == "failed" else None
+                blocked = _blocked_navigation(test)
+                if error and blocked:
+                    error = (f"Navigation to {blocked} was blocked: it isn't one of the environment's allowed "
+                             f"domains. Add it to the environment if the test should go there.\n\n{error}")
                 tests.append({
                     "scriptId": int(match.group(1)),
                     "version": int(match.group(2)),
                     "status": status,
-                    "error": _error(results) if status == "failed" else None,
+                    "error": error[:MAX_ERROR_CHARS + 300] if error else None,
                     "failedStep": _failed_step(results) if status == "failed" else None,
                     "page": _page(results) if status == "failed" else None,
                     "durationMs": _duration(results),
