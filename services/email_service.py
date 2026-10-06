@@ -1,7 +1,36 @@
 import os
 import logging
+import threading
 
 logger = logging.getLogger("BugMind")
+
+# How long the background check waits for Azure's final send status.
+_DELIVERY_STATUS_TIMEOUT_SECONDS = 120
+
+
+def _log_delivery_status(poller, kind: str, to_email: str) -> None:
+    """
+    begin_send() only means Azure accepted the message. The final outcome
+    (Succeeded / Failed, with Azure's error) arrives later, so wait for it on
+    a background thread and log it without delaying the HTTP response.
+    """
+
+    def wait():
+        try:
+            result = poller.result(timeout=_DELIVERY_STATUS_TIMEOUT_SECONDS) or {}
+            status = result.get("status", "Unknown")
+            message_id = result.get("id")
+            if status == "Succeeded":
+                logger.info(f"{kind} email delivered to {to_email} (status={status}, id={message_id})")
+            else:
+                logger.warning(
+                    f"{kind} email NOT delivered to {to_email} "
+                    f"(status={status}, id={message_id}, error={result.get('error')})"
+                )
+        except Exception as e:
+            logger.warning(f"{kind} email to {to_email}: could not confirm delivery: {e}")
+
+    threading.Thread(target=wait, name=f"email-status-{kind}", daemon=True).start()
 
 
 def send_invitation_email(
@@ -61,8 +90,9 @@ def send_invitation_email(
             "senderAddress": sender_address,
         }
 
-        client.begin_send(message)
-        logger.info(f"Invitation email sent to {to_email}")
+        poller = client.begin_send(message)
+        logger.info(f"Invitation email accepted by Azure for {to_email}")
+        _log_delivery_status(poller, "Invitation", to_email)
         return True
     except Exception as e:
         logger.warning(f"Error sending invite email to {to_email}: {e}")
@@ -133,8 +163,9 @@ def send_password_reset_email(
             "senderAddress": sender_address,
         }
 
-        client.begin_send(message)
-        logger.info(f"Password reset email sent to {to_email}")
+        poller = client.begin_send(message)
+        logger.info(f"Password reset email accepted by Azure for {to_email}")
+        _log_delivery_status(poller, "Password reset", to_email)
         return True
     except Exception as e:
         logger.warning(f"Error sending password reset email to {to_email}: {e}")
