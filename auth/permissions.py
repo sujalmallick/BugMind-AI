@@ -184,3 +184,39 @@ def require_project_role(
             detail=f"This action requires at least the '{min_role}' role on this project.",
         )
     return role
+
+
+# ── Role granting ────────────────────────────────────────────────────────────
+# "owner" is never grantable through member-add, team-add or invitations: it
+# comes only from creating the project/org or an explicit owner-only transfer.
+
+GRANTABLE_PROJECT_ROLES: tuple[str, ...] = ("viewer", "editor", "admin")
+GRANTABLE_ORG_ROLES: tuple[str, ...] = ("member", "admin")
+
+
+def assert_project_role_grantable(requester_role: str, role: str) -> None:
+    """Raise unless `role` is grantable and not above the requester's own role."""
+    if role not in GRANTABLE_PROJECT_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Role must be one of: {', '.join(GRANTABLE_PROJECT_ROLES)}.",
+        )
+    if not project_role_satisfies(requester_role, role):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You cannot grant a role higher than your own.",
+        )
+
+
+def assert_org_role_grantable(requester_role: str, role: str) -> None:
+    """Raise unless `role` is grantable and not above the requester's own role."""
+    if role not in GRANTABLE_ORG_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Role must be one of: {', '.join(GRANTABLE_ORG_ROLES)}.",
+        )
+    if not role_satisfies(requester_role, role):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You cannot grant a role higher than your own.",
+        )

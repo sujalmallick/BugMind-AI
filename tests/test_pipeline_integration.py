@@ -189,10 +189,19 @@ def test_unhandled_error_response_does_not_leak_secrets(client, monkeypatch):
         raise RuntimeError("could not connect to postgresql://admin:pw-Pr0d-123@prod-db:5432/bugmind")
 
     monkeypatch.setattr(main.workflow_graph, "invoke", explode)
-    res = client.post("/analyze-workflow", json={"workflow": "User logs in."})
+    res = client.post("/analyze-workflow", json={"workflow": "User logs in."},
+                      headers={"Origin": "https://evil.example"})
     assert res.status_code == 500
-    assert "pw-Pr0d-123" not in res.text
-    assert "[CONNECTION_STRING_REDACTED]" in res.json()["error"]
+    assert "pw-Pr0d-123" not in res.text and "prod-db" not in res.text
+    body = res.json()
+    assert body["error"] == "An unexpected error occurred."
+    assert body["request_id"]  # correlates with the server log line
+    # The handler bypasses CORSMiddleware, so it must not echo arbitrary origins.
+    assert "access-control-allow-origin" not in {k.lower() for k in res.headers}
+
+    allowed = main.allowed_origins[0]
+    res = client.post("/analyze-workflow", json={"workflow": "User logs in."}, headers={"Origin": allowed})
+    assert res.headers["access-control-allow-origin"] == allowed
 
 
 def test_provider_error_text_is_sanitized(client, fake_llm, agent_router):

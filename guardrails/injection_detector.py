@@ -126,7 +126,12 @@ RULES: list[InjectionRule] = [
     ),
     InjectionRule(
         "role_line_marker", 0.35,
-        re.compile(r"^\s*(?:system|assistant|developer)\s*:|^\s*#{2,}\s*(?:system|instructions?|new instructions)\b", _F | re.M),
+        # [ \t]* (not \s*): \s would cross newlines and rescan every following
+        # line from each line start, which is quadratic on blank-line floods.
+        re.compile(
+            r"^[ \t]*(?:system|assistant|developer)[ \t]*:|^[ \t]*#{2,}[ \t]*(?:system|instructions?|new instructions)\b",
+            _F | re.M,
+        ),
     ),
     InjectionRule(
         "tool_manipulation", 0.75,

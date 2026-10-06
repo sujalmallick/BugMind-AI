@@ -239,13 +239,34 @@ def bulk_import_issues(
     return created
 
 
+# Columns an editor may change through the generic update endpoint. Assignment
+# fields go through /api/issues/{id}/assign (which checks membership), and
+# reporter/ids/timestamps are server-managed. Other keys are ignored.
+EDITABLE_ISSUE_FIELDS = {
+    "bug_id", "title", "description", "severity", "priority", "status",
+    "reproduction_steps", "expected_result", "actual_result",
+}
+
+
+def _get_project_issue(db: Session, project_id: int, issue_id: int) -> Issue:
+    """Load an issue only if it belongs to the given project (404 otherwise)."""
+    issue = (
+        db.query(Issue)
+        .join(TestCase, TestCase.id == Issue.test_case_id)
+        .join(Workspace, Workspace.id == TestCase.workspace_id)
+        .filter(Issue.id == issue_id, Workspace.project_id == project_id)
+        .first()
+    )
+    if not issue:
+        raise HTTPException(status_code=404, detail="Issue not found.")
+    return issue
+
+
 def update_issue(db: Session, project_id: int, issue_id: int, current_user_id: int, data: dict):
     from auth.permissions import require_project_role
     require_project_role(db, current_user_id, project_id, "editor")
-    issue = db.query(Issue).filter(Issue.id == issue_id).first()
-    if not issue:
-        raise HTTPException(status_code=404, detail="Issue not found.")
-    
+    issue = _get_project_issue(db, project_id, issue_id)
+
     # Fields that should be merged into custom_fields instead of set directly
     cf_only_fields = {"notes", "solved"}
     
@@ -257,7 +278,7 @@ def update_issue(db: Session, project_id: int, issue_id: int, current_user_id: i
             extra_cf[key[3:]] = value
         elif key == "custom_fields" and isinstance(value, dict):
             extra_cf.update(value)
-        elif hasattr(issue, key) and key not in ("id", "test_case_id", "created_at", "updated_at"):
+        elif key in EDITABLE_ISSUE_FIELDS:
             setattr(issue, key, value)
     
     issue.custom_fields = extra_cf
@@ -269,9 +290,7 @@ def update_issue(db: Session, project_id: int, issue_id: int, current_user_id: i
 def delete_issue(db: Session, project_id: int, issue_id: int, current_user_id: int):
     from auth.permissions import require_project_role
     require_project_role(db, current_user_id, project_id, "editor")
-    issue = db.query(Issue).filter(Issue.id == issue_id).first()
-    if not issue:
-        raise HTTPException(status_code=404, detail="Issue not found.")
+    issue = _get_project_issue(db, project_id, issue_id)
     db.delete(issue)
     db.commit()
     return {"success": True}

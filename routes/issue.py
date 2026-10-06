@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -127,9 +128,10 @@ def bulk_import_issues_endpoint(
             data_list=items,
         )
         return {"imported": len(created), "errors": errors}
-    except Exception as e:
-        import traceback
-        detail = str(e)
-        print(f"[bulk-import] ERROR: {detail}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Import failed: {detail}")
+    except HTTPException:
+        raise
+    except Exception:
+        # Driver errors embed SQL, parameters and schema details: log, don't return.
+        logging.getLogger("BugMind").error("Issue bulk import failed", exc_info=True)
+        raise HTTPException(status_code=500, detail="Import failed. Check the file format and try again.")
 

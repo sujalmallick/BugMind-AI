@@ -1,3 +1,13 @@
+// Spreadsheet apps execute cells starting with these characters as formulas
+// (e.g. =HYPERLINK(...)). Test data is user- and AI-written, so prefix such
+// cells with a quote to keep them as plain text (OWASP CSV injection).
+const FORMULA_TRIGGERS = /^[=+\-@\t\r]/;
+
+export function neutralizeFormula(value) {
+  if (typeof value !== "string") return value;
+  return FORMULA_TRIGGERS.test(value) ? `'${value}` : value;
+}
+
 export function exportTestCasesCSV(
   testCases,
   fileName = "BugMind_TestCases"
@@ -29,7 +39,7 @@ export function exportTestCasesCSV(
     headers.join(","),
     ...rows.map((row) =>
       row
-        .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
+        .map((cell) => `"${neutralizeFormula(String(cell)).replace(/"/g, '""')}"`)
         .join(",")
     ),
   ].join("\n");

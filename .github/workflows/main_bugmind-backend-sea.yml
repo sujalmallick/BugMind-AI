@@ -46,6 +46,11 @@ jobs:
           path: |
             .
             !antenv/
+            !frontend/
+            !tests/
+            !uploads/
+            !*.db
+            !BugMind_Paper/
 
       # 🚫 Opting Out of Oryx Build
       # If you prefer to disable the Oryx build process during deployment, follow these steps:

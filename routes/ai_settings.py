@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from sqlalchemy.orm import Session
 
@@ -11,6 +11,8 @@ from schemas.ai_settings import AISettingsUpdate, AISettingsTestKeyRequest
 from services.encryption_service import EncryptionService
 from services.ai_settings_service import ai_settings_service, KNOWN_PROVIDERS
 from services.llm_factory import build_llm_manager
+from guardrails import output_guardrail
+from limiter import limiter
 
 from database.models.user import User
 from database.models.user_ai_settings import UserAISettings
@@ -30,6 +32,36 @@ PROVIDER_BILLING_URLS = {
 # Providers that reject traffic from the backend's Azure East Asia region.
 GEO_BLOCKED_PROVIDERS = {"gemini", "groq"}
 encryption_service = EncryptionService()
+
+# Provider → models users may select (and test). Shared by PUT and test-key so
+# a user-supplied model string can never route LiteLLM to arbitrary backends.
+ALLOWED_MODELS = {
+    "gemini": [
+        "gemini/gemini-2.5-flash",
+        "gemini/gemini-2.5-pro",
+    ],
+    "openai": [
+        "openai/gpt-4o-mini",
+        "openai/gpt-4o",
+    ],
+    "anthropic": [
+        "anthropic/claude-sonnet-4-20250514",
+    ],
+    "deepseek": [
+        "deepseek/deepseek-chat",
+    ],
+    "groq": [
+        "groq/openai/gpt-oss-120b",
+    ],
+    "openrouter": [
+        "openrouter/openrouter/free",
+        "openrouter/google/gemma-4-31b-it:free",
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        "openrouter/deepseek/deepseek-chat",
+        "openrouter/meta-llama/llama-3.3-70b-instruct",
+    ],
+}
+
 
 router = APIRouter(
     prefix="/ai-settings",
@@ -82,32 +114,7 @@ def update_ai_settings(
         "openrouter",
     ]
 
-    allowed_models = {
-        "gemini": [
-            "gemini/gemini-2.5-flash",
-            "gemini/gemini-2.5-pro",
-        ],
-        "openai": [
-            "openai/gpt-4o-mini",
-            "openai/gpt-4o",
-        ],
-        "anthropic": [
-            "anthropic/claude-sonnet-4-20250514",
-        ],
-        "deepseek": [
-            "deepseek/deepseek-chat",
-        ],
-        "groq": [
-            "groq/openai/gpt-oss-120b",
-        ],
-        "openrouter": [
-            "openrouter/openrouter/free",
-            "openrouter/google/gemma-4-31b-it:free",
-            "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
-            "openrouter/deepseek/deepseek-chat",
-            "openrouter/meta-llama/llama-3.3-70b-instruct",
-        ],
-    }
+    allowed_models = ALLOWED_MODELS
 
     if request.provider not in allowed_providers:
         return {
@@ -193,17 +200,19 @@ def delete_provider_key(
 
 
 @router.post("/test-key")
+@limiter.limit("5/minute")
 def test_provider_key(
-    request: AISettingsTestKeyRequest,
+    request: Request,
+    body: AISettingsTestKeyRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    provider = request.provider.lower().strip()
+    provider = body.provider.lower().strip()
     if provider not in KNOWN_PROVIDERS:
         return {"success": False, "error": f"Unknown provider: {provider}"}
 
     # Resolve test model
-    model = request.model
+    model = body.model
     if not model:
         default_model_map = {
             "gemini": "gemini/gemini-2.5-flash",
@@ -215,8 +224,13 @@ def test_provider_key(
         }
         model = default_model_map.get(provider, "groq/openai/gpt-oss-120b")
 
+    # Same allowlist as saving settings: blocks routing to ollama/llamafile
+    # (localhost), bedrock/vertex (ambient cloud credentials) and the like.
+    if model not in ALLOWED_MODELS.get(provider, []):
+        return {"success": False, "error": "Invalid model for this provider."}
+
     # Resolve API key (explicit input -> stored user key for this provider -> fallback to developer env key)
-    api_key = request.api_key
+    api_key = body.api_key
     if api_key:
         api_key = api_key.strip().strip("'\"").strip()
     else:
@@ -290,7 +304,7 @@ def test_provider_key(
         elif any(kw in err_lower for kw in ["not found", "404", "does not exist"]):
             clean_err = f"Model '{model}' is not available with this key."
         else:
-            clean_err = f"{provider.capitalize()} error: {err_msg}"
+            clean_err = f"{provider.capitalize()} error: {output_guardrail.sanitize_error(err_msg, limit=200)}"
         return {"success": False, "error": clean_err}
 
 

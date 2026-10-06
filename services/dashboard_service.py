@@ -543,9 +543,17 @@ def get_team_dashboard(db: Session, user_id: int, org_id: int, team_id: int) -> 
     project_count = len(project_ids)
     total_open_items = sum(item["total"] for item in member_load)
 
-    org_activity_query = db.query(ActivityLog).outerjoin(Project, ActivityLog.project_id == Project.id).filter(
-        or_(ActivityLog.org_id == org_id, Project.organization_id == org_id)
-    )
+    if org_role in {"owner", "admin"}:
+        org_activity_query = db.query(ActivityLog).outerjoin(Project, ActivityLog.project_id == Project.id).filter(
+            or_(ActivityLog.org_id == org_id, Project.organization_id == org_id)
+        )
+    else:
+        # Team membership doesn't grant project access: only show activity from
+        # projects this user can open (entries carry titles and emails).
+        visible_project_ids = [pid for pid in project_ids if get_project_role(db, user_id, pid)]
+        org_activity_query = db.query(ActivityLog).filter(
+            ActivityLog.project_id.in_(visible_project_ids) if visible_project_ids else False
+        )
     recent_activity = [
         _serialize_activity(log)
         for log in org_activity_query.order_by(ActivityLog.created_at.desc()).limit(10).all()

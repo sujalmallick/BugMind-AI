@@ -25,6 +25,8 @@ from services.email_service import send_invitation_email
 
 # Default invite expiry
 DEFAULT_EXPIRY_HOURS = 48
+MIN_EXPIRY_HOURS = 1
+MAX_EXPIRY_HOURS = 24 * 7
 
 
 # ── Serializer ────────────────────────────────────────────────────────────────
@@ -65,7 +67,9 @@ def create_invitation(
     Create a new invitation. Enforces that the requester has admin+ role
     on the target before issuing an invite.
     """
-    _check_invite_permission(db, invite_type, target_id, invited_by)
+    requester_role = _check_invite_permission(db, invite_type, target_id, invited_by)
+    _assert_role_grantable(invite_type, requester_role, role)
+    expiry_hours = max(MIN_EXPIRY_HOURS, min(int(expiry_hours), MAX_EXPIRY_HOURS))
 
     # Revoke any existing pending invite to the same email/target
     if invited_email:
@@ -220,6 +224,11 @@ def decline_invitation(db: Session, token: str, user_id: int) -> dict:
     if inv.status != "pending":
         raise HTTPException(status_code=400, detail=f"Invitation is already {inv.status}.")
 
+    if inv.invited_email:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user or user.email.lower() != inv.invited_email:
+            raise HTTPException(status_code=403, detail="This invitation was sent to a different email address.")
+
     inv.status = "declined"
     inv.accepted_by = user_id
     inv.accepted_at = datetime.utcnow()
@@ -270,16 +279,25 @@ def list_invitations(
 
 # ── Private helpers ───────────────────────────────────────────────────────────
 
-def _check_invite_permission(db: Session, invite_type: str, target_id: int, user_id: int):
-    """Raise 403 if the user doesn't have admin+ on the target."""
+def _check_invite_permission(db: Session, invite_type: str, target_id: int, user_id: int) -> str:
+    """Raise 403 if the user doesn't have admin+ on the target; return their role."""
     if invite_type == "project":
         from auth.permissions import require_project_role
-        require_project_role(db, user_id, target_id, "admin")
+        return require_project_role(db, user_id, target_id, "admin")
     elif invite_type == "organization":
         from auth.permissions import require_org_role
-        require_org_role(db, user_id, target_id, "admin")
+        return require_org_role(db, user_id, target_id, "admin")
     else:
         raise HTTPException(status_code=400, detail="Invalid invitation type.")
+
+
+def _assert_role_grantable(invite_type: str, requester_role: str, role: str) -> None:
+    from auth.permissions import assert_org_role_grantable, assert_project_role_grantable
+
+    if invite_type == "project":
+        assert_project_role_grantable(requester_role, role)
+    else:
+        assert_org_role_grantable(requester_role, role)
 
 
 def _get_target_name(db: Session, invite_type: str, target_id: int) -> str:
@@ -295,7 +313,11 @@ def _get_target_name(db: Session, invite_type: str, target_id: int) -> str:
 
 
 def _grant_project_access(db: Session, project_id: int, user_id: int, role: str, granted_by: int):
+    from auth.permissions import GRANTABLE_PROJECT_ROLES
     from database.models.project_member import ProjectMember
+
+    if role not in GRANTABLE_PROJECT_ROLES:
+        raise HTTPException(status_code=400, detail="This invitation grants an invalid role.")
 
     existing = (
         db.query(ProjectMember)
@@ -318,7 +340,11 @@ def _grant_project_access(db: Session, project_id: int, user_id: int, role: str,
 
 
 def _grant_org_access(db: Session, org_id: int, user_id: int, role: str):
+    from auth.permissions import GRANTABLE_ORG_ROLES
     from database.models.organization_member import OrganizationMember
+
+    if role not in GRANTABLE_ORG_ROLES:
+        raise HTTPException(status_code=400, detail="This invitation grants an invalid role.")
 
     existing = (
         db.query(OrganizationMember)

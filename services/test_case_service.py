@@ -2,6 +2,8 @@
 services/test_case_service.py
 """
 
+import logging
+
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from database.models.project import Project
@@ -150,10 +152,11 @@ def bulk_create_manual_test_cases(db: Session, project_id: int, current_user_id:
         db.commit()
         for tc in created:
             db.refresh(tc)
-    except Exception as e:
+    except Exception:
         db.rollback()
-        print(f"ERROR IN BULK IMPORT: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Database error during import: {str(e)}")
+        # Driver errors embed SQL, parameters and schema details: log, don't return.
+        logging.getLogger("BugMind").error("Test case bulk import failed", exc_info=True)
+        raise HTTPException(status_code=400, detail="Import failed. Check the file format and try again.")
 
     log_activity(
         db=db,
@@ -167,6 +170,15 @@ def bulk_create_manual_test_cases(db: Session, project_id: int, current_user_id:
         meta={"count": len(created)},
     )
     return created
+
+
+# Columns an editor may change through the generic update endpoint. Assignment
+# goes through /api/test-cases/{id}/assign; ids, relationships and timestamps
+# are server-managed. Other keys are ignored.
+EDITABLE_TEST_CASE_FIELDS = {
+    "test_case_id", "description", "module", "category", "priority", "status",
+    "preconditions", "steps", "expected_result", "actual_result", "notes", "is_manual",
+}
 
 
 def update_test_case(db: Session, project_id: int, tc_id: int, current_user_id: int, data: dict):
@@ -185,7 +197,7 @@ def update_test_case(db: Session, project_id: int, tc_id: int, current_user_id: 
             existing_custom = dict(tc.custom_fields or {})
             existing_custom.update(value)
             tc.custom_fields = existing_custom
-        elif hasattr(tc, key) and key not in ("id", "workspace_id", "created_at", "updated_at", "assignee_id", "assigned_at"):
+        elif key in EDITABLE_TEST_CASE_FIELDS:
             setattr(tc, key, value)
             
     db.commit()

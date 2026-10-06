@@ -254,12 +254,18 @@ def update_org_member_role(
     if not target_membership:
         raise HTTPException(status_code=404, detail="Member not found in this organization.")
 
-    if (
-        ROLE_HIERARCHY.get(target_membership.role, 0) >= ROLE_HIERARCHY.get(requester_role, 0)
-        and target_user_id != requester_id
-        and requester_role != "owner"
-    ):
-        raise HTTPException(status_code=403, detail="Cannot modify a member with equal or higher role.")
+    if target_user_id == requester_id:
+        raise HTTPException(status_code=403, detail="You cannot change your own role.")
+
+    if new_role == "owner":
+        # Ownership transfer is the owner's decision alone.
+        if requester_role != "owner":
+            raise HTTPException(status_code=403, detail="Only the organization owner can transfer ownership.")
+    elif requester_role != "owner":
+        if ROLE_HIERARCHY.get(target_membership.role, 0) >= ROLE_HIERARCHY.get(requester_role, 0):
+            raise HTTPException(status_code=403, detail="Cannot modify a member with equal or higher role.")
+        if ROLE_HIERARCHY.get(new_role, 0) > ROLE_HIERARCHY.get(requester_role, 0):
+            raise HTTPException(status_code=403, detail="You cannot grant a role higher than your own.")
 
     # Only one owner allowed — transferring ownership re-demotes the old owner
     if new_role == "owner":
@@ -273,6 +279,9 @@ def update_org_member_role(
         )
         if old_owner and old_owner.user_id != target_user_id:
             old_owner.role = "admin"
+        org = db.query(Organization).filter(Organization.id == org_id).first()
+        if org is not None:
+            org.owner_id = target_user_id
 
     target_membership.role = new_role
     db.commit()
@@ -481,15 +490,13 @@ def add_team_member(
         .first()
     )
     if not target_in_org:
-        # Auto-add as a regular member
-        new_membership = OrganizationMember(
-            organization_id=org_id,
-            user_id=target_user_id,
-            role="member",
+        # Joining an organization requires accepting an invitation; adding
+        # arbitrary user ids would let any org admin enrol (and read the
+        # email of) any user on the platform.
+        raise HTTPException(
+            status_code=400,
+            detail="Only organization members can be added to a team. Send an invitation instead.",
         )
-        db.add(new_membership)
-        db.flush()  # obtain ID if needed
-        # No commit yet; will commit later with team member
 
     team = (
         db.query(Team)
@@ -528,6 +535,10 @@ def remove_team_member(
         require_org_role(db, requester_id, org_id, "admin")
     else:
         require_org_role(db, requester_id, org_id, "member")
+
+    team = db.query(Team).filter(Team.id == team_id, Team.organization_id == org_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found.")
 
     membership = (
         db.query(TeamMember)

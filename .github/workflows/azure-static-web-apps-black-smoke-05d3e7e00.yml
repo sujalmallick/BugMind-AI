@@ -11,6 +11,11 @@ on:
     branches:
       - main
 
+# Least privilege for GITHUB_TOKEN; the SWA action only comments on PRs.
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   build_and_deploy_job:
     runs-on: ubuntu-latest

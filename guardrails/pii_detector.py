@@ -264,7 +264,11 @@ _UNIT_ADDRESS = re.compile(
     r"(?i:\b(?:flat|house|h\.?\s?no|door|plot|apt|apartment|suite)\.?\s*(?:no\.?|number|#)?\s*[:\-]?\s*)"
     r"[A-Za-z0-9/-]{1,10}(?:,\s*[A-Za-z0-9 .'-]{2,40}){1,4}"
 )
-_ADDRESS_LABEL = re.compile(r"(?i)\b(?P<owner>[a-z-]+\s+)?address\s*[:=-]\s*(?P<value>[^\n]{5,160})")
+# Anchored on "address:" itself; the word before it is inspected separately.
+# (An optional greedy owner prefix here was tried from every word boundary,
+# which is quadratic on long hyphenated text.)
+_ADDRESS_LABEL = re.compile(r"(?i)\baddress[ \t]*[:=-][ \t]*(?P<value>[^\n]{5,160})")
+_OWNER_WORD = re.compile(r"(?i)([a-z][a-z-]{0,30})[ \t]+$")
 _NON_POSTAL_ADDRESS = {
     "email", "e-mail", "ip", "mac", "web", "wallet", "url", "server", "memory",
     "network", "hardware", "bitcoin", "contract", "ipv4", "ipv6", "return", "base",
@@ -277,7 +281,8 @@ def _find_addresses(text: str):
     for m in _UNIT_ADDRESS.finditer(text):
         yield m.start(), m.end(), 0.7
     for m in _ADDRESS_LABEL.finditer(text):
-        owner = (m.group("owner") or "").strip().lower()
+        before = _OWNER_WORD.search(text[max(0, m.start() - 32):m.start()])
+        owner = before.group(1).lower() if before else ""
         if owner in _NON_POSTAL_ADDRESS:
             continue
         yield m.start("value"), m.end("value"), 0.7
