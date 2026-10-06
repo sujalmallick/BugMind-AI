@@ -154,10 +154,7 @@ export default function ApiKeysSection({ showToast }) {
       } else {
         setProvidersStatus(result.providers ?? providersStatus);
         setApiKey("");
-        if (payload.api_key) {
-          showToast("API key saved successfully.");
-          return;
-        }
+        showToast(payload.api_key ? "API key saved." : "AI settings saved.");
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
       }

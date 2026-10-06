@@ -207,13 +207,15 @@
   }
 
   /* Route transition */
+  /* Opacity only: a transform on this wrapper would become the containing
+     block for every position:fixed child (toasts, modals, drawers). */
   .page-fade-in {
-    animation: fadeUp 0.36s var(--ease-out-expo) both;
+    animation: fadeIn 0.3s ease-out backwards;
   }
 
   /* Staggered entrance — set --d on the element for delay */
   .stagger {
-    animation: fadeUp 0.6s var(--ease-out-expo) both;
+    animation: fadeUp 0.6s var(--ease-out-expo) backwards;
     animation-delay: var(--d, 0ms);
   }
 
@@ -232,7 +234,7 @@
   }
 
   .section-enter {
-    animation: fadeUp 0.45s var(--ease-out-expo) both;
+    animation: fadeUp 0.45s var(--ease-out-expo) backwards;
   }
   .section-enter-1 { animation-delay: 60ms; }
   .section-enter-2 { animation-delay: 120ms; }
@@ -240,28 +242,28 @@
   .section-enter-4 { animation-delay: 240ms; }
 
   .animate-tab-enter {
-    animation: fadeUp 0.28s var(--ease-out-expo) both;
+    animation: fadeUp 0.28s var(--ease-out-expo) backwards;
   }
 
   .card-cascade-enter {
-    animation: fadeUp 0.4s var(--ease-out-expo) both;
+    animation: fadeUp 0.4s var(--ease-out-expo) backwards;
   }
 
   .menu-enter {
-    animation: scaleIn 160ms var(--ease-out-expo) both;
+    animation: scaleIn 160ms var(--ease-out-expo) backwards;
     transform-origin: top right;
   }
 
   .modal-pop-enter {
-    animation: scaleIn 0.24s var(--ease-out-expo) both;
+    animation: scaleIn 0.24s var(--ease-out-expo) backwards;
   }
 
   .modal-backdrop-enter {
-    animation: fadeIn 0.2s ease-out both;
+    animation: fadeIn 0.2s ease-out backwards;
   }
 
   .toast-item {
-    animation: fadeUp 0.24s var(--ease-out-expo) both;
+    animation: fadeUp 0.24s var(--ease-out-expo) backwards;
   }
 
   @keyframes spinKey {
@@ -369,6 +371,11 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
+  /* Entrance animations use fill-mode `backwards` on purpose: holding the
+     final transform (`both`/`forwards`) would turn the element into the
+     containing block for position:fixed descendants and misplace toasts,
+     dialogs and drawers rendered inside it. */
 
   /* Respect user preference everywhere */
   @media (prefers-reduced-motion: reduce) {
@@ -645,7 +652,7 @@
     color: var(--color-muted);
   }
   .dashboard-stat-enter {
-    animation: fadeUp 0.4s var(--ease-out-expo) both;
+    animation: fadeUp 0.4s var(--ease-out-expo) backwards;
   }
   .dashboard-stat-enter.delay-1 { animation-delay: 50ms; }
   .dashboard-stat-enter.delay-2 { animation-delay: 100ms; }
@@ -655,7 +662,7 @@
      AUTH PAGES  (login · register · forgot · reset)
   ═══════════════════════════════════════════════════════════════════════════ */
   .auth-card-enter {
-    animation: fadeUp 0.5s var(--ease-out-expo) both;
+    animation: fadeUp 0.5s var(--ease-out-expo) backwards;
   }
 
   .auth-panel {
@@ -743,7 +750,7 @@
     padding: 10px 12px;
     font-size: 0.8125rem;
     line-height: 1.5;
-    animation: fadeUp 0.24s var(--ease-out-expo) both;
+    animation: fadeUp 0.24s var(--ease-out-expo) backwards;
   }
   .auth-error {
     border: 1px solid #fecaca;
@@ -799,13 +806,13 @@
     to { transform: translateX(0); opacity: 1; }
   }
   .notif-drawer-enter {
-    animation: drawerIn 0.32s var(--ease-out-expo) both;
+    animation: drawerIn 0.32s var(--ease-out-expo) backwards;
   }
   .notif-backdrop-enter {
-    animation: fadeIn 0.2s ease both;
+    animation: fadeIn 0.2s ease backwards;
   }
   .notif-card-enter {
-    animation: fadeUp 0.3s var(--ease-out-expo) both;
+    animation: fadeUp 0.3s var(--ease-out-expo) backwards;
   }
 
   @keyframes notifCardOut {
@@ -822,11 +829,11 @@
     transition: background-color 300ms ease;
   }
   .badge-pop {
-    animation: fadeIn 0.2s ease both;
+    animation: fadeIn 0.2s ease backwards;
   }
   .section-label-enter,
   .gradient-bar-enter {
-    animation: fadeIn 0.3s ease both;
+    animation: fadeIn 0.3s ease backwards;
   }
   .bell-float {
     animation: none;

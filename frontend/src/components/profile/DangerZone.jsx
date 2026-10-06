@@ -25,7 +25,7 @@ export default function DangerZone({ showToast }) {
   function handleOpenDialog(e) {
     e.preventDefault();
     if (!password) {
-      showToast("Please enter your password to confirm deletion.");
+      showToast("Please enter your password to confirm deletion.", "error");
       return;
     }
     setDialogOpen(true);
@@ -44,7 +44,7 @@ export default function DangerZone({ showToast }) {
       }, 1500);
     } catch (err) {
       const msg = err?.response?.data?.detail ?? "Failed to delete account. Check your password.";
-      showToast(msg);
+      showToast(msg, "error");
       setDeleting(false);
     }
   }

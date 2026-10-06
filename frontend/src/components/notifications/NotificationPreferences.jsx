@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getPreferences, updatePreference } from '../../services/notificationService';
 
-const NotificationPreferences = () => {
+const NotificationPreferences = ({ showToast }) => {
   const [preferences, setPreferences] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,10 +26,13 @@ const NotificationPreferences = () => {
       // Optimistic update
       setPreferences(prev => prev.map(p => p.type === typeStr ? { ...p, enabled: newEnabled } : p));
       await updatePreference(typeStr, { enabled: newEnabled });
+      const label = typeStr.replace(/_/g, ' ');
+      showToast?.(`${label.charAt(0).toUpperCase()}${label.slice(1)} notifications ${newEnabled ? 'turned on' : 'turned off'}.`);
     } catch (error) {
       console.error('Failed to update preference', error);
       // Revert on error
       setPreferences(prev => prev.map(p => p.type === typeStr ? { ...p, enabled: currentEnabled } : p));
+      showToast?.("Couldn't update that preference. Please try again.", 'error');
     }
   };
 
