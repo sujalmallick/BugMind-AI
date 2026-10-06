@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useId } from "react";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { changePassword } from "../../auth/profileService";
 
@@ -28,12 +28,12 @@ export default function SecuritySection({ showToast }) {
     e.preventDefault();
 
     if (newPw !== confirmPw) {
-      showToast("New passwords do not match.");
+      showToast("New passwords do not match.", "error");
       return;
     }
 
     if (newPw.length < 8) {
-      showToast("New password must be at least 8 characters.");
+      showToast("New password must be at least 8 characters.", "error");
       return;
     }
 
@@ -46,7 +46,7 @@ export default function SecuritySection({ showToast }) {
       setConfirmPw("");
     } catch (err) {
       const msg = err?.response?.data?.detail ?? "Failed to change password.";
-      showToast(msg);
+      showToast(msg, "error");
     } finally {
       setSaving(false);
     }
@@ -101,13 +101,15 @@ export default function SecuritySection({ showToast }) {
 }
 
 function PasswordField({ label, value, onChange, show, onToggle, autoComplete }) {
+  const id = useId();
   return (
     <div>
-      <label className="block text-[13px] font-medium text-ink mb-1.5">
+      <label htmlFor={id} className="block text-[13px] font-medium text-ink mb-1.5">
         {label}
       </label>
       <div className="relative">
         <input
+          id={id}
           type={show ? "text" : "password"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -118,6 +120,8 @@ function PasswordField({ label, value, onChange, show, onToggle, autoComplete })
         <button
           type="button"
           onClick={onToggle}
+          aria-label={show ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`}
+          aria-pressed={show}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink transition-colors"
         >
           {show ? <EyeOff size={15} /> : <Eye size={15} />}

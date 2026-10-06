@@ -48,9 +48,9 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
       });
       onSaved(updated);
       await refreshUser(); // Update global user state (navbars)
-      showToast("Name updated successfully.");
+      showToast("Profile saved.");
     } catch {
-      showToast("Failed to update name. Please try again.");
+      showToast("Couldn't save your profile. Please try again.", "error");
     } finally {
       setSaving(false);
     }
@@ -68,7 +68,7 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
       showToast("Avatar updated.");
     } catch (err) {
       const msg = err?.response?.data?.detail ?? "Avatar upload failed.";
-      showToast(msg);
+      showToast(msg, "error");
     } finally {
       setAvatarLoading(false);
       e.target.value = "";
@@ -85,7 +85,7 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
       await refreshUser(); // Update global user state (navbars)
       showToast("Avatar removed.");
     } catch {
-      showToast("Failed to remove avatar.");
+      showToast("Failed to remove avatar.", "error");
     } finally {
       setAvatarLoading(false);
     }
