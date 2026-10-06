@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime, timezone
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -14,6 +15,68 @@ from database.models.user import User
 from database.models.workspace import Workspace
 from services.llm_factory import build_llm_manager
 
+logger = logging.getLogger("BugMind")
+
+
+def _get_project_suggestion(db: Session, project_id: int, suggestion_id: int):
+    """Load a suggestion only if it belongs to the given project."""
+    return (
+        db.query(AIAssignmentSuggestion)
+        .filter(
+            AIAssignmentSuggestion.id == suggestion_id,
+            AIAssignmentSuggestion.project_id == project_id,
+        )
+        .first()
+    )
+
+
+def _build_assignee_pool(db: Session, project: Project) -> dict[int, str]:
+    """
+    Returns {user_id: role} for everyone work can be assigned to:
+    project owner + explicit project members + org members (deduplicated).
+    """
+    pool: dict[int, str] = {}
+
+    # Add project owner first
+    owner = db.query(User).filter(User.id == project.owner_id).first()
+    if owner:
+        pool[owner.id] = "owner"
+
+    # Add explicit project members
+    project_members = db.query(ProjectMember).filter(ProjectMember.project_id == project.id).all()
+    for pm in project_members:
+        pool.setdefault(pm.user_id, pm.role)
+
+    # If project belongs to an org, also pull in org members as potential assignees
+    if project.organization_id:
+        org_members = db.query(OrganizationMember).filter(
+            OrganizationMember.organization_id == project.organization_id
+        ).all()
+        for om in org_members:
+            pool.setdefault(om.user_id, om.role)
+
+    return pool
+
+
+def _get_project_test_case(db: Session, project_id: int, tc_id: int):
+    return (
+        db.query(TestCase)
+        .join(Workspace, Workspace.id == TestCase.workspace_id)
+        .filter(TestCase.id == tc_id, Workspace.project_id == project_id)
+        .first()
+    )
+
+
+def _get_project_issue(db: Session, project_id: int, issue_id: int):
+    return (
+        db.query(Issue)
+        .join(TestCase, TestCase.id == Issue.test_case_id)
+        .join(Workspace, Workspace.id == TestCase.workspace_id)
+        .filter(Issue.id == issue_id, Workspace.project_id == project_id)
+        .first()
+    )
+
+
 def get_latest_suggestion(db: Session, project_id: int):
     return (
         db.query(AIAssignmentSuggestion)
@@ -25,35 +88,49 @@ def get_latest_suggestion(db: Session, project_id: int):
         .first()
     )
 
-def dismiss_suggestion(db: Session, suggestion_id: int):
-    suggestion = db.query(AIAssignmentSuggestion).filter(AIAssignmentSuggestion.id == suggestion_id).first()
+def dismiss_suggestion(db: Session, project_id: int, suggestion_id: int):
+    suggestion = _get_project_suggestion(db, project_id, suggestion_id)
     if not suggestion:
         raise HTTPException(status_code=404, detail="Suggestion not found")
-    
+
     suggestion.status = "dismissed"
     db.commit()
 
-def apply_suggestions(db: Session, suggestion_id: int, selected_indices: list[int]):
-    suggestion = db.query(AIAssignmentSuggestion).filter(AIAssignmentSuggestion.id == suggestion_id).first()
+def apply_suggestions(db: Session, project_id: int, suggestion_id: int, selected_indices: list[int]):
+    suggestion = _get_project_suggestion(db, project_id, suggestion_id)
     if not suggestion or suggestion.status != "pending":
         raise HTTPException(status_code=404, detail="Pending suggestion not found")
-    
+
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found.")
+
+    # Re-check against current membership: it may have changed since the suggestion was generated.
+    assignee_pool = _build_assignee_pool(db, project)
+
     for i, item in enumerate(suggestion.suggestions):
         if i in selected_indices:
             entity_type = item.get("entity_type")
             entity_id = item.get("entity_id")
             assignee_id = item.get("assignee_id")
-            
+
+            if assignee_id not in assignee_pool:
+                logger.warning(
+                    f"Skipping suggestion {suggestion_id}[{i}]: assignee {assignee_id} "
+                    f"is not in project {project_id}'s assignee pool"
+                )
+                continue
+
             if entity_type == "test_case":
-                tc = db.query(TestCase).filter(TestCase.id == entity_id).first()
+                tc = _get_project_test_case(db, project_id, entity_id)
                 if tc:
                     tc.assignee_id = assignee_id
                     tc.assigned_at = datetime.now(timezone.utc)
             elif entity_type == "issue":
-                issue = db.query(Issue).filter(Issue.id == entity_id).first()
+                issue = _get_project_issue(db, project_id, entity_id)
                 if issue:
                     issue.assignee_id = assignee_id
-                    
+
     suggestion.status = "applied"
     suggestion.applied_at = datetime.now(timezone.utc)
     db.commit()
@@ -83,31 +160,8 @@ def generate_suggestions(db: Session, project_id: int, user_id: int):
     if not project:
         raise HTTPException(status_code=404, detail="Project not found.")
 
-    seen_user_ids = set()
-    user_role_map: dict[int, str] = {}  # user_id -> role label
-
-    # Add project owner first
-    owner = db.query(User).filter(User.id == project.owner_id).first()
-    if owner:
-        seen_user_ids.add(owner.id)
-        user_role_map[owner.id] = "owner"
-
-    # Add explicit project members
-    project_members = db.query(ProjectMember).filter(ProjectMember.project_id == project_id).all()
-    for pm in project_members:
-        if pm.user_id not in seen_user_ids:
-            seen_user_ids.add(pm.user_id)
-            user_role_map[pm.user_id] = pm.role
-
-    # If project belongs to an org, also pull in org members as potential assignees
-    if project.organization_id:
-        org_members = db.query(OrganizationMember).filter(
-            OrganizationMember.organization_id == project.organization_id
-        ).all()
-        for om in org_members:
-            if om.user_id not in seen_user_ids:
-                seen_user_ids.add(om.user_id)
-                user_role_map[om.user_id] = om.role
+    user_role_map = _build_assignee_pool(db, project)  # user_id -> role label
+    seen_user_ids = set(user_role_map)
 
     if not seen_user_ids:
         raise HTTPException(status_code=400, detail="No team members found to assign work to.")
@@ -129,7 +183,7 @@ def generate_suggestions(db: Session, project_id: int, user_id: int):
 
         member_data.append({
             "user_id": user.id,
-            "name": f"{user.first_name} {user.last_name}".strip() or user.email,
+            "name": (user.name or "").strip() or user.email,
             "role": user_role_map.get(user.id, "member"),
             "job_title": user.job_title or "Unknown",
             "active_test_cases": tc_count,
@@ -206,11 +260,38 @@ Output ONLY the JSON and nothing else. No markdown wrappers.
     if not isinstance(suggestions, list):
         suggestions = []
 
-    # Filter out anything missing fields
+    # Keep only suggestions that reference items and people we actually sent.
+    # The prompt contains user-written titles, so the model's IDs are untrusted.
+    allowed_entities = {(item["entity_type"], item["entity_id"]) for item in items_data}
+    assigned_entities = set()
     valid_suggestions = []
     for s in suggestions:
-        if "entity_type" in s and "entity_id" in s and "assignee_id" in s and "reason" in s:
-            valid_suggestions.append(s)
+        if not isinstance(s, dict) or "reason" not in s:
+            continue
+        try:
+            entity_key = (s.get("entity_type"), int(s.get("entity_id")))
+            assignee_id = int(s.get("assignee_id"))
+        except (TypeError, ValueError):
+            continue
+
+        if (
+            entity_key not in allowed_entities
+            or entity_key in assigned_entities
+            or assignee_id not in seen_user_ids
+        ):
+            continue
+
+        assigned_entities.add(entity_key)
+        valid_suggestions.append({
+            "entity_type": entity_key[0],
+            "entity_id": entity_key[1],
+            "assignee_id": assignee_id,
+            "reason": str(s.get("reason") or "").strip(),
+        })
+
+    dropped = len(suggestions) - len(valid_suggestions)
+    if dropped:
+        logger.warning(f"Dropped {dropped} invalid AI assignment suggestion(s) for project {project_id}")
 
     if not valid_suggestions:
         raise HTTPException(status_code=500, detail="AI did not generate any valid suggestions.")
