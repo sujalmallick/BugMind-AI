@@ -23,11 +23,16 @@ class Comment(Base):
 
     # Relationships
     author = relationship("User", foreign_keys=[author_id])
+    # Many-to-one: the comment this one replies to.
+    parent = relationship("Comment", remote_side=[id], foreign_keys=[parent_id])
+    # One-to-many: live (not soft-deleted) replies, oldest first. Read-only: a reply is
+    # created by setting parent_id; removal is a soft delete, and the DB's
+    # ondelete=CASCADE covers hard deletes.
     replies = relationship(
         "Comment",
-        backref="parent",
-        remote_side=[id],
-        cascade="all",          # no delete-orphan here; DB ondelete=CASCADE handles it
+        primaryjoin="and_(Comment.id == remote(foreign(Comment.parent_id)), remote(Comment.deleted_at).is_(None))",
+        order_by="Comment.created_at",
+        viewonly=True,
     )
     reactions = relationship("CommentReaction", back_populates="comment", cascade="all, delete-orphan")
     mentions = relationship("Mention", back_populates="comment", cascade="all, delete-orphan")
