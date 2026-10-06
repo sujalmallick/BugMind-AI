@@ -41,6 +41,8 @@ def main(argv=None) -> int:
     parser.add_argument("--repeat", type=int, default=1, help="Runs per case, to smooth out sampling noise")
     parser.add_argument("--pause", type=float, default=0,
                         help="Seconds to wait between runs, for per-minute token limits (e.g. 60 on Groq free tier)")
+    parser.add_argument("--save-outputs", action="store_true",
+                        help="Keep each run's generated modules/checklist/test cases in the report")
     parser.add_argument("--baseline", type=Path, help="Compare against this baseline; exit 1 on regression")
     parser.add_argument("--tolerance", type=float, default=0.1, help="Allowed absolute drop per metric")
     parser.add_argument("--update-baseline", action="store_true", help=f"Write aggregate scores to {DEFAULT_BASELINE.name}")
@@ -68,7 +70,8 @@ def main(argv=None) -> int:
     def show(run):
         print(" | ".join(_fmt(run.get(c)) for c in columns) + (f"   ({run['error']})" if run.get("error") else ""))
 
-    report = evaluate(cases, repeat=args.repeat, on_result=show, pause_seconds=args.pause)
+    report = evaluate(cases, repeat=args.repeat, on_result=show, pause_seconds=args.pause,
+                      save_outputs=args.save_outputs)
     report["meta"] = {
         "provider": provider,
         "model": model,
