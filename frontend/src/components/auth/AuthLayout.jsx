@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
 import BrandMark from "../shared/BrandMark";
+import Orbs from "../shared/Orbs";
 import {
   MotionCard,
   WorkflowScene,
@@ -121,7 +122,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
       {/* Showcase column */}
       <aside className="hidden p-3 lg:block" aria-label="What BugMind does">
         <div className="relative flex h-full flex-col items-center justify-center overflow-hidden rounded-2xl border border-hairline bg-paper px-10 py-12">
-          <div className="aurora aurora-soft" aria-hidden="true" />
+          <Orbs variant="panel" />
           <div className="relative w-full max-w-[440px]">
             <p className="eyebrow">Inside BugMind</p>
             <h2 className="mt-3 text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.03em] text-ink">

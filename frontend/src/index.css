@@ -139,18 +139,34 @@
     background-color: var(--color-surface);
   }
 
-  /* App pages: a faint brand wash at the top so white never feels flat */
+  /* App pages: two faint, static orbs at the top corners so white never
+     feels flat (kept still and light — these sit behind working UI) */
   .projects-atmosphere::before,
-  .workspace-atmosphere::before {
+  .workspace-atmosphere::before,
+  .projects-atmosphere::after,
+  .workspace-atmosphere::after {
     content: "";
     position: absolute;
-    inset: 0 0 auto 0;
-    height: 420px;
     z-index: -1;
+    border-radius: 9999px;
     pointer-events: none;
-    background:
-      radial-gradient(45% 100% at 15% 0%, rgba(37, 99, 235, 0.07), transparent 70%),
-      radial-gradient(35% 90% at 85% 0%, rgba(56, 189, 248, 0.06), transparent 70%);
+    filter: blur(40px);
+  }
+  .projects-atmosphere::before,
+  .workspace-atmosphere::before {
+    top: -140px;
+    left: -120px;
+    width: 380px;
+    height: 380px;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.16), transparent 68%);
+  }
+  .projects-atmosphere::after,
+  .workspace-atmosphere::after {
+    top: -100px;
+    right: -100px;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(5, 150, 105, 0.12), transparent 68%);
   }
 
   /* Kept as a no-op hook so existing markup keeps working */
@@ -274,43 +290,62 @@
     animation: fillBar linear both;
   }
 
-  /* Aurora — soft drifting colour fields + faint film grain behind hero
-     areas. One element, fades into white; no grid, no hard shapes. */
-  .aurora {
+  /* Orbs — soft blurred colour spheres behind hero areas. Mixed brand hues
+     so the page never reads as "all blue"; placed toward the edges so text
+     stays clear. Each preset positions the four orbs differently. */
+  .orbs {
     position: absolute;
     inset: 0;
     z-index: 0;
     overflow: hidden;
     pointer-events: none;
-    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
-    mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
   }
-  .aurora::before {
-    content: "";
+  .orb {
+    --s: 320px;
     position: absolute;
-    inset: -25% -15%;
-    background:
-      radial-gradient(38% 32% at 22% 28%, rgba(37, 99, 235, 0.32), transparent 70%),
-      radial-gradient(34% 30% at 78% 22%, rgba(56, 189, 248, 0.3), transparent 70%),
-      radial-gradient(30% 28% at 62% 62%, rgba(5, 150, 105, 0.16), transparent 70%),
-      radial-gradient(26% 24% at 30% 70%, rgba(59, 130, 246, 0.16), transparent 70%);
-    filter: blur(48px);
-    animation: auroraDrift 26s ease-in-out infinite alternate;
+    width: var(--s);
+    height: var(--s);
+    border-radius: 9999px;
+    filter: blur(36px);
+    opacity: 0.6;
+    animation: orbFloat 18s ease-in-out infinite alternate;
+    will-change: transform;
   }
-  .aurora::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    opacity: 0.06;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  .orb-a { background: radial-gradient(circle at 35% 35%, rgba(37, 99, 235, 0.55), rgba(37, 99, 235, 0) 68%); }
+  .orb-b { background: radial-gradient(circle at 40% 40%, rgba(5, 150, 105, 0.42), rgba(5, 150, 105, 0) 68%); animation-duration: 22s; animation-delay: -6s; }
+  .orb-c { background: radial-gradient(circle at 40% 40%, rgba(56, 189, 248, 0.5), rgba(56, 189, 248, 0) 68%); animation-duration: 20s; animation-delay: -11s; }
+  .orb-d { background: radial-gradient(circle at 40% 40%, rgba(217, 119, 6, 0.32), rgba(217, 119, 6, 0) 68%); animation-duration: 16s; animation-delay: -3s; }
+
+  @keyframes orbFloat {
+    0% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(18px, -22px, 0) scale(1.06); }
+    100% { transform: translate3d(-14px, 14px, 0) scale(0.97); }
   }
-  .aurora-soft::before {
-    opacity: 0.7;
-  }
-  @keyframes auroraDrift {
-    0% { transform: translate3d(-2%, -1%, 0) rotate(0deg) scale(1); }
-    50% { transform: translate3d(2%, 1.5%, 0) rotate(3deg) scale(1.05); }
-    100% { transform: translate3d(-1%, 2%, 0) rotate(-2deg) scale(1.02); }
+
+  /* Landing hero */
+  .orbs-hero .orb-a { --s: 420px; top: 4%; left: -140px; }
+  .orbs-hero .orb-b { --s: 360px; top: 26%; right: -120px; }
+  .orbs-hero .orb-c { --s: 300px; top: 58%; left: 12%; }
+  .orbs-hero .orb-d { --s: 200px; top: 10%; right: 20%; }
+
+  /* Closing call-to-action */
+  .orbs-cta .orb-a { --s: 340px; bottom: -180px; left: 6%; }
+  .orbs-cta .orb-b { --s: 300px; bottom: -160px; right: 8%; }
+  .orbs-cta .orb-c { --s: 220px; top: -120px; left: 42%; opacity: 0.45; }
+  .orbs-cta .orb-d { --s: 160px; top: 20%; right: 30%; }
+
+  /* Auth showcase panel */
+  .orbs-panel .orb-a { --s: 360px; top: -80px; left: -100px; }
+  .orbs-panel .orb-b { --s: 300px; bottom: -60px; right: -80px; }
+  .orbs-panel .orb-c { --s: 220px; top: 44%; right: 18%; opacity: 0.5; }
+  .orbs-panel .orb-d { --s: 160px; bottom: 18%; left: 14%; }
+
+  @media (max-width: 640px) {
+    .orb { filter: blur(30px); }
+    .orbs-hero .orb-a { --s: 260px; left: -110px; }
+    .orbs-hero .orb-b { --s: 240px; right: -110px; top: 34%; }
+    .orbs-hero .orb-c { --s: 200px; top: 70%; left: -40px; }
+    .orbs-hero .orb-d { --s: 140px; right: 6%; top: 6%; }
   }
 
   /* Horizontal swipe rows on phones */
@@ -358,14 +393,37 @@
   .glass-menu {
     background-color: rgba(255, 255, 255, 0.985);
   }
+  /* Full-width app header */
   .glass-bar {
-    background-color: rgba(255, 255, 255, 0.78);
-    -webkit-backdrop-filter: blur(14px) saturate(160%);
-    backdrop-filter: blur(14px) saturate(160%);
+    background-color: rgba(255, 255, 255, 0.7);
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.6);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  /* Floating marketing header — inset glass bar with a fine double edge */
+  .glass-header {
+    background-color: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    box-shadow:
+      0 0 0 1px rgba(9, 10, 15, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      0 10px 30px -14px rgba(9, 10, 15, 0.14);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+    transition: background-color 300ms ease, box-shadow 300ms ease;
+  }
+  .glass-header.is-scrolled {
+    background-color: rgba(255, 255, 255, 0.76);
+    box-shadow:
+      0 0 0 1px rgba(9, 10, 15, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      0 14px 36px -16px rgba(9, 10, 15, 0.2);
   }
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .glass,
-    .glass-bar { background-color: rgba(255, 255, 255, 0.97); }
+    .glass-bar,
+    .glass-header { background-color: rgba(255, 255, 255, 0.97); }
   }
 
   /* Card */

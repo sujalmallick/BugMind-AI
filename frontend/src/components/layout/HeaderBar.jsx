@@ -200,8 +200,8 @@ export default function HeaderBar({
   return (
     <>
       <header
-        className={`glass-bar sticky top-0 z-50 border-b border-hairline/80 transition-shadow duration-200 ${
-          scrolled ? "shadow-[0_1px_12px_rgba(9,10,15,0.06)]" : ""
+        className={`glass-bar sticky top-0 z-50 border-b border-ink/[0.07] transition-shadow duration-300 ${
+          scrolled ? "shadow-[0_8px_24px_-14px_rgba(9,10,15,0.18)]" : ""
         }`}
       >
 

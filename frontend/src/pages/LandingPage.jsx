@@ -26,6 +26,7 @@ import {
 import { useAuth } from "../auth/AuthContext";
 import UserAvatar from "../components/common/UserAvatar";
 import BrandMark from "../components/shared/BrandMark";
+import Orbs from "../components/shared/Orbs";
 import AppFooter from "../components/layout/AppFooter";
 import useReveal from "../hooks/useReveal";
 import {
@@ -277,6 +278,7 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const heroMockRef = useRef(null);
   const heroTextRef = useRef(null);
+  const heroOrbsRef = useRef(null);
   const [activeAgentIndex, setActiveAgentIndex] = useState(0);
 
   const [activeStackIndex, setActiveStackIndex] = useState(0);
@@ -337,6 +339,10 @@ export default function LandingPage() {
           const scale = Math.min(1.02, 0.985 + y * 0.0001);
           mock.style.transform = enabled ? `translate3d(0, ${rise}px, 0) scale(${scale})` : "";
         }
+        const orbs = heroOrbsRef.current;
+        if (orbs) {
+          orbs.style.transform = enabled ? `translate3d(0, ${y * 0.25}px, 0)` : "";
+        }
         if (text) {
           text.style.opacity = enabled ? String(Math.max(0.15, 1 - y * 0.002)) : "";
           text.style.transform = enabled ? `translate3d(0, ${y * 0.1}px, 0)` : "";
@@ -361,12 +367,9 @@ export default function LandingPage() {
   return (
     <div ref={pageRef} className="relative min-h-screen bg-surface font-sans text-ink overflow-x-clip">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header
-        className={`sticky top-0 z-50 border-b transition-colors duration-300 ${
-          scrolled ? "glass-bar border-hairline/80" : "border-transparent bg-transparent"
-        }`}
-      >
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+      <header className="sticky top-0 z-50 px-3 pt-3 sm:px-4">
+        <div className={`glass-header mx-auto w-full max-w-6xl rounded-2xl ${scrolled ? "is-scrolled" : ""}`}>
+        <div className="flex h-14 items-center justify-between gap-4 pl-3 pr-2 sm:pl-4">
           <Link
             to="/landing"
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
@@ -381,7 +384,7 @@ export default function LandingPage() {
               <a
                 key={l.href}
                 href={l.href}
-                className="rounded-md px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:bg-ink/[0.04] hover:text-ink"
+                className="rounded-lg px-3 py-1.5 text-[13px] font-medium text-ink/70 transition-colors hover:bg-white/70 hover:text-ink"
               >
                 {l.label}
               </a>
@@ -482,7 +485,7 @@ export default function LandingPage() {
         </div>
 
         {mobileMenuOpen && (
-          <div id="landing-mobile-nav" className="menu-enter border-t border-hairline bg-surface px-4 pb-4 pt-2 md:hidden">
+          <div id="landing-mobile-nav" className="menu-enter border-t border-hairline/70 px-2 pb-3 pt-2 md:hidden">
             <nav className="flex flex-col" aria-label="Mobile">
               {NAV_LINKS.map((l) => (
                 <a
@@ -522,12 +525,13 @@ export default function LandingPage() {
             )}
           </div>
         )}
+        </div>
       </header>
 
       <main className="relative">
         {/* ── Hero ─────────────────────────────────────────────────────────── */}
-        <section className="relative -mt-16 overflow-x-clip pb-14 pt-24 sm:pt-36 md:pb-4">
-          <div className="aurora" aria-hidden="true" />
+        <section className="relative -mt-[4.25rem] overflow-x-clip pb-14 pt-28 sm:pt-40 md:pb-4">
+          <Orbs ref={heroOrbsRef} variant="hero" className="will-change-transform" />
           <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
             <div ref={heroTextRef} className="relative z-10 mx-auto max-w-3xl text-center will-change-transform">
               <p className="stagger eyebrow" style={{ "--d": "0ms" }}>
@@ -759,7 +763,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── Pipeline ─────────────────────────────────────────────────────── */}
-        <section id="pipeline" className="scroll-mt-16 border-t border-hairline bg-surface py-16 sm:py-28">
+        <section id="pipeline" className="scroll-mt-24 border-t border-hairline bg-surface py-16 sm:py-28">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="grid gap-12 lg:grid-cols-12 lg:items-start lg:gap-16">
               <div className="lg:sticky lg:top-28 lg:col-span-5">
@@ -845,7 +849,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── Workspace ────────────────────────────────────────────────────── */}
-        <section id="workspace" className="scroll-mt-16 border-t border-hairline py-16 sm:py-28">
+        <section id="workspace" className="scroll-mt-24 border-t border-hairline py-16 sm:py-28">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <SectionHeading eyebrow="The workspace" title="Test cases with" accent="spreadsheet control.">
               Execute cases, edit preconditions and tag custom fields inline — built on AG Grid
@@ -966,7 +970,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── Teams ────────────────────────────────────────────────────────── */}
-        <section id="collaboration" className="scroll-mt-16 border-t border-hairline bg-surface py-16 sm:py-28">
+        <section id="collaboration" className="scroll-mt-24 border-t border-hairline bg-surface py-16 sm:py-28">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <SectionHeading eyebrow="For teams" title="Built for engineering" accent="organizations.">
               Manage projects under organizations and teams, with role-based access and your own AI keys.
@@ -989,7 +993,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── FAQ ──────────────────────────────────────────────────────────── */}
-        <section id="faq" className="scroll-mt-16 border-t border-hairline py-16 sm:py-28">
+        <section id="faq" className="scroll-mt-24 border-t border-hairline py-16 sm:py-28">
           <div className="mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-12">
             <div className="lg:col-span-4">
               <SectionHeading eyebrow="FAQ" title="Questions," accent="answered." align="left">
@@ -1008,7 +1012,7 @@ export default function LandingPage() {
 
         {/* ── Closing CTA ──────────────────────────────────────────────────── */}
         <section className="relative overflow-hidden border-t border-hairline bg-surface py-20 sm:py-28">
-          <div className="aurora aurora-soft rotate-180" aria-hidden="true" />
+          <Orbs variant="cta" />
           <div className="reveal relative mx-auto max-w-3xl px-4 text-center sm:px-6">
             <h2 className="text-[1.875rem] font-semibold leading-[1.1] tracking-[-0.025em] text-ink sm:text-[2.75rem]">
               Your next release,{" "}
