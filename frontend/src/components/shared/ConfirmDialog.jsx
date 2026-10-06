@@ -1,4 +1,5 @@
-import { AlertTriangle, X } from "lucide-react";
+import { useEffect, useId } from "react";
+import { AlertTriangle, Loader2, X } from "lucide-react";
 
 /**
  * Reusable confirmation dialog.
@@ -8,9 +9,10 @@ import { AlertTriangle, X } from "lucide-react";
  *   title       - heading text
  *   message     - body copy
  *   confirmText - button label (default "Delete")
+ *   cancelText  - cancel label (default "Cancel")
  *   danger      - boolean, red confirm button (default true)
  *   onConfirm   - called when user clicks confirm
- *   onCancel    - called when user cancels / closes
+ *   onCancel    - called when user cancels / closes (also on Escape)
  *   loading     - disables buttons during async action
  */
 export default function ConfirmDialog({
@@ -18,65 +20,65 @@ export default function ConfirmDialog({
   title = "Are you sure?",
   message = "This action cannot be undone.",
   confirmText = "Delete",
+  cancelText = "Cancel",
   danger = true,
   onConfirm,
   onCancel,
   loading = false,
 }) {
+  const titleId = useId();
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => e.key === "Escape" && !loading && onCancel?.();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, loading, onCancel]);
+
   if (!open) return null;
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-ink/40 p-4 backdrop-blur-sm animate-in fade-in"
-      onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
+      className="modal-backdrop-enter fixed inset-0 z-[200] flex items-center justify-center bg-ink/30 p-4"
+      onClick={(e) => { if (e.target === e.currentTarget && !loading) onCancel(); }}
     >
-      <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 overflow-hidden">
-        {/* Top accent */}
-        <div className={`h-1 w-full ${danger ? "bg-flagged" : "bg-signal"}`} />
-
-        <div className="p-6">
-          {/* Icon + title */}
-          <div className="flex items-start gap-4 mb-4">
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${danger ? "bg-red-50" : "bg-signal-soft"}`}>
-              <AlertTriangle size={20} className={danger ? "text-flagged" : "text-signal"} />
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="glass glass-menu modal-pop-enter w-full max-w-sm overflow-hidden rounded-2xl"
+      >
+        <div className="p-5 sm:p-6">
+          <div className="flex items-start gap-3.5">
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${danger ? "bg-flagged-soft text-flagged" : "bg-signal-soft text-signal"}`}>
+              <AlertTriangle size={18} aria-hidden="true" />
             </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-base font-bold text-ink">{title}</h3>
-              <p className="mt-1 text-sm text-muted leading-relaxed">{message}</p>
+            <div className="min-w-0 flex-1 pt-0.5">
+              <h3 id={titleId} className="text-[15px] font-semibold text-ink">{title}</h3>
+              <p className="mt-1 text-[13px] leading-relaxed text-muted">{message}</p>
             </div>
             <button
+              type="button"
               onClick={onCancel}
               disabled={loading}
-              className="shrink-0 rounded-md p-1 text-muted hover:bg-paper hover:text-ink transition"
+              aria-label="Close"
+              className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-muted transition-colors hover:bg-ink/[0.05] hover:text-ink"
             >
               <X size={16} />
             </button>
           </div>
 
-          {/* Actions */}
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              onClick={onCancel}
-              disabled={loading}
-              className="rounded-xl border border-hairline bg-white px-4 py-2 text-sm font-semibold text-ink hover:bg-paper transition"
-            >
-              Cancel
+          <div className="mt-6 flex justify-end gap-2">
+            <button type="button" onClick={onCancel} disabled={loading} className="btn-secondary">
+              {cancelText}
             </button>
             <button
+              type="button"
               onClick={onConfirm}
               disabled={loading}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition shadow-md disabled:opacity-50 flex items-center gap-2
-                ${danger
-                  ? "bg-flagged hover:bg-red-600 shadow-red-200"
-                  : "bg-signal hover:bg-signal/90 shadow-signal/20"
-                }`}
+              className={`btn-primary ${danger ? "!border-flagged !bg-flagged hover:!border-red-700 hover:!bg-red-700" : ""}`}
             >
-              {loading && (
-                <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                </svg>
-              )}
+              {loading && <Loader2 size={14} className="spin" aria-hidden="true" />}
               {confirmText}
             </button>
           </div>

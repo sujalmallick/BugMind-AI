@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {
-  Building2, Plus, Loader2, ArrowLeft, Users, Settings,
-  Crown, ShieldCheck, User, Trash2, FolderKanban, ListChecks, Sparkles, Layers3
+  Building2, Plus, Loader2, Users, Settings, ChevronRight, LayoutDashboard, UserPlus,
+  Crown, ShieldCheck, User, Trash2, FolderKanban, ListChecks, Layers3
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
@@ -9,9 +9,13 @@ import useOrgStore from "../store/useOrgStore";
 import OrgCard from "../components/organization/OrgCard";
 import OrgCreateModal from "../components/organization/OrgCreateModal";
 import OrgMemberList from "../components/organization/OrgMemberList";
-import useToasts         from "../components/shared/useToasts";
-import ToastStack        from "../components/shared/ToastStack";
 import PageHeading       from "../components/shared/PageHeading";
+import Panel             from "../components/shared/Panel";
+import Pill              from "../components/shared/Pill";
+import EmptyState        from "../components/shared/EmptyState";
+import SegmentedControl  from "../components/shared/SegmentedControl";
+import ConfirmDialog     from "../components/shared/ConfirmDialog";
+import Orbs              from "../components/shared/Orbs";
 import TeamCard from "../components/organization/TeamCard";
 import TeamCreateModal from "../components/organization/TeamCreateModal";
 import TeamMemberList from "../components/organization/TeamMemberList";
@@ -19,15 +23,14 @@ import OrgSettingsPanel from "../components/organization/OrgSettingsPanel";
 import OrgInvitePanel from "../components/organization/OrgInvitePanel";
 import CreateProjectModal from "../components/projects/CreateProjectModal";
 import AppFooter from "../components/layout/AppFooter";
+import HeaderBar from "../components/layout/HeaderBar";
 import { createProject as createProjectApi, getProjects, addTeamToProject } from "../services/projectApi";
 import { getTeamDashboard } from "../services/dashboardApi";
-import logo from "../assets/bugmind2.png";
-import favicon from "../assets/favicon.png";
 
 const ROLE_META = {
-  owner:  { label: "Owner",  color: "bg-ochre-soft text-ochre border-ochre/30",   icon: Crown },
-  admin:  { label: "Admin",  color: "bg-signal-soft text-signal border-signal/30", icon: ShieldCheck },
-  member: { label: "Member", color: "bg-paper text-muted border-hairline",          icon: User },
+  owner:  { label: "Owner",  tone: "ochre",   icon: Crown },
+  admin:  { label: "Admin",  tone: "signal",  icon: ShieldCheck },
+  member: { label: "Member", tone: "neutral", icon: User },
 };
 
 export default function OrganizationsPage() {
@@ -120,110 +123,69 @@ export default function OrganizationsPage() {
   }, [org, activeTab, isOwner]);
 
   const RoleIcon = ROLE_META[myRole]?.icon || User;
-  const roleColor = ROLE_META[myRole]?.color || ROLE_META.member.color;
   const roleLabel = ROLE_META[myRole]?.label || ROLE_META.member.label;
   const orgProjects = projects.filter((project) => project.organizationId === org?.id);
   const teamProjects = activeTeam ? orgProjects.filter(p => p.assigned_team_ids?.includes(activeTeam.id)) : [];
   const teamAssignments = teamDashboard?.member_load || [];
 
   // ── Header ────────────────────────────────────────────────────────────────
-  const TopHeader = () => (
-    <header className="sticky top-0 z-50 border-b border-hairline bg-white/95 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3 sm:px-8">
-        <div
-          className="flex cursor-pointer items-center gap-3 transition-opacity hover:opacity-80"
-          onClick={() => navigate("/")}
-        >
-          <img src={favicon} alt="BugMind" className="h-9 w-9 object-contain" />
-          <img src={logo} alt="BugMind AI" className="h-10 w-auto object-contain" />
-        </div>
-        <div className="flex items-center gap-2">
-          {activeTeam ? (
-            <button
-              onClick={() => setActiveTeam(null)}
-              className="rounded-lg border border-hairline bg-surface px-3 py-2 text-xs font-medium text-muted
-                         transition hover:bg-paper hover:text-ink flex items-center gap-1.5"
-            >
-              <ArrowLeft size={13} /> Back to {org?.name || "Organization"}
-            </button>
-          ) : orgId ? (
-            <button
-              onClick={() => navigate("/organizations")}
-              className="rounded-lg border border-hairline bg-surface px-3 py-2 text-xs font-medium text-muted
-                         transition hover:bg-paper hover:text-ink flex items-center gap-1.5"
-            >
-              <ArrowLeft size={13} /> Back to Organizations
-            </button>
-          ) : (
-            <button
-              onClick={() => navigate("/")}
-              className="rounded-lg border border-hairline bg-surface px-3 py-2 text-xs font-medium text-muted
-                         transition hover:bg-paper hover:text-ink flex items-center gap-1.5"
-            >
-              <ArrowLeft size={13} /> Back to Projects
-            </button>
-          )}
-        </div>
-      </div>
-    </header>
-  );
 
   if (store.loading && !org && !store.orgs.length) {
     return (
       <div className="workspace-atmosphere min-h-screen">
-        <TopHeader />
-        <main className="mx-auto flex w-full max-w-5xl items-center justify-center py-20 px-4 sm:px-8">
-          <Loader2 size={28} className="animate-spin text-signal" />
+        <HeaderBar />
+        <main className="mx-auto flex w-full max-w-7xl items-center justify-center px-4 py-20 sm:px-6">
+          <Loader2 size={24} className="spin text-signal" aria-label="Loading" />
         </main>
       </div>
     );
   }
 
+  const teamMemberCount = activeTeam ? (store.teamMembers[activeTeam.id]?.length ?? 0) : 0;
+  const totalAssignments = teamAssignments.reduce((sum, member) => sum + member.total, 0);
+  const maxLoad = Math.max(1, ...teamAssignments.map((m) => m.total));
+
+  const orgTabs = [
+    { value: "teams", label: "Teams", icon: Layers3, count: store.teams.length },
+    { value: "members", label: "Members", icon: Users, count: store.members.length },
+    ...(canManageTeams ? [{ value: "invite", label: "Invite", icon: UserPlus }] : []),
+    ...(isOwner ? [{ value: "settings", label: "Settings", icon: Settings }] : []),
+  ];
+
   return (
     <div className="workspace-atmosphere min-h-screen flex flex-col">
-      <TopHeader />
+      <HeaderBar />
 
-      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-8 flex-1">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-16 pt-8 sm:px-6 sm:pt-10">
         {/* ── LIST VIEW ───────────────────────────────────────────────────── */}
         {!orgId ? (
           <>
-            <div className="mb-6 flex items-center justify-between">
-              <PageHeading meta="Manage your teams and collaborative workspaces.">
+            <div className="section-enter mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <PageHeading meta="Shared workspaces for your QA teams, members and projects.">
                 Organizations
               </PageHeading>
 
               {store.orgs.length > 0 && (
-                <button
-                  onClick={() => setShowCreateOrg(true)}
-                  className="flex items-center gap-2 rounded-lg bg-signal px-4 py-2.5 text-sm font-semibold
-                             text-white shadow-sm transition hover:bg-signal/90 hover:-translate-y-0.5"
-                >
-                  <Plus size={15} /> New organization
+                <button onClick={() => setShowCreateOrg(true)} className="btn-primary self-start sm:self-auto">
+                  <Plus size={15} aria-hidden="true" /> New organization
                 </button>
               )}
             </div>
 
             {store.orgs.length === 0 ? (
-              <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-hairline py-20 px-8 text-center bg-surface">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-signal-soft text-signal">
-                  <Building2 size={26} />
-                </div>
-                <div>
-                  <p className="text-base font-semibold text-ink">No organizations yet</p>
-                  <p className="mt-1 max-w-sm text-sm text-muted leading-relaxed">
-                    Create your first organization to start collaborating with your QA team and sharing test cases.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowCreateOrg(true)}
-                  className="flex items-center gap-2 rounded-lg bg-signal px-5 py-2.5 text-sm font-semibold
-                             text-white shadow-sm transition hover:bg-signal/90 hover:-translate-y-0.5 mt-2"
-                >
-                  <Plus size={14} /> Create organization
-                </button>
-              </div>
+              <EmptyState
+                className="section-enter section-enter-1 py-16"
+                icon={<Building2 size={18} />}
+                title="No organizations yet"
+                description="Create an organization to collaborate with your QA team, organize members into teams and share projects."
+                action={
+                  <button onClick={() => setShowCreateOrg(true)} className="btn-primary">
+                    <Plus size={14} aria-hidden="true" /> Create organization
+                  </button>
+                }
+              />
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="section-enter section-enter-1 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {store.orgs.map((o) => (
                   <OrgCard key={o.id} org={o} onClick={() => navigate(`/organizations/${o.id}`)} />
                 ))}
@@ -233,372 +195,351 @@ export default function OrganizationsPage() {
         ) : (
           /* ── DETAIL VIEW ────────────────────────────────────────────────── */
           org && (
-            <div className="animate-fade-in">
-              {/* Breadcrumbs for deep views (like team detail) */}
-              {activeTeam && (
-                <div className="flex items-center gap-1.5 text-xs text-muted mb-4">
-                  <button onClick={() => navigate("/organizations")} className="hover:text-signal transition">
-                    Organizations
-                  </button>
-                  <span className="text-muted/50">/</span>
-                  <button onClick={() => setActiveTeam(null)} className="hover:text-signal transition text-ink font-medium">
-                    {org.name}
-                  </button>
-                  <span className="text-muted/50">/</span>
-                  <span className="text-ink font-medium">{activeTeam.name}</span>
-                </div>
-              )}
+            <div>
+              {/* Breadcrumbs */}
+              <nav aria-label="Breadcrumb" className="mb-5 flex flex-wrap items-center gap-1 text-[13px] text-muted">
+                <button onClick={() => navigate("/organizations")} className="rounded px-1 py-0.5 transition-colors hover:text-ink">
+                  Organizations
+                </button>
+                <ChevronRight size={13} aria-hidden="true" className="text-muted/60" />
+                {activeTeam ? (
+                  <>
+                    <button onClick={() => setActiveTeam(null)} className="rounded px-1 py-0.5 transition-colors hover:text-ink">
+                      {org.name}
+                    </button>
+                    <ChevronRight size={13} aria-hidden="true" className="text-muted/60" />
+                    <span className="px-1 font-medium text-ink" aria-current="page">{activeTeam.name}</span>
+                  </>
+                ) : (
+                  <span className="px-1 font-medium text-ink" aria-current="page">{org.name}</span>
+                )}
+              </nav>
 
-              {/* Org Header */}
+              {/* ── Org overview ─────────────────────────────────────────── */}
               {!activeTeam && (
-                <div className="mb-8">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-4 min-w-0">
-                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl
-                                      bg-linear-to-br from-signal to-indigo-500 text-white shadow-sm text-xl font-bold">
+                <section className="section-enter relative mb-6 overflow-hidden rounded-2xl border border-hairline bg-surface shadow-[var(--shadow-card)]">
+                  <Orbs variant="panel" className="opacity-60" />
+                  <div className="relative flex flex-col gap-6 p-5 sm:p-7 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex min-w-0 items-start gap-4">
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-signal-soft text-xl font-semibold text-signal ring-4 ring-surface">
                         {org.logo_url ? (
-                          <img src={org.logo_url} alt={org.name} className="h-full w-full rounded-xl object-cover" />
+                          <img src={org.logo_url} alt="" className="h-full w-full object-cover" />
                         ) : (
                           org.name.charAt(0).toUpperCase()
                         )}
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-3">
-                          <h1 className="text-2xl font-bold text-ink truncate font-sans">{org.name}</h1>
-                          <span className={`shrink-0 flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold ${roleColor}`}>
-                            <RoleIcon size={12} />
-                            {roleLabel}
-                          </span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h1 className="truncate text-2xl font-semibold tracking-[-0.025em] text-ink">{org.name}</h1>
+                          <Pill tone={ROLE_META[myRole]?.tone || "neutral"} icon={RoleIcon}>{roleLabel}</Pill>
                         </div>
-                        <p className="text-sm text-muted font-mono mt-1">{org.slug}</p>
+                        <p className="mt-0.5 font-mono text-[12px] text-muted">{org.slug}</p>
+                        {org.description && (
+                          <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-muted">{org.description}</p>
+                        )}
                       </div>
                     </div>
+
+                    <dl className="grid grid-cols-3 gap-2 sm:gap-3 lg:w-auto">
+                      {[
+                        { label: "Members", value: store.members.length || org.member_count || 0 },
+                        { label: "Teams", value: store.teams.length },
+                        { label: "Projects", value: orgProjects.length },
+                      ].map((s) => (
+                        <div key={s.label} className="glass rounded-xl px-4 py-3 text-center lg:min-w-[96px]">
+                          <dd className="text-xl font-semibold tabular-nums text-ink">{s.value}</dd>
+                          <dt className="mt-0.5 text-[12px] text-muted">{s.label}</dt>
+                        </div>
+                      ))}
+                    </dl>
                   </div>
-                  {org.description && (
-                    <p className="mt-4 text-sm text-muted max-w-2xl leading-relaxed">{org.description}</p>
-                  )}
-                </div>
+                </section>
               )}
 
-              {/* Team Detail View */}
+              {/* ── Team detail ──────────────────────────────────────────── */}
               {activeTeam ? (
-                <div className="animate-fade-in">
-                  <section className="mb-6 rounded-3xl border border-hairline bg-white p-6 shadow-sm">
-                    <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="max-w-3xl">
-                        <p className="inline-flex items-center gap-2 rounded-full border border-signal/20 bg-signal-soft px-3 py-1 text-xs font-semibold text-signal">
-                          <Sparkles size={13} />
-                          Team overview
-                        </p>
-                        <h1 className="mt-3 text-3xl font-bold tracking-tight text-ink">{activeTeam.name}</h1>
-                        <p className="mt-2 text-sm text-muted">
-                          {activeTeam.description || "Team members, project coverage, and assignments in one place."}
-                        </p>
-                        <div className="mt-4 flex flex-wrap gap-2 text-xs text-muted">
-                          <span className="rounded-full border border-hairline bg-paper px-2.5 py-1 font-semibold">Members: {store.teamMembers[activeTeam.id]?.length ?? 0}</span>
-                          <span className="rounded-full border border-hairline bg-paper px-2.5 py-1 font-semibold">Projects: {teamProjects.length}</span>
-                          <span className="rounded-full border border-hairline bg-paper px-2.5 py-1 font-semibold">Assignments: {teamAssignments.reduce((sum, member) => sum + member.total, 0)}</span>
+                <div className="section-enter">
+                  <section className="relative mb-6 overflow-hidden rounded-2xl border border-hairline bg-surface shadow-[var(--shadow-card)]">
+                    <Orbs variant="panel" className="opacity-50" />
+                    <div className="relative flex flex-col gap-6 p-5 sm:p-7 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="flex min-w-0 items-start gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-verified-soft text-verified ring-4 ring-surface">
+                          <Users size={20} aria-hidden="true" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="eyebrow">Team · {org.name}</p>
+                          <h1 className="mt-1 truncate text-2xl font-semibold tracking-[-0.025em] text-ink">{activeTeam.name}</h1>
+                          <p className="mt-1 max-w-2xl text-[14px] text-muted">
+                            {activeTeam.description || "Team members, project coverage and assignments in one place."}
+                          </p>
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-2">
-                        {canManageTeams && (
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <dl className="grid grid-cols-3 gap-2">
+                          {[
+                            { label: "Members", value: teamMemberCount },
+                            { label: "Projects", value: teamProjects.length },
+                            { label: "Assigned", value: totalAssignments },
+                          ].map((s) => (
+                            <div key={s.label} className="glass rounded-xl px-3.5 py-2.5 text-center">
+                              <dd className="text-lg font-semibold tabular-nums text-ink">{s.value}</dd>
+                              <dt className="text-[11px] text-muted">{s.label}</dt>
+                            </div>
+                          ))}
+                        </dl>
+                        <div className="flex gap-2">
                           <button
-                            type="button"
-                            onClick={() => setShowDeleteTeamDialog(true)}
-                            className="flex items-center gap-1.5 rounded-lg border border-flagged/40 bg-flagged-soft px-4 py-2 text-sm font-semibold text-flagged transition hover:bg-flagged hover:text-white"
+                            onClick={() => navigate(`/organizations/${org.id}/teams/${activeTeam.id}/dashboard`)}
+                            className="btn-secondary flex-1 sm:flex-none"
                           >
-                            <Trash2 size={14} /> Delete team
+                            <LayoutDashboard size={14} aria-hidden="true" />
+                            Dashboard
                           </button>
-                        )}
+                          {canManageTeams && (
+                            <button
+                              type="button"
+                              onClick={() => setShowDeleteTeamDialog(true)}
+                              aria-label="Delete team"
+                              className="btn-secondary !px-2.5 text-flagged hover:!border-flagged/30 hover:!bg-flagged-soft"
+                            >
+                              <Trash2 size={14} aria-hidden="true" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </section>
 
-                  <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-                    <section className="rounded-3xl border border-hairline bg-white p-6 shadow-sm">
-                      <div className="mb-4 flex items-center justify-between">
-                        <div>
-                          <h2 className="text-lg font-semibold text-ink">Members</h2>
-                          <p className="text-sm text-muted">People on this team.</p>
-                        </div>
-                        {canManageTeams && (() => {
-                          const eligibleMembers = store.members.filter(m => !(store.teamMembers[activeTeam.id] || []).some(tm => tm.user_id === m.user_id));
-                          return (
-                            <select
-                              className="rounded-lg border border-hairline bg-surface px-3 py-2 text-xs font-medium text-ink transition focus:border-signal focus:outline-none disabled:opacity-50 disabled:bg-paper"
-                              disabled={eligibleMembers.length === 0}
-                              value=""
-                              onChange={async (e) => {
-                                if (!e.target.value) return;
-                                const uid = parseInt(e.target.value, 10);
-                                try {
-                                  await store.addTeamMember(org.id, activeTeam.id, { user_id: uid, role: "member" });
-                                } catch (err) {
-                                  alert(err.message || "Failed to add member");
-                                }
-                              }}
-                            >
-                              <option value="" disabled>
-                                {eligibleMembers.length === 0 ? "No other members available" : "+ Add member"}
-                              </option>
-                              {eligibleMembers.map(m => (
-                                <option key={m.user_id} value={m.user_id}>{m.user?.name || m.user?.email}</option>
-                              ))}
-                            </select>
-                          );
-                        })()}
-                      </div>
+                  <div className="grid gap-6 xl:grid-cols-2">
+                    <Panel
+                      title="Members"
+                      description="People on this team"
+                      action={canManageTeams && (() => {
+                        const eligibleMembers = store.members.filter(m => !(store.teamMembers[activeTeam.id] || []).some(tm => tm.user_id === m.user_id));
+                        return (
+                          <select
+                            aria-label="Add a member to this team"
+                            className="field !min-h-0 !w-auto !py-1.5 !text-[13px]"
+                            disabled={eligibleMembers.length === 0}
+                            value=""
+                            onChange={async (e) => {
+                              if (!e.target.value) return;
+                              const uid = parseInt(e.target.value, 10);
+                              try {
+                                await store.addTeamMember(org.id, activeTeam.id, { user_id: uid, role: "member" });
+                              } catch (err) {
+                                alert(err.message || "Failed to add member");
+                              }
+                            }}
+                          >
+                            <option value="" disabled>
+                              {eligibleMembers.length === 0 ? "Everyone's already on this team" : "+ Add member"}
+                            </option>
+                            {eligibleMembers.map(m => (
+                              <option key={m.user_id} value={m.user_id}>{m.user?.name || m.user?.email}</option>
+                            ))}
+                          </select>
+                        );
+                      })()}
+                    >
                       <TeamMemberList
                         members={store.teamMembers[activeTeam.id] ?? []}
                         currentUserId={user?.id}
                         canManage={canManageTeams}
                         onRemove={(uid) => store.removeTeamMember(org.id, activeTeam.id, uid)}
                       />
-                    </section>
+                    </Panel>
 
-                    <section className="rounded-3xl border border-hairline bg-white p-6 shadow-sm">
-                      <div className="mb-4 flex items-center justify-between gap-4 flex-wrap">
-                        <div>
-                          <h2 className="text-lg font-semibold text-ink">Projects</h2>
-                          <p className="text-sm text-muted">Projects linked to this team.</p>
-                        </div>
-                        {canManageTeams && (() => {
-                          const assignableProjects = orgProjects.filter(p => !p.assigned_team_ids?.includes(activeTeam.id));
-                          if (assignableProjects.length === 0) return null;
-                          return (
-                            <div className="flex items-center gap-2">
-                              <select
-                                value={assignProjectId}
-                                onChange={(e) => setAssignProjectId(e.target.value)}
-                                className="rounded-lg border border-hairline bg-surface px-3 py-2 text-xs font-medium text-ink transition focus:border-signal focus:outline-none"
-                              >
-                                <option value="">Assign org project…</option>
-                                {assignableProjects.map(p => (
-                                  <option key={p.id} value={p.id}>{p.name}</option>
-                                ))}
-                              </select>
+                    <Panel
+                      title="Projects"
+                      description="Projects linked to this team"
+                      action={canManageTeams && (() => {
+                        const assignableProjects = orgProjects.filter(p => !p.assigned_team_ids?.includes(activeTeam.id));
+                        if (assignableProjects.length === 0) return null;
+                        return (
+                          <div className="flex items-center gap-2">
+                            <select
+                              aria-label="Organization project to assign"
+                              value={assignProjectId}
+                              onChange={(e) => setAssignProjectId(e.target.value)}
+                              className="field !min-h-0 !w-auto !py-1.5 !text-[13px]"
+                            >
+                              <option value="">Assign project…</option>
+                              {assignableProjects.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              disabled={!assignProjectId || assigningProject}
+                              onClick={async () => {
+                                if (!assignProjectId) return;
+                                setAssigningProject(true);
+                                try {
+                                  await addTeamToProject(parseInt(assignProjectId, 10), activeTeam.id);
+                                  const refreshedProjects = await getProjects();
+                                  setProjects(refreshedProjects);
+                                  setAssignProjectId("");
+                                } catch (error) {
+                                  alert(error?.response?.data?.detail || error.message || "Failed to assign project");
+                                } finally {
+                                  setAssigningProject(false);
+                                }
+                              }}
+                              className="btn-primary !min-h-0 !py-1.5"
+                            >
+                              {assigningProject ? <Loader2 size={14} className="spin" aria-hidden="true" /> : <Plus size={14} aria-hidden="true" />}
+                              Assign
+                            </button>
+                          </div>
+                        );
+                      })()}
+                    >
+                      {teamProjects.length > 0 ? (
+                        <ul className="-mx-2 -my-1">
+                          {teamProjects.map((project) => (
+                            <li key={project.id}>
                               <button
                                 type="button"
-                                disabled={!assignProjectId || assigningProject}
-                                onClick={async () => {
-                                  if (!assignProjectId) return;
-                                  setAssigningProject(true);
-                                  try {
-                                    await addTeamToProject(parseInt(assignProjectId, 10), activeTeam.id);
-                                    const refreshedProjects = await getProjects();
-                                    setProjects(refreshedProjects);
-                                    setAssignProjectId("");
-                                  } catch (error) {
-                                    alert(error?.response?.data?.detail || error.message || "Failed to assign project");
-                                  } finally {
-                                    setAssigningProject(false);
-                                  }
-                                }}
-                                className="flex items-center justify-center rounded-lg bg-signal px-3 py-2 text-xs font-semibold text-white transition hover:bg-signal/90 disabled:opacity-50"
+                                onClick={() => navigate(`/project/${project.id}/workspace`)}
+                                className="group flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-ink/[0.03]"
                               >
-                                {assigningProject ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-                                Assign
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-hairline bg-paper text-muted group-hover:text-signal">
+                                  <FolderKanban size={15} aria-hidden="true" />
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                  <span className="block truncate text-[13px] font-medium text-ink">{project.name}</span>
+                                  <span className="block truncate text-[12px] text-muted">{project.description || "No description"}</span>
+                                </span>
+                                <ChevronRight size={15} aria-hidden="true" className="shrink-0 text-muted opacity-0 transition-opacity group-hover:opacity-100" />
                               </button>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                      <div className="space-y-3">
-                        {orgProjects.filter(p => p.assigned_team_ids?.includes(activeTeam.id)).length > 0 ? (
-                          orgProjects.filter(p => p.assigned_team_ids?.includes(activeTeam.id)).map((project) => (
-                            <button
-                              key={project.id}
-                              type="button"
-                              onClick={() => navigate(`/project/${project.id}/workspace`)}
-                              className="w-full rounded-2xl border border-hairline bg-surface px-4 py-3 text-left transition hover:border-signal hover:bg-paper"
-                            >
-                              <div className="flex items-center justify-between gap-3">
-                                <div>
-                                  <p className="text-sm font-semibold text-ink">{project.name}</p>
-                                  <p className="text-xs text-muted">{project.description || "No description"}</p>
-                                </div>
-                              </div>
-                              <p className="mt-2 text-xs text-muted">
-                                Open workspace to review test cases and assign them to team members.
-                              </p>
-                            </button>
-                          ))
-                        ) : (
-                          <div className="rounded-2xl border border-dashed border-hairline bg-surface px-4 py-8 text-center text-sm text-muted">
-                            No projects have been imported into this team yet.
-                          </div>
-                        )}
-                      </div>
-                    </section>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <EmptyState
+                          icon={<FolderKanban size={18} />}
+                          title="No projects linked"
+                          description="Assign an organization project so this team can work on its test cases."
+                        />
+                      )}
+                    </Panel>
 
-                    <section className="rounded-3xl border border-hairline bg-white p-6 shadow-sm xl:col-span-2">
-                      <div className="mb-4 flex items-center justify-between">
-                        <div>
-                          <h2 className="text-lg font-semibold text-ink">Assignments</h2>
-                          <p className="text-sm text-muted">Current load across the team.</p>
-                        </div>
-                        <button
-                          onClick={() => navigate(`/organizations/${org.id}/teams/${activeTeam.id}/dashboard`)}
-                          className="rounded-lg border border-hairline bg-white px-3 py-2 text-sm font-semibold text-ink transition hover:border-signal hover:text-signal"
-                        >
-                          Open dashboard
-                        </button>
-                      </div>
-                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                        {teamAssignments.length > 0 ? teamAssignments.map((member) => (
-                          <div key={member.user_id} className="rounded-2xl border border-hairline bg-surface px-4 py-3">
-                            <div className="flex items-center justify-between gap-3">
-                              <div>
-                                <p className="text-sm font-semibold text-ink">{member.name}</p>
-                                <p className="text-xs text-muted">{member.role}</p>
+                    <Panel
+                      title="Assignments"
+                      description="Current load across the team"
+                      className="xl:col-span-2"
+                    >
+                      {teamAssignments.length > 0 ? (
+                        <ul className="grid gap-x-8 gap-y-4 md:grid-cols-2">
+                          {teamAssignments.map((member) => (
+                            <li key={member.user_id}>
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex min-w-0 items-center gap-2.5">
+                                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-signal-soft text-[11px] font-semibold text-signal">
+                                    {(member.name || "?").charAt(0).toUpperCase()}
+                                  </span>
+                                  <span className="min-w-0">
+                                    <span className="block truncate text-[13px] font-medium text-ink">{member.name}</span>
+                                    <span className="block text-[11px] capitalize text-muted">{String(member.role || "").replace(/_/g, " ")}</span>
+                                  </span>
+                                </div>
+                                <span className="shrink-0 text-[12px] text-muted">
+                                  <span className="font-semibold tabular-nums text-ink">{member.total}</span> items
+                                </span>
                               </div>
-                              <span className="rounded-full border border-hairline bg-white px-2.5 py-1 text-xs font-semibold text-muted">
-                                {member.total} items
-                              </span>
-                            </div>
-                            <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-muted">
-                              <div className="rounded-lg bg-white px-3 py-2 text-center">
-                                <p className="font-semibold text-ink">{member.test_cases}</p>
-                                <p>Cases</p>
+                              <div className="mt-2 flex h-1.5 overflow-hidden rounded-full bg-paper ring-1 ring-inset ring-hairline" aria-hidden="true">
+                                <span className="h-full bg-signal" style={{ width: `${(member.test_cases / maxLoad) * 100}%` }} />
+                                <span className="h-full bg-flagged/80" style={{ width: `${(member.issues / maxLoad) * 100}%` }} />
                               </div>
-                              <div className="rounded-lg bg-white px-3 py-2 text-center">
-                                <p className="font-semibold text-ink">{member.issues}</p>
-                                <p>Issues</p>
-                              </div>
-                              <div className="rounded-lg bg-white px-3 py-2 text-center">
-                                <p className="font-semibold text-ink">{member.total}</p>
-                                <p>Total</p>
-                              </div>
-                            </div>
-                          </div>
-                        )) : (
-                          <div className="rounded-2xl border border-dashed border-hairline bg-surface px-4 py-8 text-center text-sm text-muted xl:col-span-3">
-                            No assignment data yet.
-                          </div>
-                        )}
-                      </div>
-                    </section>
+                              <p className="mt-1.5 text-[11px] text-muted">
+                                {member.test_cases} test cases · {member.issues} issues
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <EmptyState
+                          icon={<ListChecks size={18} />}
+                          title="No assignments yet"
+                          description="Assign test cases or issues to team members from a project workspace."
+                        />
+                      )}
+                    </Panel>
                   </div>
                 </div>
               ) : (
-                /* Org Tabs View */
-                <div>
-                  <div className="mb-6 flex border-b border-hairline">
-                    <button
-                      onClick={() => setActiveTab("teams")}
-                      className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors
-                        ${activeTab === "teams" ? "border-signal text-signal" : "border-transparent text-muted hover:text-ink hover:border-hairline"}`}
-                    >
-                      Teams
-                    </button>
-                    <button
-                      onClick={() => setActiveTab("members")}
-                      className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors
-                        ${activeTab === "members" ? "border-signal text-signal" : "border-transparent text-muted hover:text-ink hover:border-hairline"}`}
-                    >
-                      Members
-                    </button>
-                    {canManageTeams && (
-                      <button
-                        onClick={() => setActiveTab("invite")}
-                        className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors
-                          ${activeTab === "invite" ? "border-signal text-signal" : "border-transparent text-muted hover:text-ink hover:border-hairline"}`}
-                      >
-                        Invite
-                      </button>
-                    )}
-                    {isOwner && (
-                      <button
-                        onClick={() => setActiveTab("settings")}
-                        className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors
-                          ${activeTab === "settings" ? "border-signal text-signal" : "border-transparent text-muted hover:text-ink hover:border-hairline"}`}
-                      >
-                        Settings
+                /* ── Org tabs ─────────────────────────────────────────────── */
+                <div className="section-enter section-enter-1">
+                  <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <SegmentedControl
+                      label="Organization sections"
+                      options={orgTabs}
+                      value={activeTab}
+                      onChange={setActiveTab}
+                    />
+                    {activeTab === "teams" && canManageTeams && store.teams.length > 0 && (
+                      <button onClick={() => setShowCreateTeam(true)} className="btn-secondary self-start sm:self-auto">
+                        <Plus size={14} aria-hidden="true" /> Create team
                       </button>
                     )}
                   </div>
 
-                  {activeTab === "teams" && (
-                    <section className="animate-fade-in">
-                      <div className="mb-4 flex items-center justify-between">
-                        <h2 className="text-base font-semibold text-ink flex items-center gap-2">
-                          Teams
-                          <span className="rounded-full bg-paper border border-hairline px-2 py-0.5 text-xs font-mono text-muted">
-                            {store.teams.length}
-                          </span>
-                        </h2>
-                        {canManageTeams && (
-                          <button
-                            onClick={() => setShowCreateTeam(true)}
-                            className="flex items-center gap-1.5 rounded-lg bg-surface border border-hairline px-3 py-1.5 text-sm font-semibold text-ink transition hover:bg-paper hover:-translate-y-0.5"
-                          >
-                            <Plus size={14} /> Create team
-                          </button>
-                        )}
-                      </div>
-
-                        {store.teams.length === 0 ? (
-                        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-hairline py-12 text-center bg-surface">
-                          <Users size={24} className="text-muted/60" />
-                          <div>
-                            <p className="text-sm font-semibold text-ink">No teams yet</p>
-                            <p className="text-xs text-muted max-w-xs mt-1">Organize your members into groups based on projects or roles.</p>
-                          </div>
-                          {canManageTeams && (
-                            <button
-                              onClick={() => setShowCreateTeam(true)}
-                              className="mt-2 text-sm font-medium text-signal hover:underline flex items-center gap-1"
-                            >
-                              <Plus size={14} /> Create the first team
+                  <div key={activeTab} className="animate-tab-enter">
+                    {activeTab === "teams" && (
+                      store.teams.length === 0 ? (
+                        <EmptyState
+                          icon={<Layers3 size={18} />}
+                          title="No teams yet"
+                          description="Group members by product area or role, then link the projects each team owns."
+                          action={canManageTeams && (
+                            <button onClick={() => setShowCreateTeam(true)} className="btn-primary">
+                              <Plus size={14} aria-hidden="true" /> Create the first team
                             </button>
                           )}
-                        </div>
-                        ) : (
+                        />
+                      ) : (
                         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                           {store.teams.map((team) => (
                             <TeamCard key={team.id} team={team} onClick={() => setActiveTeam(team)} />
                           ))}
                         </div>
-                      )}
-                    </section>
-                  )}
+                      )
+                    )}
 
-                  {activeTab === "members" && (
-                    <section className="signal-card p-6 max-w-3xl animate-fade-in">
-                      <div className="mb-6 flex items-center justify-between">
-                        <h2 className="text-base font-semibold text-ink flex items-center gap-2">
-                          Organization Members
-                          <span className="rounded-full bg-paper border border-hairline px-2 py-0.5 text-xs font-mono text-muted">
-                            {store.members.length}
-                          </span>
-                        </h2>
-                      </div>
-                      <OrgMemberList
-                        members={store.members}
-                        currentUserId={user?.id}
-                        myRole={myRole}
-                        onRoleChange={(uid, role) => store.changeMemberRole(org.id, uid, role)}
-                        onRemove={(uid) => store.removeMember(org.id, uid)}
-                      />
-                    </section>
-                  )}
+                    {activeTab === "members" && (
+                      <Panel
+                        title="Organization members"
+                        description="Manage roles and access for everyone in this organization"
+                        className="max-w-4xl"
+                      >
+                        <OrgMemberList
+                          members={store.members}
+                          currentUserId={user?.id}
+                          myRole={myRole}
+                          onRoleChange={(uid, role) => store.changeMemberRole(org.id, uid, role)}
+                          onRemove={(uid) => store.removeMember(org.id, uid)}
+                        />
+                      </Panel>
+                    )}
 
-                  {activeTab === "settings" && isOwner && (
-                    <div className="animate-fade-in">
-                      <OrgSettingsPanel />
-                    </div>
-                  )}
-                  
-                  {activeTab === "invite" && canManageTeams && (
-                    <section className="signal-card p-6 max-w-3xl animate-fade-in">
-                      <div className="mb-6">
-                        <h2 className="text-base font-semibold text-ink">Invite People</h2>
-                        <p className="text-sm text-muted mt-1">Add new members to your organization.</p>
+                    {activeTab === "settings" && isOwner && (
+                      <div className="max-w-4xl">
+                        <OrgSettingsPanel />
                       </div>
-                      <OrgInvitePanel orgId={org.id} />
-                    </section>
-                  )}
+                    )}
+
+                    {activeTab === "invite" && canManageTeams && (
+                      <Panel
+                        title="Invite people"
+                        description="Add new members to your organization by email or invite link"
+                        className="max-w-4xl"
+                      >
+                        <OrgInvitePanel orgId={org.id} />
+                      </Panel>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -629,36 +570,19 @@ export default function OrganizationsPage() {
                 />
               )}
 
-              {activeTeam && showDeleteTeamDialog && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                  <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDeleteTeamDialog(false)} />
-                  <div className="relative w-full max-w-md rounded-2xl border border-hairline bg-white p-6 shadow-2xl">
-                    <h3 className="text-lg font-semibold text-ink">Delete team</h3>
-                    <p className="mt-2 text-sm text-muted">
-                      Are you sure you want to delete {activeTeam.name}? This cannot be undone.
-                    </p>
-                    <div className="mt-6 flex justify-end gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setShowDeleteTeamDialog(false)}
-                        className="rounded-lg border border-hairline bg-white px-4 py-2 text-sm font-semibold text-ink transition hover:border-signal hover:text-signal"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          await store.deleteTeam(org.id, activeTeam.id);
-                          setShowDeleteTeamDialog(false);
-                          setActiveTeam(null);
-                        }}
-                        className="rounded-lg bg-flagged px-4 py-2 text-sm font-semibold text-white transition hover:bg-flagged/90"
-                      >
-                        Delete team
-                      </button>
-                    </div>
-                  </div>
-                </div>
+              {activeTeam && (
+                <ConfirmDialog
+                  open={showDeleteTeamDialog}
+                  title="Delete team?"
+                  message={`Delete ${activeTeam.name}? Members stay in the organization, but this team and its project links are removed. This can't be undone.`}
+                  confirmText="Delete team"
+                  onConfirm={async () => {
+                    await store.deleteTeam(org.id, activeTeam.id);
+                    setShowDeleteTeamDialog(false);
+                    setActiveTeam(null);
+                  }}
+                  onCancel={() => setShowDeleteTeamDialog(false)}
+                />
               )}
             </div>
           )

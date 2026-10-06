@@ -35,7 +35,7 @@ function RoleDropdown({ current, onChange, disabled }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-xl border border-hairline bg-white p-1 shadow-lg">
+        <div className="glass glass-menu menu-enter absolute right-0 top-full z-20 mt-1 w-36 rounded-xl p-1">
           {ROLES.map((r) => {
             const R = r.icon;
             return (
@@ -87,7 +87,7 @@ export default function OrgMemberList({ members, currentUserId, myRole, onRoleCh
             <li key={m.user_id} className="flex items-center justify-between gap-3 py-3">
               {/* Avatar + info */}
               <div className="flex items-center gap-3 min-w-0">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-signal to-indigo-500 text-xs font-bold text-white overflow-hidden">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-signal-soft text-signal text-xs font-bold overflow-hidden">
                   {m.user?.avatar_url
                     ? <img src={getAvatarUrl(m.user.avatar_url)} alt="" className="h-full w-full object-cover" />
                     : (m.user?.name || "?").charAt(0).toUpperCase()
@@ -118,7 +118,7 @@ export default function OrgMemberList({ members, currentUserId, myRole, onRoleCh
                     title="Remove member"
                   >
                     {removing === m.user_id
-                      ? <Loader2 size={13} className="animate-spin" />
+                      ? <Loader2 size={13} className="spin" />
                       : <Trash2 size={13} />
                     }
                   </button>

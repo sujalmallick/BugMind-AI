@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ActivityItem from "./ActivityItem";
-import { Loader2 } from "lucide-react";
+import EmptyState from "./EmptyState";
+import { History, Loader2 } from "lucide-react";
 
 export default function ActivityFeed({ fetchFn }) {
   const [activities, setActivities] = useState([]);
@@ -40,22 +41,24 @@ export default function ActivityFeed({ fetchFn }) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-muted">
         <Loader2 className="animate-spin mb-2" size={24} />
-        <span>Loading activities...</span>
+        <span className="text-sm">Loading activity…</span>
       </div>
     );
   }
 
   if (activities.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 border border-hairline border-dashed rounded-2xl bg-surface/50 text-muted">
-        <span className="text-sm">No activity recorded yet.</span>
-      </div>
+      <EmptyState
+        icon={<History size={18} />}
+        title="No activity yet"
+        description="Edits, assignments and status changes in this project will appear here."
+      />
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="space-y-3">
+      <div className="rounded-xl border border-hairline bg-surface p-2 shadow-[var(--shadow-card)]">
         {activities.map((activity) => (
           <ActivityItem key={activity.id} activity={activity} />
         ))}
@@ -65,10 +68,10 @@ export default function ActivityFeed({ fetchFn }) {
           <button
             onClick={handleLoadMore}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 border border-hairline bg-surface hover:bg-paper text-sm font-semibold rounded-lg text-ink transition disabled:opacity-50"
+            className="btn-secondary"
           >
-            {loading && <Loader2 className="animate-spin" size={14} />}
-            Load More
+            {loading && <Loader2 className="spin" size={14} aria-hidden="true" />}
+            Load more
           </button>
         </div>
       )}

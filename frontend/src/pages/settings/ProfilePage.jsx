@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Loader2, User, ShieldCheck, Users, KeyRound, TriangleAlert, ArrowLeft, Menu, X, Bell } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Loader2, User, ShieldCheck, Users, KeyRound, TriangleAlert, Bell } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { getAvatarUrl } from "../../utils/avatarUrl";
 
 import { getProfile } from "../../auth/profileService";
@@ -13,10 +13,11 @@ import ToastStack      from "../../components/shared/ToastStack";
 import useToasts       from "../../components/shared/useToasts";
 import NotificationPreferences from "../../components/notifications/NotificationPreferences";
 import PageHeading     from "../../components/shared/PageHeading";
+import HeaderBar       from "../../components/layout/HeaderBar";
+import AppFooter       from "../../components/layout/AppFooter";
+import SegmentedControl from "../../components/shared/SegmentedControl";
 
 
-import logo    from "../../assets/bugmind2.png";
-import favicon from "../../assets/favicon.png";
 
 // ── Nav config ─────────────────────────────────────────────────────────────
 const TABS = [
@@ -33,7 +34,6 @@ const TABS = [
  * Sidebar nav with animated slide-in panel per section.
  */
 export default function ProfilePage() {
-  const navigate = useNavigate();
   const location = useLocation();
   const { toasts, showToast } = useToasts();
   
@@ -50,7 +50,6 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const panelRef = useRef(null);
 
   useEffect(() => {
@@ -71,75 +70,47 @@ export default function ProfilePage() {
     setPrevTab(activeTab);
     setAnimating(true);
     setActiveTab(id);
-    setMobileMenuOpen(false); // close mobile menu on selection
     setTimeout(() => setAnimating(false), 320);
     // Scroll panel to top on tab change
     if (panelRef.current) panelRef.current.scrollTop = 0;
   }
 
   return (
-    <div className="workspace-atmosphere min-h-screen">
-      
-      {/* Clean Solid Header */}
-      <header className="sticky top-0 z-50 border-b border-hairline bg-white">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3 sm:px-8 sm:py-3.5 relative">
-          
-          {/* Left: Back Button */}
-          <div className="flex-1 flex items-center justify-start">
-            <button
-              type="button"
-              onClick={() => navigate("/")}
-              className="group flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium text-muted transition-colors hover:text-ink"
-            >
-              <ArrowLeft size={15} />
-              <span className="hidden sm:inline">Back</span>
-            </button>
-          </div>
+    <div className="workspace-atmosphere flex min-h-screen flex-col">
+      <HeaderBar />
 
-          {/* Center: Logo */}
-          <div className="flex-shrink-0 flex cursor-pointer items-center gap-2.5 transition-opacity hover:opacity-90 absolute left-1/2 -translate-x-1/2" onClick={() => navigate("/")}>
-            <img src={favicon} alt="BugMind" className="h-7 w-7 object-contain" />
-            <img src={logo} alt="BugMind AI" className="h-8 w-auto object-contain hidden sm:block" />
-          </div>
-
-          {/* Right: Hamburger / Title */}
-          <div className="flex-1 flex items-center justify-end gap-3">
-            <span className="text-sm font-medium text-ink hidden sm:block">Profile Settings</span>
-            
-            {/* Hamburger Menu Toggle (Mobile only) */}
-            <button 
-              className="lg:hidden flex items-center justify-center h-8 w-8 rounded-md text-muted hover:bg-paper hover:text-ink transition-colors"
-              onClick={() => setMobileMenuOpen(true)}
-            >
-              <Menu size={18} />
-            </button>
-          </div>
-
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 pt-8 sm:px-6 sm:pt-10">
+        <div className="section-enter">
+          <PageHeading meta="Manage your account, security, notifications and AI providers.">
+            Settings
+          </PageHeading>
         </div>
-      </header>
-
-      <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-8">
 
         {loading ? (
-          <div className="flex items-center justify-center py-32 gap-3 text-muted">
-            <Loader2 size={24} className="animate-spin text-signal" />
-            <span className="text-sm font-medium">Loading your profile…</span>
+          <div className="flex items-center justify-center gap-3 py-32 text-muted" role="status">
+            <Loader2 size={20} className="spin text-signal" aria-hidden="true" />
+            <span className="text-sm">Loading your profile…</span>
           </div>
         ) : error ? (
-          <div className="rounded-xl border border-flagged/30 bg-flagged-soft px-8 py-10 text-center max-w-md mx-auto">
-            <p className="text-sm font-semibold text-flagged">{error}</p>
+          <div className="mx-auto mt-10 max-w-md rounded-xl border border-flagged/25 bg-flagged-soft px-8 py-10 text-center">
+            <p className="text-sm font-medium text-flagged">{error}</p>
           </div>
         ) : (
-          <div className="flex flex-col lg:flex-row gap-8 lg:items-start w-full">
+          <div className="section-enter section-enter-1 mt-7 flex w-full flex-col gap-6 lg:flex-row lg:items-start lg:gap-10">
+            {/* Phones/tablets: swipeable section switcher */}
+            <div className="no-scrollbar -mx-4 overflow-x-auto px-4 lg:hidden">
+              <SegmentedControl
+                label="Settings sections"
+                value={activeTab}
+                onChange={switchTab}
+                options={TABS.map((t) => ({ value: t.id, label: t.label, icon: t.icon }))}
+              />
+            </div>
 
-            {/* ── Sidebar nav (Left on desktop) ────────────────────────────────────────── */}
-            <aside className="hidden lg:flex flex-col gap-1 w-56 shrink-0 sticky top-24">
-              {/* User badge at top */}
-              <div className="mb-4 flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white border border-hairline shadow-sm">
-                <div
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full overflow-hidden text-sm font-bold text-white"
-                  style={{ background: `hsl(${((profile?.id ?? 0) * 53) % 360},55%,48%)` }}
-                >
+            {/* Desktop sidebar */}
+            <aside className="hidden w-60 shrink-0 lg:sticky lg:top-24 lg:block">
+              <div className="flex items-center gap-3 rounded-xl border border-hairline bg-surface px-3 py-3 shadow-[var(--shadow-card)]">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-signal-soft text-[13px] font-semibold text-signal">
                   {profile?.avatar_url ? (
                     <img src={getAvatarUrl(profile.avatar_url)} alt="" className="h-full w-full object-cover" />
                   ) : (
@@ -152,52 +123,15 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Nav items */}
-              {TABS.map((tab) => {
-                const Icon = tab.icon;
-                const active = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => switchTab(tab.id)}
-                    className={`
-                      group flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-200
-                      ${active
-                        ? tab.danger
-                          ? "bg-flagged-soft border border-flagged/25 text-flagged shadow-sm"
-                          : "bg-signal-soft border border-signal/20 text-signal shadow-sm"
-                        : tab.danger
-                          ? "text-flagged hover:bg-flagged-soft border border-transparent"
-                          : "text-muted hover:bg-paper hover:text-ink border border-transparent"
-                      }
-                    `}
-                  >
-                    <div className={`
-                      flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors
-                      ${active
-                        ? tab.danger ? "bg-flagged/15" : "bg-signal/15"
-                        : "bg-hairline/60 group-hover:bg-hairline"
-                      }
-                    `}>
-                      <Icon size={14} />
-                    </div>
-                    <div>
-                      <p className="text-[13px] font-semibold leading-tight">{tab.label}</p>
-                      <p className={`text-[11px] leading-tight ${active ? "opacity-80" : "text-muted"}`}>{tab.desc}</p>
-                    </div>
-                  </button>
-                );
-              })}
+              <nav aria-label="Settings sections" className="mt-4 flex flex-col gap-0.5">
+                {TABS.filter((t) => !t.danger).map((tab) => <NavItem key={tab.id} tab={tab} activeTab={activeTab} onSelect={switchTab} />)}
+                <div className="my-2 h-px bg-hairline" />
+                {TABS.filter((t) => t.danger).map((tab) => <NavItem key={tab.id} tab={tab} activeTab={activeTab} onSelect={switchTab} />)}
+              </nav>
             </aside>
 
-            {/* ── Content panel (Right on desktop) ───────────────────────────────────────── */}
-            <div
-              ref={panelRef}
-              className="flex-1 min-w-0"
-              style={{ animation: "profilePanelEnter 0.32s cubic-bezier(0.16,1,0.3,1) both" }}
-              key={activeTab}
-            >
+            {/* Section content */}
+            <div ref={panelRef} key={activeTab} className="animate-tab-enter min-w-0 flex-1">
               <PanelContent
                 tab={activeTab}
                 profile={profile}
@@ -205,101 +139,48 @@ export default function ProfilePage() {
                 showToast={showToast}
               />
             </div>
-
-            {/* ── Mobile Drawer Slider ─────────────────────────────────────── */}
-            {mobileMenuOpen && (
-              <div className="lg:hidden fixed inset-0 z-[100] flex justify-end">
-                {/* Opaque Backdrop */}
-                <div 
-                  className="fixed inset-0 bg-ink/40 transition-opacity animate-in fade-in duration-200" 
-                  onClick={() => setMobileMenuOpen(false)}
-                />
-                
-                {/* Sliding panel (Right side) */}
-                <div 
-                  className="relative flex flex-col w-72 max-w-[85vw] h-full bg-white shadow-xl border-l border-hairline"
-                  style={{ 
-                    animation: "slideInRight 0.25s cubic-bezier(0.16,1,0.3,1) forwards" 
-                  }}
-                >
-                  <style>{`
-                    @keyframes slideInRight {
-                      from { transform: translateX(100%); }
-                      to { transform: translateX(0); }
-                    }
-                  `}</style>
-                  
-                  <div className="p-4 border-b border-hairline flex items-center justify-between">
-                    <span className="font-semibold text-ink">Menu</span>
-                    <button 
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="p-1 rounded-md text-muted hover:bg-paper hover:text-ink transition-colors"
-                    >
-                      <X size={18} />
-                    </button>
-                  </div>
-                  
-                  <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-1">
-                    {TABS.map((tab) => {
-                      const Icon = tab.icon;
-                      const active = activeTab === tab.id;
-                      return (
-                        <button
-                          key={tab.id}
-                          type="button"
-                          onClick={() => switchTab(tab.id)}
-                          className={`
-                            flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition-colors
-                            ${active
-                              ? tab.danger
-                                ? "bg-flagged-soft text-flagged"
-                                : "bg-signal-soft text-signal"
-                              : tab.danger
-                                ? "text-flagged hover:bg-flagged-soft"
-                                : "text-muted hover:bg-paper hover:text-ink"
-                            }
-                          `}
-                        >
-                          <div className={`
-                            flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors
-                            ${active
-                              ? tab.danger ? "bg-flagged/15" : "bg-signal/15"
-                              : "bg-hairline/60"
-                            }
-                          `}>
-                            <Icon size={16} className={active ? "" : "opacity-70"} />
-                          </div>
-                          {tab.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
-
           </div>
         )}
-      </div>
+      </main>
 
+      <AppFooter />
       <ToastStack toasts={toasts} />
     </div>
   );
 }
 
+// ── Sidebar item ────────────────────────────────────────────────────────────
+function NavItem({ tab, activeTab, onSelect }) {
+  const Icon = tab.icon;
+  const active = activeTab === tab.id;
+  const tone = tab.danger
+    ? active
+      ? "bg-flagged-soft text-flagged"
+      : "text-flagged/80 hover:bg-flagged-soft hover:text-flagged"
+    : active
+      ? "bg-ink/[0.05] text-ink"
+      : "text-muted hover:bg-ink/[0.03] hover:text-ink";
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(tab.id)}
+      aria-current={active ? "page" : undefined}
+      className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors duration-150 ${tone}`}
+    >
+      <Icon size={16} aria-hidden="true" className={active && !tab.danger ? "text-signal" : ""} />
+      <span className="min-w-0">
+        <span className="block text-[13px] font-medium leading-tight">{tab.label}</span>
+        <span className={`block truncate text-[11px] leading-tight ${active ? "opacity-70" : "text-muted"}`}>{tab.desc}</span>
+      </span>
+    </button>
+  );
+}
+
+
 // ── Panel renderer ──────────────────────────────────────────────────────────
 function PanelContent({ tab, profile, setProfile, showToast }) {
-  const heading = TABS.find((t) => t.id === tab);
-
   return (
-    <div className="flex flex-col gap-1">
-      {/* Section heading */}
-      <div className="mb-5">
-        <PageHeading meta={heading?.desc}>
-          {heading?.label}
-        </PageHeading>
-      </div>
-
+    <div className="flex flex-col">
 
       {tab === "account" && (
         <AccountInfo

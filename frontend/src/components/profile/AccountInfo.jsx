@@ -33,9 +33,6 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
     .charAt(0)
     .toUpperCase();
 
-  // Deterministic hue from user id so initials circle is always the same colour
-  const hue = ((profile?.id ?? 0) * 53) % 360;
-  const initialsStyle = { background: `hsl(${hue},55%,48%)` };
 
   // ── Name save ────────────────────────────────────────────────────
   async function handleSaveName(e) {
@@ -95,7 +92,7 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
   }
 
   return (
-    <section className="signal-card p-6 sm:p-8">
+    <section className="signal-card p-5 sm:p-7">
       <h2 className="text-lg font-semibold text-ink mb-1">Account</h2>
       <p className="text-sm text-muted mb-6">
         Your name is visible across the product. Email cannot be changed.
@@ -109,12 +106,11 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
               src={avatarUrl}
               alt="Your avatar"
               onError={() => setImgError(true)}
-              className="h-20 w-20 rounded-full object-cover ring-2 ring-hairline"
+              className="h-20 w-20 rounded-full object-cover ring-4 ring-surface shadow-[var(--shadow-card)]"
             />
           ) : (
             <div
-              className="h-20 w-20 rounded-full flex items-center justify-center text-2xl font-bold text-white ring-2 ring-hairline"
-              style={initialsStyle}
+              className="flex h-20 w-20 items-center justify-center rounded-full bg-signal-soft text-2xl font-semibold text-signal ring-4 ring-surface shadow-[var(--shadow-card)]"
             >
               {initials}
             </div>
@@ -138,7 +134,7 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="btn-secondary flex items-center gap-2 text-sm"
+            className="btn-secondary"
             disabled={avatarLoading}
           >
             <Camera size={14} />
@@ -165,7 +161,7 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
       {/* Name form */}
       <form onSubmit={handleSaveName} className="flex flex-col gap-4 max-w-sm">
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">
+          <label className="block text-[13px] font-medium text-ink mb-1.5">
             Display name
           </label>
           <input
@@ -174,24 +170,24 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
             onChange={(e) => setName(e.target.value)}
             maxLength={100}
             required
-            className="w-full rounded-lg border border-hairline bg-surface px-3 py-2.5 text-sm text-ink focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20"
+            className="field"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">
+          <label className="block text-[13px] font-medium text-ink mb-1.5">
             Email address
           </label>
           {/* Email is read-only — no edit affordance in this phase */}
-          <div className="w-full rounded-lg border border-hairline bg-paper px-3 py-2.5 text-sm text-muted select-none cursor-not-allowed">
+          <div className="field !bg-paper text-muted select-none cursor-not-allowed">
             {profile?.email}
           </div>
           <p className="mt-1 text-[11px] text-muted">Email cannot be changed.</p>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">
-            Job Title
+          <label className="block text-[13px] font-medium text-ink mb-1.5">
+            Job title
           </label>
           <input
             type="text"
@@ -199,12 +195,12 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
             onChange={(e) => setJobTitle(e.target.value)}
             maxLength={100}
             placeholder="e.g. Senior Software Engineer"
-            className="w-full rounded-lg border border-hairline bg-surface px-3 py-2.5 text-sm text-ink focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20"
+            className="field"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">
+          <label className="block text-[13px] font-medium text-ink mb-1.5">
             Location
           </label>
           <input
@@ -213,12 +209,12 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
             onChange={(e) => setLocation(e.target.value)}
             maxLength={100}
             placeholder="e.g. San Francisco, CA"
-            className="w-full rounded-lg border border-hairline bg-surface px-3 py-2.5 text-sm text-ink focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20"
+            className="field"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">
+          <label className="block text-[13px] font-medium text-ink mb-1.5">
             Bio
           </label>
           <textarea
@@ -227,7 +223,7 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
             maxLength={500}
             rows={3}
             placeholder="A little bit about yourself..."
-            className="w-full rounded-lg border border-hairline bg-surface px-3 py-2.5 text-sm text-ink focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20 resize-none"
+            className="field"
           />
         </div>
 
@@ -237,7 +233,7 @@ export default function AccountInfo({ profile, onSaved, showToast }) {
             className="btn-primary"
             disabled={saving || !name.trim()}
           >
-            {saving ? <Loader2 size={14} className="animate-spin" /> : null}
+            {saving ? <Loader2 size={14} className="spin" /> : null}
             Save changes
           </button>
         </div>

@@ -92,7 +92,7 @@ export default function CommentEditor({ projectId, onSubmit }) {
                   className="px-3 py-2 hover:bg-surface cursor-pointer flex items-center gap-2"
                   onClick={() => insertMention(handle)}
                 >
-                  <div className="w-6 h-6 rounded-full bg-violet-100 flex items-center justify-center text-xs font-bold text-violet-700">
+                  <div className="w-6 h-6 rounded-full bg-signal-soft flex items-center justify-center text-xs font-bold text-signal">
                     {u.name.charAt(0)}
                   </div>
                   <div className="flex flex-col">

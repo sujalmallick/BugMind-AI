@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import logo from "../../assets/bugmind2.png";
 import {
   Search,
   LogOut,
@@ -14,13 +13,12 @@ import {
   Check,
   Settings,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { formatRelativeTime } from "../../utils/time";
 import { useAuth } from "../../auth/AuthContext";
-import favicon from "../../assets/favicon.png";
+import BrandMark from "../shared/BrandMark";
 import AISettingsModal from "../common/AISettingsModal";
 import UserAvatar from "../common/UserAvatar";
-import { getAvatarUrl } from "../../utils/avatarUrl";
 import useToasts from "../shared/useToasts";
 import ToastStack from "../shared/ToastStack";
 import NotificationsDrawer from "../layout/NotificationsDrawer";
@@ -39,10 +37,9 @@ function IconBtn({ onClick, label, children, className = "" }) {
       aria-label={label}
       className={`
         relative flex h-[34px] w-[34px] items-center justify-center
-        rounded-md border border-hairline bg-surface
-        text-muted transition-colors duration-150
-        hover:border-ink/30 hover:bg-paper hover:text-ink
-        active:scale-[0.98]
+        rounded-lg text-muted transition-colors duration-150
+        hover:bg-white/70 hover:text-ink
+        active:translate-y-px
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/40
         ${className}
       `}
@@ -52,12 +49,19 @@ function IconBtn({ onClick, label, children, className = "" }) {
   );
 }
 
+const NAV_ITEMS = [
+  { label: "Projects", to: "/", match: (p) => p === "/" || p === "/projects" || p.startsWith("/project/") || p.startsWith("/workspace/") },
+  { label: "Dashboard", to: "/dashboard", match: (p) => p.startsWith("/dashboard") },
+  { label: "Organizations", to: "/organizations", match: (p) => p.startsWith("/organizations") },
+];
+
 export default function HeaderBar({
   connected = true,
   onOpenCommandPalette,
   projectName,
   projectId,
   updatedAt,
+  actions,
 }) {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
@@ -71,29 +75,15 @@ export default function HeaderBar({
   const [projects, setProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [showHeader, setShowHeader] = useState(true);
-  const lastScrollY = useRef(0);
+  const { pathname } = useLocation();
 
   const profileRef = useRef(null);
   const projectSelectorRef = useRef(null);
 
-  // ── Scroll Listener for Header Effects & Instant Reveal on Scroll UP ────────
+  // ── Scroll listener: soft shadow once content passes under the bar ───────
   useEffect(() => {
     function handleScroll() {
-      const currentY = window.scrollY;
-      setScrolled(currentY > 10);
-
-      if (currentY <= 10) {
-        setShowHeader(true);
-      } else if (currentY < lastScrollY.current) {
-        // Scrolling UP -> Reveal instantly
-        setShowHeader(true);
-      } else if (currentY > lastScrollY.current && currentY > 60) {
-        // Scrolling DOWN -> Hide
-        setShowHeader(false);
-      }
-
-      lastScrollY.current = currentY;
+      setScrolled(window.scrollY > 4);
     }
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
@@ -131,8 +121,18 @@ export default function HeaderBar({
         setProjectSelectorOpen(false);
       }
     }
+    function handleEscape(e) {
+      if (e.key === "Escape") {
+        setProfileOpen(false);
+        setProjectSelectorOpen(false);
+      }
+    }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, []);
 
   // ── Unread count ─────────────────────────────────────────────────────────────
@@ -199,33 +199,54 @@ export default function HeaderBar({
 
   return (
     <>
-      <header
-        className={`
-          sticky top-0 z-50 transition-all duration-200 ease-out
-          ${showHeader ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"}
-          ${
-            scrolled
-              ? "border-b border-hairline/80 bg-surface/90 backdrop-blur-md shadow-xs"
-              : "border-b border-hairline bg-surface"
-          }
-        `}
-      >
-
-        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6">
+      <header className="sticky top-0 z-50 px-3 pt-3 sm:px-4">
+        {/* Same floating glass bar as the landing page */}
+        <div
+          className={`glass-header mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-3 rounded-2xl pl-3 pr-2 sm:pl-4 ${
+            scrolled ? "is-scrolled" : ""
+          }`}
+        >
 
           {/* ── Left cluster ─────────────────────────────────────────────── */}
-          <div className="flex min-w-0 items-center gap-4">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
 
-            {/* Logo — favicon + wordmark image */}
+            {/* Logo */}
             <button
               type="button"
-              onClick={() => navigate("/landing")}
-              className="flex shrink-0 items-center gap-2.5 transition-opacity duration-150 hover:opacity-85 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/40 rounded-sm py-1"
-              aria-label="BugMind AI — go to landing page"
+              onClick={() => navigate("/")}
+              className="shrink-0 rounded-md py-1 transition-opacity duration-150 hover:opacity-80"
+              aria-label="BugMind AI — projects"
             >
-              <img src={favicon} alt="" aria-hidden="true" className="h-9 w-9 object-contain" />
-              <img src={logo} alt="BugMind AI" className="h-[32px] w-auto object-contain" />
+              <BrandMark
+                size="md"
+                className={projectName ? "[&>img:last-child]:hidden sm:[&>img:last-child]:block" : ""}
+              />
             </button>
+
+            {/* Primary navigation */}
+            <nav
+              aria-label="Primary"
+              className={`items-center gap-0.5 ${projectName ? "hidden xl:flex" : "hidden md:flex"}`}
+            >
+              {NAV_ITEMS.map((item) => {
+                const active = item.match(pathname);
+                return (
+                  <button
+                    key={item.to}
+                    type="button"
+                    onClick={() => navigate(item.to)}
+                    aria-current={active ? "page" : undefined}
+                    className={`rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors duration-150 ${
+                      active
+                        ? "bg-white/80 text-ink shadow-[0_1px_2px_rgba(9,10,15,0.06)] ring-1 ring-ink/[0.04]"
+                        : "text-ink/70 hover:bg-white/70 hover:text-ink"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
 
 
             {/* Vertical divider */}
@@ -243,10 +264,10 @@ export default function HeaderBar({
                   aria-expanded={projectSelectorOpen}
                   className="
                     flex min-w-0 items-center gap-1.5
-                    rounded-md px-1.5 py-1
+                    rounded-md px-2 py-1.5
                     text-[13px] font-medium text-ink
                     transition-colors duration-150
-                    hover:bg-paper
+                    hover:bg-ink/[0.04]
                     active:scale-[0.98]
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/40
                   "
@@ -270,9 +291,8 @@ export default function HeaderBar({
                     role="listbox"
                     aria-label="Switch project"
                     className="
-                      absolute left-0 top-full z-50 mt-1.5
-                      w-64 rounded-lg border border-hairline bg-surface
-                      py-1 shadow-md
+                      glass glass-menu menu-enter absolute left-0 top-full z-50 mt-2
+                      w-64 rounded-xl p-1
                     "
                   >
                     <p className="px-3 pb-1.5 pt-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
@@ -305,10 +325,10 @@ export default function HeaderBar({
                               navigate(`/project/${proj.id}/workspace`);
                             }}
                             className={`
-                              flex w-full items-center gap-2.5 px-3 py-2
+                              flex w-full items-center gap-2.5 rounded-lg px-3 py-2
                               text-[13px] font-medium text-left
                               transition-colors duration-100
-                              hover:bg-paper
+                              hover:bg-ink/[0.04]
                               ${isCurrent ? "text-signal" : "text-ink"}
                             `}
                           >
@@ -339,7 +359,7 @@ export default function HeaderBar({
                         navigate("/");
                       }}
                       className="
-                        flex w-full items-center gap-2.5 px-3 py-2
+                        flex w-full items-center gap-2.5 rounded-lg px-3 py-2
                         text-[13px] font-medium text-muted text-left
                         hover:bg-paper hover:text-ink
                         transition-colors duration-100
@@ -371,7 +391,7 @@ export default function HeaderBar({
           </div>
 
           {/* ── Right cluster ────────────────────────────────────────────── */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
 
             {/* Add AI key — only when no key, warning-tinted, not gradient */}
             {!hasApiKey && (
@@ -417,13 +437,18 @@ export default function HeaderBar({
 
             {/* Key configured — subtle settings entry point in profile dropdown only; no visible pill here */}
 
-            {/* Search — icon-only, Ctrl+K wired in useEffect above */}
-            <IconBtn
-              onClick={onOpenCommandPalette}
-              label="Search (Ctrl+K)"
-            >
-              <Search size={14} aria-hidden="true" />
-            </IconBtn>
+            {/* Page-specific primary action (e.g. New project) */}
+            {actions}
+
+            {/* Search — only where a command palette exists (Ctrl+K) */}
+            {onOpenCommandPalette && (
+              <IconBtn
+                onClick={onOpenCommandPalette}
+                label="Search (Ctrl+K)"
+              >
+                <Search size={14} aria-hidden="true" />
+              </IconBtn>
+            )}
 
             {/* Notifications */}
             <IconBtn
@@ -457,7 +482,7 @@ export default function HeaderBar({
                   aria-haspopup="true"
                   aria-expanded={profileOpen}
                   className="
-                    flex h-7 w-7 items-center justify-center
+                    ml-1 flex h-8 w-8 items-center justify-center
                     rounded-full overflow-hidden
                     bg-signal-soft text-signal text-[12px] font-semibold
                     ring-1 ring-hairline
@@ -478,9 +503,8 @@ export default function HeaderBar({
                 {/* Profile dropdown */}
                 {profileOpen && (
                   <div className="
-                    absolute right-0 top-full z-50 mt-2
-                    w-60 rounded-lg border border-hairline bg-surface
-                    py-1 shadow-md
+                    glass glass-menu menu-enter absolute right-0 top-full z-50 mt-2
+                    w-60 rounded-xl p-1
                   ">
                     {/* User info header */}
                     <div className="px-3 py-2.5">
@@ -496,6 +520,11 @@ export default function HeaderBar({
 
                     <div className="flex flex-col">
                       {[
+                        {
+                          icon: Folder,
+                          label: "Projects",
+                          action: () => { setProfileOpen(false); navigate("/"); },
+                        },
                         {
                           icon: User,
                           label: "Profile Settings",
@@ -517,9 +546,9 @@ export default function HeaderBar({
                           type="button"
                           onClick={action}
                           className="
-                            flex w-full items-center gap-2.5 px-3 py-2
+                            flex w-full items-center gap-2.5 rounded-lg px-3 py-2
                             text-[13px] font-medium text-ink text-left
-                            hover:bg-paper
+                            hover:bg-ink/[0.04]
                             transition-colors duration-100
                           "
                         >
@@ -533,9 +562,9 @@ export default function HeaderBar({
                         type="button"
                         onClick={() => { setProfileOpen(false); setNotificationsOpen(true); }}
                         className="
-                          flex w-full items-center justify-between px-3 py-2
+                          flex w-full items-center justify-between rounded-lg px-3 py-2
                           text-[13px] font-medium text-ink text-left
-                          hover:bg-paper
+                          hover:bg-ink/[0.04]
                           transition-colors duration-100
                         "
                       >
@@ -555,9 +584,9 @@ export default function HeaderBar({
                         type="button"
                         onClick={() => { setProfileOpen(false); setAiModalOpen(true); }}
                         className="
-                          flex w-full items-center gap-2.5 px-3 py-2
+                          flex w-full items-center gap-2.5 rounded-lg px-3 py-2
                           text-[13px] font-medium text-ink text-left
-                          hover:bg-paper
+                          hover:bg-ink/[0.04]
                           transition-colors duration-100
                         "
                       >
@@ -577,7 +606,7 @@ export default function HeaderBar({
                       type="button"
                       onClick={handleLogout}
                       className="
-                        flex w-full items-center gap-2.5 px-3 py-2
+                        flex w-full items-center gap-2.5 rounded-lg px-3 py-2
                         text-[13px] font-medium text-flagged text-left
                         hover:bg-flagged-soft
                         transition-colors duration-100

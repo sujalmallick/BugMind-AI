@@ -383,8 +383,8 @@ export default function TrackerTab({
                     onClick={() => setCategoryFilter(categoryFilter === cat ? null : cat)}
                     className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                       categoryFilter === cat
-                        ? "border-purple-600 bg-purple-600 text-white"
-                        : "border-hairline bg-white text-muted hover:border-purple-400 hover:text-ink"
+                        ? "border-signal bg-signal text-white"
+                        : "border-hairline bg-white text-muted hover:border-signal/40 hover:text-ink"
                     }`}
                   >
                     {cat}

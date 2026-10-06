@@ -7,10 +7,8 @@ export default function ProtectedRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-paper">
-        <div className="text-lg font-semibold text-muted font-mono">
-          Authenticating...
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-surface" role="status" aria-label="Checking your session">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-hairline border-t-signal" />
       </div>
     );
   }
@@ -26,4 +24,4 @@ export default function ProtectedRoute({ children }) {
   }
 
   return children;
-}
+}

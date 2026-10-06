@@ -140,7 +140,7 @@ export default function TestCasesTab({
   // ── Imported project → spreadsheet grid ──
   if (isImported) {
     return (
-      <div className="base-card p-3 sm:p-5">
+      <div>
         <EditableDataGrid
           rowData={filtered}
           baseColumns={BASE_COLS}
@@ -193,7 +193,7 @@ export default function TestCasesTab({
                 </span>
               )}
               {filterCategory && (
-                <span className="flex items-center gap-1 bg-purple-500/10 text-purple-600 text-[11px] px-2 py-0.5 rounded-full">
+                <span className="flex items-center gap-1 bg-signal-soft text-signal text-[11px] px-2 py-0.5 rounded-full">
                   {filterCategory}
                   <button onClick={() => setFilterCategory(null)}><X size={9} /></button>
                 </span>

@@ -586,7 +586,7 @@ function handleCopyIssueResult() {
 />
 
 
-<div className="mx-auto max-w-7xl px-3 sm:px-8">
+<div className="mx-auto max-w-7xl px-4 sm:px-6">
       <WorkflowInputPanel
         workflow={workflow}
         observedSteps={observedSteps}
@@ -604,7 +604,7 @@ function handleCopyIssueResult() {
       />
 </div>
 {analysisStatus === "error" && (
-  <main className="flex-1 px-3 sm:px-5">
+  <main className="mx-auto w-full max-w-7xl flex-1 px-4 sm:px-6">
     <APIErrorCard
       message={apiError}
       onRetry={handleAnalyze}
@@ -612,7 +612,7 @@ function handleCopyIssueResult() {
   </main>
 )}
       {analysisStatus === "loading" && (
-  <main className="flex-1 px-3 sm:px-5">
+  <main className="mx-auto w-full max-w-7xl flex-1 px-4 sm:px-6">
     <AIThinking title="Analyzing Workflow" />
   </main>
 )}
@@ -631,17 +631,18 @@ function handleCopyIssueResult() {
     ) : (
       <>
         {/* ---------------- WORKSPACE ---------------- */}
-        <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-3 sm:px-5">
+        <div className="mx-auto mt-5 flex max-w-7xl flex-col gap-3 px-4 sm:mt-6 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center justify-between gap-3">
             <button
               type="button"
               onClick={() => navigate("/")}
-              className="btn-secondary inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 text-xs sm:text-[13px]"
+              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[13px] font-medium text-muted transition-colors hover:bg-ink/[0.04] hover:text-ink"
             >
-              <span>← Back to Projects</span>
+              <span aria-hidden="true">←</span>
+              <span>All projects</span>
             </button>
             {project?.name && (
-              <span className="sm:hidden font-mono text-xs font-semibold text-muted truncate max-w-[160px]">
+              <span className="max-w-[180px] truncate text-[13px] font-medium text-ink sm:hidden">
                 {project.name}
               </span>
             )}
@@ -656,7 +657,7 @@ function handleCopyIssueResult() {
 
 
 
-        <main key={activeTab} className="animate-tab-enter mt-4 sm:mt-6 pb-12 px-2 sm:px-4">
+        <main key={activeTab} className="animate-tab-enter mx-auto mt-4 max-w-7xl px-4 pb-16 sm:mt-5 sm:px-6">
 
           {activeTab === "modules" && (
             <ModulesTab

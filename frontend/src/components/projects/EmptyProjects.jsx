@@ -4,15 +4,12 @@ export default function EmptyProjects({
   onCreateProject,
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-hairline bg-white px-8 py-20 text-center">
-      <div className="mb-5 rounded-full bg-paper p-4">
-        <FolderOpen
-          size={34}
-          className="text-signal"
-        />
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-hairline-strong bg-surface px-6 py-16 text-center sm:py-20">
+      <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-signal-soft">
+        <FolderOpen size={20} className="text-signal" aria-hidden="true" />
       </div>
 
-      <h2 className="text-xl font-semibold text-ink">
+      <h2 className="text-lg font-semibold tracking-[-0.01em] text-ink">
         No projects yet
       </h2>
 
@@ -24,10 +21,10 @@ export default function EmptyProjects({
       <button
         type="button"
         onClick={onCreateProject}
-        className="btn-primary mt-8"
+        className="btn-primary mt-6"
       >
         <Plus size={16} />
-        Create Project
+        Create project
       </button>
     </div>
   );

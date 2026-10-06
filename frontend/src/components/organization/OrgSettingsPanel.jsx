@@ -50,9 +50,9 @@ export default function OrgSettingsPanel() {
   return (
     <div className="flex flex-col gap-8 max-w-2xl">
       {/* General Settings */}
-      <section className="rounded-xl border border-hairline bg-surface p-6 shadow-sm">
+      <section className="rounded-xl border border-hairline bg-surface p-5 shadow-[var(--shadow-card)] sm:p-6">
         <div className="mb-4">
-          <h2 className="text-sm font-semibold text-ink">General Settings</h2>
+          <h2 className="text-[15px] font-semibold text-ink">General Settings</h2>
           <p className="text-xs text-muted">Update your organization's name and description.</p>
         </div>
 
@@ -69,7 +69,7 @@ export default function OrgSettingsPanel() {
           )}
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-ink" htmlFor="org-name">
+            <label className="text-[13px] font-medium text-ink" htmlFor="org-name">
               Organization name
             </label>
             <input
@@ -78,13 +78,12 @@ export default function OrgSettingsPanel() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="rounded-lg border border-hairline bg-paper px-3 py-2 text-sm text-ink
-                         focus:border-signal focus:bg-white focus:outline-none transition"
+              className="field"
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-ink" htmlFor="org-desc">
+            <label className="text-[13px] font-medium text-ink" htmlFor="org-desc">
               Description
             </label>
             <textarea
@@ -92,8 +91,7 @@ export default function OrgSettingsPanel() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="resize-none rounded-lg border border-hairline bg-paper px-3 py-2 text-sm text-ink
-                         focus:border-signal focus:bg-white focus:outline-none transition"
+              className="resize-none field"
             />
           </div>
 
@@ -101,10 +99,9 @@ export default function OrgSettingsPanel() {
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 rounded-lg bg-signal px-4 py-2 text-sm font-semibold text-white
-                         transition hover:bg-signal/90 disabled:opacity-60"
+              className="btn-primary"
             >
-              {saving && <Loader2 size={14} className="animate-spin" />}
+              {saving && <Loader2 size={14} className="spin" />}
               Save changes
             </button>
           </div>
@@ -112,7 +109,7 @@ export default function OrgSettingsPanel() {
       </section>
 
       {/* Danger Zone */}
-      <section className="rounded-xl border border-flagged/30 bg-flagged-soft/20 p-6 shadow-sm">
+      <section className="rounded-xl border border-flagged/25 bg-surface p-5 sm:p-6">
         <div className="mb-4">
           <h2 className="text-sm font-semibold text-flagged flex items-center gap-2">
             <AlertTriangle size={16} /> Danger Zone
@@ -125,10 +122,9 @@ export default function OrgSettingsPanel() {
         <button
           onClick={handleDelete}
           disabled={deleting}
-          className="flex items-center gap-2 rounded-lg border border-flagged bg-flagged px-4 py-2 text-sm font-semibold text-white
-                     transition hover:bg-flagged/90 disabled:opacity-60"
+          className="btn-primary !border-flagged !bg-flagged hover:!border-red-700 hover:!bg-red-700"
         >
-          {deleting && <Loader2 size={14} className="animate-spin" />}
+          {deleting && <Loader2 size={14} className="spin" />}
           <Trash2 size={14} />
           Delete organization
         </button>

@@ -19,13 +19,13 @@ import {
 
 const VERB_META = {
   created_test_case: { icon: ListPlus, color: "text-blue-500 bg-blue-500/10 border-blue-500/20", label: "created test case" },
-  updated_test_case: { icon: Pencil, color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20", label: "updated test case" },
+  updated_test_case: { icon: Pencil, color: "text-signal bg-signal/10 border-signal/20", label: "updated test case" },
   deleted_test_case: { icon: Trash2, color: "text-red-500 bg-red-500/10 border-red-500/20", label: "deleted test case" },
-  assigned_test_case: { icon: UserPlus, color: "text-violet-500 bg-violet-500/10 border-violet-500/20", label: "assigned test case" },
+  assigned_test_case: { icon: UserPlus, color: "text-ochre bg-ochre/10 border-ochre/20", label: "assigned test case" },
   unassigned_test_case: { icon: UserMinus, color: "text-slate-500 bg-slate-500/10 border-slate-500/20", label: "unassigned test case" },
   changed_test_case_status: { icon: RefreshCw, color: "text-teal-500 bg-teal-500/10 border-teal-500/20", label: "updated status" },
   created_issue: { icon: Bug, color: "text-red-500 bg-red-500/10 border-red-500/20", label: "logged issue" },
-  assigned_issue: { icon: UserPlus, color: "text-violet-500 bg-violet-500/10 border-violet-500/20", label: "assigned issue" },
+  assigned_issue: { icon: UserPlus, color: "text-ochre bg-ochre/10 border-ochre/20", label: "assigned issue" },
   unassigned_issue: { icon: UserMinus, color: "text-slate-500 bg-slate-500/10 border-slate-500/20", label: "unassigned issue" },
   changed_issue_status: { icon: RefreshCw, color: "text-teal-500 bg-teal-500/10 border-teal-500/20", label: "updated issue status" },
   member_joined: { icon: UserCheck, color: "text-green-500 bg-green-500/10 border-green-500/20", label: "joined" },
@@ -34,7 +34,7 @@ const VERB_META = {
   accepted_invitation: { icon: MailCheck, color: "text-green-500 bg-green-500/10 border-green-500/20", label: "accepted invitation" },
   sent_invitation: { icon: Mail, color: "text-blue-500 bg-blue-500/10 border-blue-500/20", label: "sent invitation" },
   created_project: { icon: FolderPlus, color: "text-blue-500 bg-blue-500/10 border-blue-500/20", label: "created project" },
-  updated_project: { icon: FolderEdit, color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20", label: "updated project" },
+  updated_project: { icon: FolderEdit, color: "text-signal bg-signal/10 border-signal/20", label: "updated project" },
 };
 
 function formatTimeAgo(dateString) {
@@ -71,18 +71,20 @@ export default function ActivityItem({ activity }) {
   }
 
   return (
-    <div className="flex gap-4 p-4 border border-hairline bg-surface rounded-xl hover:bg-paper/50 transition">
-      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${meta.color}`}>
-        <IconComponent size={18} />
+    <div className="flex gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-ink/[0.03]">
+      <div className="relative h-8 w-8 shrink-0 rounded-lg bg-surface">
+        <div className={`flex h-8 w-8 items-center justify-center rounded-lg border ${meta.color}`}>
+          <IconComponent size={15} aria-hidden="true" />
+        </div>
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm text-muted">
+      <div className="min-w-0 flex-1">
+        <div className="text-[13px] leading-snug text-muted">
           <strong className="text-ink font-semibold">{actorName}</strong>{" "}
           <span className="text-muted/80">{meta.label}</span>{" "}
           <strong className="text-ink font-semibold">{entityLabel}</strong>
         </div>
         {actionDetail}
-        <div className="text-xs text-muted/60 mt-1">
+        <div className="mt-0.5 text-[12px] text-muted/80">
           {formatTimeAgo(activity.created_at)}
         </div>
       </div>

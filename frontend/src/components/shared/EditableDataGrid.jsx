@@ -341,7 +341,7 @@ export default function EditableDataGrid({
   return (
     <div className="flex flex-col gap-3 w-full">
       {/* ── Toolbar ── */}
-      <div className="flex flex-wrap items-center justify-between gap-2 bg-surface px-4 py-2.5 rounded-xl border border-hairline">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-hairline bg-surface px-3 py-2.5 sm:px-4">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-ink">{title}</span>
           {rowData.length > 0 && (
@@ -383,7 +383,7 @@ export default function EditableDataGrid({
             </button>
 
             {showManageMenu && (
-              <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-hairline rounded-xl shadow-xl z-50 py-2 flex flex-col gap-1 text-xs">
+              <div className="glass glass-menu menu-enter absolute right-0 top-full z-50 mt-1 flex w-56 flex-col gap-0.5 rounded-xl p-1 text-xs">
                 <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted border-b border-hairline pb-1">
                   Spreadsheet Columns ({activeColumnsList.length})
                 </div>
@@ -494,7 +494,7 @@ export default function EditableDataGrid({
 
       {/* ── Grid ── */}
       <div
-        className="ag-theme-alpine w-full rounded-xl border border-hairline shadow-sm"
+        className="ag-theme-alpine w-full overflow-hidden rounded-xl border border-hairline"
         style={{ minHeight: rowData.length === 0 ? 220 : 200 }}
       >
         <AgGridReact
