@@ -42,6 +42,21 @@ def test_third_party_loggers_are_redacted_too(caplog):
     assert "abcdef0123456789ABCDEFxyz" not in caplog.text
 
 
+def test_uvicorn_access_log_keeps_args_and_formats(caplog):
+    from uvicorn.logging import AccessFormatter
+
+    caplog.set_level(logging.INFO, logger="uvicorn.access")
+    logging.getLogger("uvicorn.access").info(
+        '%s - "%s %s HTTP/%s" %d',
+        "49.36.12.7:51234", "GET", "/health?api_key=AbC123xyz789QQ", "1.1", 200,
+    )
+    record = caplog.records[-1]
+    assert isinstance(record.args, tuple) and len(record.args) == 5
+    line = AccessFormatter('%(client_addr)s - "%(request_line)s" %(status_code)s', use_colors=False).format(record)
+    assert "49.36.12.7" not in line and "AbC123xyz789QQ" not in line
+    assert "[IP_REDACTED]" in line and '"GET /health' in line and line.endswith("200 OK")
+
+
 def test_redaction_failure_withholds_the_message(caplog, monkeypatch):
     from guardrails.data_masker import masker
 
@@ -50,6 +65,19 @@ def test_redaction_failure_withholds_the_message(caplog, monkeypatch):
     logging.getLogger("BugMind").info("secret sk-abcdefghijklmnop1234")
     assert "sk-abcdefghijklmnop1234" not in caplog.text
     assert WITHHELD in caplog.text
+
+
+def test_access_log_redaction_failure_still_formats(caplog, monkeypatch):
+    from uvicorn.logging import AccessFormatter
+    from guardrails.data_masker import masker
+
+    monkeypatch.setattr(masker, "redact", lambda *a, **k: (_ for _ in ()).throw(RuntimeError()))
+    caplog.set_level(logging.INFO, logger="uvicorn.access")
+    logging.getLogger("uvicorn.access").info(
+        '%s - "%s %s HTTP/%s" %d', "49.36.12.7:51234", "GET", "/x", "1.1", 404,
+    )
+    line = AccessFormatter('%(client_addr)s - "%(request_line)s" %(status_code)s', use_colors=False).format(caplog.records[-1])
+    assert "49.36.12.7" not in line and WITHHELD in line and line.endswith("404 Not Found")
 
 
 def test_audit_event_contains_only_safe_metadata(caplog):
