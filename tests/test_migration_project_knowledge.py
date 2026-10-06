@@ -116,3 +116,38 @@ def test_test_plans_migration(tmp_path):
     inspector = sa.inspect(engine)
     assert not {"test_plans", "test_plan_phases"} & set(inspector.get_table_names())
     assert not {"origin", "plan_phase_id"} & {c["name"] for c in inspector.get_columns("test_cases")}
+
+
+def test_automation_migration(tmp_path):
+    """Environments and scripts match the models; downgrade removes them."""
+    from database.models.automation import AutomationEnvironment, AutomationScript
+    from database.models.project import Project
+    from database.models.test_case import TestCase
+    from database.models.user import User
+    from database.models.workspace import Workspace
+
+    spec = importlib.util.spec_from_file_location("m_f2b5c7d9e013", MIGRATION.parent / "f2b5c7d9e013_add_automation.py")
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    migration.context = SimpleNamespace(is_offline_mode=lambda: False)
+
+    engine = sa.create_engine(f"sqlite:///{(tmp_path / 'a.db').as_posix()}")
+    for model in (User, Project, Workspace):
+        model.__table__.create(engine)
+    sa.Table("test_cases", sa.MetaData(), sa.Column("id", sa.Integer, primary_key=True)).create(engine)
+
+    with engine.begin() as conn:
+        with Operations.context(MigrationContext.configure(conn)):
+            migration.upgrade()
+            migration.upgrade()  # idempotent
+
+    inspector = sa.inspect(engine)
+    for model in (AutomationEnvironment, AutomationScript):
+        created = {c["name"] for c in inspector.get_columns(model.__tablename__)}
+        assert created == {c.name for c in model.__table__.columns}, model.__tablename__
+        assert {i.name for i in model.__table__.indexes} <= {i["name"] for i in inspector.get_indexes(model.__tablename__)}
+
+    with engine.begin() as conn:
+        with Operations.context(MigrationContext.configure(conn)):
+            migration.downgrade()
+    assert not {"automation_environments", "automation_scripts"} & set(sa.inspect(engine).get_table_names())

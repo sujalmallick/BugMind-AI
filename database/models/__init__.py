@@ -20,6 +20,7 @@ from database.models.ai_assignment_suggestion import AIAssignmentSuggestion
 from database.models.job import Job
 from database.models.project_document import ProjectDocument, DocumentChunk
 from database.models.test_plan import TestPlan, TestPlanPhase
+from database.models.automation import AutomationEnvironment, AutomationScript
 
 __all__ = [
     "Job",
@@ -27,6 +28,8 @@ __all__ = [
     "DocumentChunk",
     "TestPlan",
     "TestPlanPhase",
+    "AutomationEnvironment",
+    "AutomationScript",
     "User",
     "Project",
     "Workspace",
