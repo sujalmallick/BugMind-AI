@@ -342,3 +342,33 @@ def test_tiny_retrieval_budget_returns_early(monkeypatch):
     calls = []
     monkeypatch.setattr(knowledge_retrieval, "require_project_role", lambda *a, **k: calls.append(1))
     assert knowledge_retrieval.retrieve(None, 1, 1, "card payment otp", token_budget=50) == []
+
+
+def test_focused_batches_are_not_penalized_for_sharing_their_topic():
+    # A test plan phase about lockout: every case shares "login", "account", "lock".
+    workflow = ("Login and account lockout: user logs in with email and password; after 5 failed login "
+                "attempts the account locks for 15 minutes.")
+    cases = [
+        {"description": "Account locks after 5 consecutive failed login attempts", "objective": "",
+         "preconditions": "Registered account", "expectedResult": "Account locks for 15 minutes",
+         "steps": ["Enter a wrong password 5 times"], "sources": ["workflow"]},
+        {"description": "Login during the lockout period is refused", "objective": "",
+         "preconditions": "Account locked", "expectedResult": "Login is refused while the account is locked",
+         "steps": ["Log in with the correct password"], "sources": ["workflow"]},
+        {"description": "Successful login with email and password", "objective": "",
+         "preconditions": "Registered account", "expectedResult": "User is logged in",
+         "steps": ["Enter email and password"], "sources": ["workflow"]},
+        {"description": "Account lock message hides whether the email exists", "objective": "",
+         "preconditions": "Account locked", "expectedResult": "Generic message without disclosure",
+         "steps": ["Log in with an unknown email"], "sources": ["assumed"]},
+    ]
+    graded, _ = ground_test_cases(cases, workflow)
+    assert [tc["grounding"]["status"] for tc in graded] == ["grounded", "grounded", "grounded", "assumed"]
+
+
+def test_topic_words_alone_still_do_not_ground_a_case():
+    graded, _ = ground_test_cases(
+        [case("Checkout shows a promotional banner carousel with seasonal offers", sources=["workflow"],
+              expected="Banner rotates every few seconds", steps=("Open checkout", "Watch banner"))],
+        WORKFLOW)
+    assert graded[0]["grounding"]["status"] == "assumed"

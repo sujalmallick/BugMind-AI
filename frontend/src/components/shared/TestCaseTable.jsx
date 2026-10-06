@@ -4,6 +4,8 @@ import AssigneeSelector from '../common/AssigneeSelector'
 import { MessageSquare } from 'lucide-react'
 import { useState } from 'react'
 import ItemDetailsPanel from '../comments/ItemDetailsPanel'
+import GroundingBadge from './GroundingBadge'
+import { groundingSummary } from '../../utils/grounding'
 
 export default function TestCaseTable({
   testCases,
@@ -45,12 +47,18 @@ export default function TestCaseTable({
   className="group border-b border-hairline last:border-0 hover:bg-[#f4f7ff] transition-colors duration-200"
 >
 
-              <td className="px-3 py-3 font-mono text-[12px] text-muted">
-                {testCase.id}
+              <td className="whitespace-nowrap px-3 py-3 font-mono text-[12px] text-muted">
+                {/* Display code (TC-001, P2-TC-001); fresh analysis rows carry it in `id`. */}
+                {testCase.test_case_id || testCase.id}
               </td>
 
               <td className="max-w-sm px-3 py-3 text-ink">
                 {testCase.description || "-"}
+                {testCase.grounding && (
+                  <div className="mt-1" title={groundingSummary(testCase.grounding)}>
+                    <GroundingBadge data={testCase} />
+                  </div>
+                )}
               </td>
 
               <td className="px-3 py-3 text-muted">

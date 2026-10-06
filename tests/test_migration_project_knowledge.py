@@ -62,7 +62,8 @@ def test_grounding_column_migration(tmp_path):
 
     engine = sa.create_engine(f"sqlite:///{(tmp_path / 'g.db').as_posix()}")
     table = TestCase.__table__
-    sa.Table(table.name, sa.MetaData(), *[c.copy() for c in table.columns if c.name != "grounding"]).create(engine)
+    sa.Table(table.name, sa.MetaData(), *[c.copy() for c in table.columns
+                                                     if c.name not in ("grounding", "origin", "plan_phase_id")]).create(engine)
 
     with engine.begin() as conn:
         with Operations.context(MigrationContext.configure(conn)):
@@ -74,3 +75,44 @@ def test_grounding_column_migration(tmp_path):
         with Operations.context(MigrationContext.configure(conn)):
             migration.downgrade()
     assert "grounding" not in {c["name"] for c in sa.inspect(engine).get_columns("test_cases")}
+
+
+def test_test_plans_migration(tmp_path):
+    """Plans and phases match the models; test_cases gains origin + plan_phase_id; downgrade is clean."""
+    from database.models.test_case import TestCase
+    from database.models.test_plan import TestPlan, TestPlanPhase
+    from database.models.project import Project
+    from database.models.user import User
+    from database.models.workspace import Workspace
+
+    spec = importlib.util.spec_from_file_location("m_e1a4b6c8d902", MIGRATION.parent / "e1a4b6c8d902_add_test_plans.py")
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    migration.context = SimpleNamespace(is_offline_mode=lambda: False)
+
+    engine = sa.create_engine(f"sqlite:///{(tmp_path / 'p.db').as_posix()}")
+    for model in (User, Project, Workspace):
+        model.__table__.create(engine)
+    table = TestCase.__table__
+    sa.Table(table.name, sa.MetaData(), *[c.copy() for c in table.columns
+                                          if c.name not in ("origin", "plan_phase_id")]).create(engine)
+
+    with engine.begin() as conn:
+        with Operations.context(MigrationContext.configure(conn)):
+            migration.upgrade()
+            migration.upgrade()  # idempotent
+
+    inspector = sa.inspect(engine)
+    for model in (TestPlan, TestPlanPhase):
+        created = {c["name"] for c in inspector.get_columns(model.__tablename__)}
+        assert created == {c.name for c in model.__table__.columns}, model.__tablename__
+    case_columns = {c["name"] for c in inspector.get_columns("test_cases")}
+    assert {"origin", "plan_phase_id"} <= case_columns
+    assert "ix_test_cases_plan_phase_id" in {i["name"] for i in inspector.get_indexes("test_cases")}
+
+    with engine.begin() as conn:
+        with Operations.context(MigrationContext.configure(conn)):
+            migration.downgrade()
+    inspector = sa.inspect(engine)
+    assert not {"test_plans", "test_plan_phases"} & set(inspector.get_table_names())
+    assert not {"origin", "plan_phase_id"} & {c["name"] for c in inspector.get_columns("test_cases")}

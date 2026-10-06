@@ -23,8 +23,8 @@ from agents.grounding import ground_draft_steps
 from agents.workflow_draft_agent import AGENT, draft_workflow_agent
 from auth.permissions import require_project_role
 from config import DEFAULT_MODEL
-from guardrails import Decision, Source, injection_detector, input_guardrail, output_guardrail
-from guardrails.policy_engine import policy
+from guardrails import Source, input_guardrail
+from services.ai_output import safe_generated_text
 from services.ai_settings_service import ai_settings_service
 from services.knowledge_retrieval import MIN_EXCERPT_TOKENS, overview_excerpts, retrieve, summarize_sources
 from services.prompt_budget import UNKNOWN_CONTEXT_TOKENS, model_context_tokens
@@ -52,19 +52,7 @@ def _error(code: str, message: str) -> dict:
 
 
 def _safe(text: str) -> str | None:
-    """
-    Generated text passes the output guardrail (secrets, prompt leaks, dangerous
-    commands) and must not carry an injection: a draft becomes the user's own
-    workflow input, so instructions smuggled in from a document stop here.
-    None = drop it.
-    """
-    checked = output_guardrail.validate(text, agent=AGENT)
-    if checked.blocked:
-        return None
-    report = injection_detector.assess(checked.sanitized_text, source=Source.LLM)
-    if policy.injection_decision(Source.LLM, report.score) != Decision.ALLOW:
-        return None
-    return checked.sanitized_text.strip() or None
+    return safe_generated_text(text, AGENT)
 
 
 def draft_workflow(db: Session, user_id: int, project_id: int, focus: str | None = None) -> dict:

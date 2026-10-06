@@ -28,6 +28,9 @@ from agents.coverage import keywords
 MIN_SUPPORT_TERMS = 2
 MIN_SUPPORT_RATIO = 0.3
 COMMON_TERM_SHARE = 0.5   # in at least this share of cases → domain vocabulary, not evidence
+# A focused batch (one test plan phase) shares its topic words in every case. When the check on
+# the remaining words fails, all of the case's words may still show support, with a higher bar.
+FALLBACK_MIN_TERMS = 3
 MIN_BATCH_FOR_COMMON = 4
 MAX_NOTES = 3
 
@@ -126,9 +129,14 @@ def _case_terms(tc: dict) -> set[str]:
     return keywords(" ".join(str(p) for p in parts if p)) - _GENERIC
 
 
-def _supported(distinctive: set[str], source_terms: set[str]) -> bool:
+def _supported(distinctive: set[str], source_terms: set[str], all_terms: set[str] | None = None) -> bool:
     matched = distinctive & source_terms
-    return len(matched) >= MIN_SUPPORT_TERMS and len(matched) >= MIN_SUPPORT_RATIO * len(distinctive)
+    if len(matched) >= MIN_SUPPORT_TERMS and len(matched) >= MIN_SUPPORT_RATIO * len(distinctive):
+        return True
+    if all_terms is None or all_terms == distinctive:
+        return False
+    matched = all_terms & source_terms
+    return len(matched) >= FALLBACK_MIN_TERMS and len(matched) >= MIN_SUPPORT_RATIO * len(all_terms)
 
 
 def ground_test_cases(
@@ -161,7 +169,7 @@ def ground_test_cases(
 
         for claim in (claims if claims else ["workflow"]):  # unlabeled: check against the workflow
             if claim == "workflow":
-                if _supported(distinctive, workflow_terms):
+                if _supported(distinctive, workflow_terms, terms):
                     refs.append({"type": "workflow"})
                 elif claims:
                     notes.append("Says it comes from the workflow, but the workflow doesn't describe this")
@@ -173,7 +181,7 @@ def ground_test_cases(
                     notes.append(f"Cited documentation excerpt [{index}], which doesn't exist")
                     continue
                 excerpt = excerpts[index - 1]
-                if _supported(distinctive, excerpt_terms[index - 1]):
+                if _supported(distinctive, excerpt_terms[index - 1], terms):
                     refs.append({"type": "document", "documentId": excerpt.get("documentId"),
                                  "filename": excerpt.get("filename"), "heading": excerpt.get("heading")})
                 else:

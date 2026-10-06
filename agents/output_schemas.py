@@ -316,3 +316,66 @@ class WorkflowDraft(BaseModel):
             "steps": parse_items(DraftStep, data.get("steps"))[:MAX_DRAFT_STEPS],
             "gaps": [g[:MAX_DRAFT_TEXT] for g in _str_list(data.get("gaps") or data.get("questions"))][:MAX_DRAFT_GAPS],
         }
+
+
+# ── Test plan agent ──────────────────────────────────────────────────────────
+
+MIN_PLAN_PHASES = 1
+MAX_PLAN_PHASES = 8
+MAX_PLAN_LIST = 8
+MAX_PLAN_FIELD = 1500
+
+
+class PlanPhase(BaseModel):
+    title: str
+    objective: str
+    scope: str
+    modules: list[str]
+    risks: list[str]
+    entryCriteria: str
+    exitCriteria: str
+    priority: Level
+    # Claimed sources ("workflow", "doc:N", "assumed"): verified by agents/grounding.py.
+    sources: list[str] | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce(cls, data: Any) -> dict:
+        if not isinstance(data, dict):
+            raise ValueError("phase must be an object")
+        title = _text(data.get("title") or data.get("name") or data.get("phase"))[:200]
+        scope = _text(data.get("scope") or data.get("workflow") or data.get("coverage"))[:MAX_PLAN_FIELD]
+        if not title or not scope:
+            raise ValueError("phase needs a title and a scope")
+        return {
+            "title": title,
+            "objective": _text(data.get("objective") or data.get("goal"))[:MAX_PLAN_FIELD],
+            "scope": scope,
+            "modules": [m[:100] for m in _str_list(data.get("modules"))][:MAX_PLAN_LIST],
+            "risks": [r[:300] for r in _str_list(data.get("risks") or data.get("riskAreas"))][:MAX_PLAN_LIST],
+            "entryCriteria": _text(data.get("entryCriteria") or data.get("entry_criteria"))[:MAX_PLAN_FIELD],
+            "exitCriteria": _text(data.get("exitCriteria") or data.get("exit_criteria"))[:MAX_PLAN_FIELD],
+            "priority": _level(data.get("priority")),
+            "sources": _sources(data["sources"]) if data.get("sources") else None,
+        }
+
+
+class TestPlanDraft(BaseModel):
+    __test__ = False  # not a pytest test class
+
+    title: str
+    summary: str
+    phases: list[PlanPhase]
+    gaps: list[str]
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce(cls, data: Any) -> dict:
+        if not isinstance(data, dict):
+            data = {}
+        return {
+            "title": _text(data.get("title"))[:200],
+            "summary": _text(data.get("summary"))[:MAX_PLAN_FIELD],
+            "phases": parse_items(PlanPhase, data.get("phases"))[:MAX_PLAN_PHASES],
+            "gaps": [g[:300] for g in _str_list(data.get("gaps") or data.get("questions"))][:5],
+        }
