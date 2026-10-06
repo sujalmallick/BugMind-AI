@@ -424,27 +424,43 @@
 
   /* Floating marketing header — inset glass bar with a fine double edge */
   .glass-header {
-    background-color: rgba(255, 255, 255, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.75);
-    box-shadow:
-      0 0 0 1px rgba(9, 10, 15, 0.05),
-      inset 0 1px 0 rgba(255, 255, 255, 0.9),
-      0 10px 30px -14px rgba(9, 10, 15, 0.14);
-    -webkit-backdrop-filter: blur(22px) saturate(180%);
-    backdrop-filter: blur(22px) saturate(180%);
-    transition: background-color 300ms ease, box-shadow 300ms ease;
-  }
-  .glass-header.is-scrolled {
-    background-color: rgba(255, 255, 255, 0.76);
+    position: relative;
+    isolation: isolate;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.58) 0%, rgba(255, 255, 255, 0.34) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.7);
     box-shadow:
       0 0 0 1px rgba(9, 10, 15, 0.06),
-      inset 0 1px 0 rgba(255, 255, 255, 0.9),
-      0 14px 36px -16px rgba(9, 10, 15, 0.2);
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.35),
+      0 12px 32px -14px rgba(9, 10, 15, 0.16);
+    -webkit-backdrop-filter: blur(28px) saturate(190%) brightness(1.04);
+    backdrop-filter: blur(28px) saturate(190%) brightness(1.04);
+    transition: background 300ms ease, box-shadow 300ms ease;
+  }
+  /* Fine frosted grain over the glass */
+  .glass-header::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0.07;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+  }
+  .glass-header.is-scrolled {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.66) 0%, rgba(255, 255, 255, 0.46) 100%);
+    box-shadow:
+      0 0 0 1px rgba(9, 10, 15, 0.07),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.35),
+      0 16px 40px -16px rgba(9, 10, 15, 0.24);
   }
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .glass,
-    .glass-bar,
-    .glass-header { background-color: rgba(255, 255, 255, 0.97); }
+    .glass-bar { background-color: rgba(255, 255, 255, 0.97); }
+    .glass-header,
+    .glass-header.is-scrolled { background: rgba(255, 255, 255, 0.97); }
   }
 
   /* Card */
