@@ -12,19 +12,19 @@ Use SigMap (`https://github.com/manojmallick/sigmap` by Manoj Mallick) to find c
 ### 1. Ranked Query (Where is code handled?)
 Run this to get the top files, line anchors, and exported functions/classes matching any topic:
 ```powershell
-npx --yes sigmap --query "<query>" --top 5 --json
+npx --yes sigmap@8.68.0 --query "<query>" --top 5 --json
 ```
 
 Examples:
-- `npx --yes sigmap --query "authentication jwt token login" --top 3 --json`
-- `npx --yes sigmap --query "byok encryption api key" --top 3 --json`
-- `npx --yes sigmap --query "test case generation workflow graph" --top 3 --json`
-- `npx --yes sigmap --query "avatar profile image upload" --top 3 --json`
+- `npx --yes sigmap@8.68.0 --query "authentication jwt token login" --top 3 --json`
+- `npx --yes sigmap@8.68.0 --query "byok encryption api key" --top 3 --json`
+- `npx --yes sigmap@8.68.0 --query "test case generation workflow graph" --top 3 --json`
+- `npx --yes sigmap@8.68.0 --query "avatar profile image upload" --top 3 --json`
 
 ### 2. File Impact & Callers
 To see what files and routes are impacted when changing a specific file:
 ```powershell
-npx --yes sigmap --impact "<relative_path>" --json
+npx --yes sigmap@8.68.0 --impact "<relative_path>" --json
 ```
 
 ### 3. Read Direct Signatures Map

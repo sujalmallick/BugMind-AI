@@ -45,3 +45,20 @@ dist/
 
 # Database Backups
 *.sql
+
+# Dependencies (installed by npm ci; never commit)
+
+node_modules/
+
+# Local databases and user uploads
+
+*.db
+*.sqlite
+uploads/
+
+# Other env files (examples stay tracked)
+
+.env.*
+!.env.example
+!.env.docker.example
+!frontend/.env.production
