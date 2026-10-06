@@ -50,6 +50,41 @@ def get_test_case_by_ref(db: Session, user_id: int, project_id: int, ref: str) -
     }
 
 
+MAX_MANUAL_TEST_CASES = 50
+# Placeholder row that CSV-imported issues hang off; not a real test case.
+_PLACEHOLDER_TEST_CASE_ID = "IMPORT-DEFAULT"
+
+
+def get_manual_test_cases(
+    db: Session, user_id: int, project_id: int, limit: int = MAX_MANUAL_TEST_CASES
+) -> list[dict]:
+    """The project's hand-written / imported test cases (most recent first), capped for prompt size."""
+    require_project_role(db, user_id, project_id, "viewer")
+    rows = (
+        db.query(TestCase)
+        .join(Workspace, Workspace.id == TestCase.workspace_id)
+        .filter(
+            Workspace.project_id == project_id,
+            TestCase.is_manual.is_(True),
+            TestCase.test_case_id != _PLACEHOLDER_TEST_CASE_ID,
+        )
+        .order_by(TestCase.id.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "id": tc.test_case_id,
+            "module": tc.module or "",
+            "category": tc.category or "",
+            "description": tc.description or "",
+            "steps": [s for s in (tc.steps or "").split("\n") if s.strip()],
+            "expectedResult": tc.expected_result or "",
+        }
+        for tc in rows
+    ]
+
+
 def _similarity(query: set[str], candidate: set[str]) -> float:
     union = query | candidate
     return len(query & candidate) / len(union) if union else 0.0

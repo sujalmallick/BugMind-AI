@@ -12,6 +12,9 @@ class WorkflowInput(BaseModel):
     existing_checklist: list[dict] | None = None
     existing_test_cases: list[dict] | None = None
 
+    # Optional: lets the agents see the project's manual test cases (viewer role required).
+    project_id: int | None = None
+
 
 class WorkflowState(TypedDict, total=False):
     # User Input
@@ -20,6 +23,9 @@ class WorkflowState(TypedDict, total=False):
     observed_steps: list[str] | None
     existing_checklist: list[dict] | None
     existing_test_cases: list[dict] | None
+
+    # Project context (server-loaded, read-only)
+    project_test_cases: list[dict]
 
     # Shared Agent Knowledge
     modules: dict

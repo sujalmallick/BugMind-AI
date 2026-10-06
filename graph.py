@@ -81,6 +81,7 @@ def test_case_node(state: WorkflowState):
         high_risk_areas=state.get("high_risk_areas", []),
         observed_steps=state.get("observed_steps"),
         user_id=state.get("user_id"),
+        manual_test_cases=state.get("project_test_cases"),
     )
 
     return {"test_cases": test_cases}
@@ -88,11 +89,12 @@ def test_case_node(state: WorkflowState):
 
 # ── Node 4: Coverage Check (deterministic) ──
 def coverage_node(state: WorkflowState):
+    # The project's manual test cases count too: a gap they already cover isn't a gap.
     report = coverage_report(
         modules=state.get("modules", {}),
         critical_workflows=state.get("critical_workflows", []),
         high_risk_areas=state.get("high_risk_areas", []),
-        test_cases=state.get("test_cases") or [],
+        test_cases=(state.get("test_cases") or []) + (state.get("project_test_cases") or []),
     )
     rounds = state.get("coverage_rounds", 0)
 
@@ -118,6 +120,7 @@ def fill_gaps_node(state: WorkflowState):
     existing test cases are kept unchanged, so the analysis never fails here.
     """
     test_cases = list(state.get("test_cases") or [])
+    manual_test_cases = list(state.get("project_test_cases") or [])
     rounds = state.get("coverage_rounds", 0) + 1
 
     try:
@@ -125,7 +128,7 @@ def fill_gaps_node(state: WorkflowState):
             workflow=state.get("workflow", ""),
             modules=state.get("modules", {}),
             gaps=state["coverage"]["gaps"],
-            existing_test_cases=test_cases,
+            existing_test_cases=test_cases + manual_test_cases,
             user_id=state.get("user_id"),
         )
     except Exception:
@@ -136,7 +139,7 @@ def fill_gaps_node(state: WorkflowState):
         logger.warning(f"Coverage fill-in failed ({new_cases.get('code', 'error')}); keeping existing test cases.")
         return {"coverage_rounds": rounds}
 
-    descriptions = [tc.get("description", "") for tc in test_cases]
+    descriptions = [tc.get("description", "") for tc in test_cases + manual_test_cases]
     added = []
     for tc in new_cases:
         if is_near_duplicate(tc.get("description", ""), descriptions):

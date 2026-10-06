@@ -341,6 +341,7 @@ useEffect(() => {
       const result = await analyzeWorkflow({
     workflow,
     observedSteps,
+    projectId: Number(projectId),
 })
 
 if (result.success === false) {

@@ -1,6 +1,7 @@
 from utils import call_llm, parse_json_response
 from utils import logger
 from constants import TEST_CASE_STATUSES
+from agents.coverage import is_near_duplicate
 from agents.output_schemas import GeneratedTestCase, parse_items, unwrap_list
 from guardrails import Source, untrusted_block
 
@@ -65,6 +66,25 @@ def _parse_test_cases(response, prompt, user_id, confirmed_mods):
     return [tc.model_dump() for tc in parsed]
 
 
+MAX_MANUAL_CASE_CHARS = 160
+
+
+def _manual_test_cases_section(manual_test_cases) -> str:
+    """Prompt block listing the project's manual test cases; empty when there are none."""
+    lines = [
+        f"- [{tc.get('module', '')}] {str(tc.get('description', ''))[:MAX_MANUAL_CASE_CHARS]}"
+        for tc in manual_test_cases or []
+        if tc.get("description")
+    ]
+    if not lines:
+        return ""
+    return f"""
+Manual test cases that already exist in this project (user-provided data). Do NOT generate
+test cases that duplicate these; spend the suite on what they do not cover:
+{untrusted_block(chr(10).join(lines), source=Source.USER, label="manual_test_cases", agent=AGENT)}
+"""
+
+
 def number_test_cases(test_cases: list[dict], start: int = 1) -> list[dict]:
     """Assign sequential TC-### ids and the initial status."""
     for index, test_case in enumerate(test_cases, start=start):
@@ -78,8 +98,13 @@ def generate_test_cases_agent(
     critical_workflows,
     high_risk_areas,
     observed_steps,
-    user_id=None
+    user_id=None,
+    manual_test_cases=None,
 ):
+    """
+    manual_test_cases: the project's hand-written test cases (server-loaded). They are
+    shown to the model as already covered, and generated near-duplicates are dropped.
+    """
     confirmed_mods = modules.get("confirmed_modules", []) if isinstance(modules, dict) else []
 
     if observed_steps:
@@ -128,7 +153,7 @@ High Risk Areas (from the module agent):
 {untrusted_block(", ".join(high_risk_areas), source=Source.LLM, label="high_risk_areas", agent=AGENT)}
 
 {steps_section}
-
+{_manual_test_cases_section(manual_test_cases)}
 Task:
 Generate a list of execution-ready manual test cases covering Functional, Negative, Edge Case, Security, and Regression categories.
 
@@ -145,6 +170,14 @@ Generate a list of execution-ready manual test cases covering Functional, Negati
     test_cases = _parse_test_cases(response, prompt, user_id, confirmed_mods)
     if isinstance(test_cases, dict):
         return test_cases
+
+    # Deterministic backstop: never return a near-copy of a manual test case.
+    manual_descriptions = [tc.get("description", "") for tc in manual_test_cases or []]
+    if manual_descriptions:
+        test_cases = [
+            tc for tc in test_cases
+            if not is_near_duplicate(tc.get("description", ""), manual_descriptions)
+        ]
 
     # Post-process: assign ID and initial status (keeping original business logic intact)
     return number_test_cases(test_cases)
