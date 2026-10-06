@@ -117,3 +117,8 @@ export async function importResults(projectId, file) {
 export async function healScript(projectId, scriptId, runId) {
   return (await api.post(`${base(projectId)}/scripts/${scriptId}/heal`, { run_id: runId })).data;
 }
+
+// A bug report from a failed result ({ created, issueId, bugId, title }); once per failure.
+export async function createIssueFromResult(projectId, runId, scriptId) {
+  return (await api.post(`${base(projectId)}/runs/${runId}/results/${scriptId}/issue`)).data;
+}
