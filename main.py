@@ -27,6 +27,9 @@ from sqlalchemy.orm import Session
 from database.session import get_db
 from services.project_context import find_similar_issues, get_manual_test_cases, get_test_case_by_ref
 from services.knowledge_retrieval import retrieve as retrieve_knowledge, summarize_sources
+from services.prompt_budget import plan_budget
+from config import DEFAULT_MODEL
+from services.ai_settings_service import ai_settings_service
 from auth.permissions import require_project_role
 from limiter import limiter
 from slowapi import _rate_limit_exceeded_handler
@@ -209,6 +212,25 @@ def analyze_workflow(
     if steps_block:
         return steps_block.error_response()
 
+    # Context-window budget for the user's model. A workflow that can't fit is refused
+    # here, before any model call (including the injection classifier) spends tokens.
+    try:
+        model = ai_settings_service.get_model(db, current_user.id)
+    except Exception:  # settings lookup failed: budget for the default model rather than fail the request
+        db.rollback()
+        model = DEFAULT_MODEL
+    budget = plan_budget(model, "\n".join([data.workflow, *(data.observed_steps or [])]))
+    if not budget.fits:
+        return {
+            "success": False,
+            "code": "context_too_long",
+            "error": (
+                f"This workflow is too long for the selected AI model ({budget.workflow_tokens:,} tokens; "
+                f"the model reads about {budget.context_tokens:,}). Shorten it or choose a model with a "
+                "larger context window."
+            ),
+        }
+
     # Model-based second opinion (paraphrased / non-English injections). Runs on
     # the masked text; fails open, since the rule checks above already ran.
     classifier_check = input_guardrail.classify(
@@ -233,7 +255,8 @@ def analyze_workflow(
     project_knowledge = []
     if data.project_id is not None:
         query = "\n".join([data.workflow, *(data.observed_steps or [])])
-        project_knowledge = retrieve_knowledge(db, current_user.id, data.project_id, query)
+        project_knowledge = retrieve_knowledge(db, current_user.id, data.project_id, query,
+                                               token_budget=budget.knowledge_tokens, model=model)
 
     # Not sent to the LLM today, but they enter graph state (and traces).
     existing_checklist, _ = masker.mask_obj(data.existing_checklist)
@@ -247,6 +270,9 @@ def analyze_workflow(
             "workflow_length": len(data.workflow) if data.workflow else 0,
             "has_observed_steps": bool(data.observed_steps),
             "knowledge_excerpts": len(project_knowledge),
+            "model": model,
+            "context_tokens": budget.context_tokens,
+            "workflow_tokens": budget.workflow_tokens,
             "has_test_environment": bool(test_environment),
         },
     }
@@ -261,6 +287,7 @@ def analyze_workflow(
             "project_test_cases": project_test_cases,
             "project_knowledge": project_knowledge,
             "test_environment": test_environment,
+            "manual_cases_tokens": budget.manual_cases_tokens,
         },
         config=run_config,
     )

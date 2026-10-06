@@ -18,6 +18,7 @@ FIELD_SPEC = """For each test case, provide:
 7. "inputData": Specific data inputs used in this test (e.g., "Email: invaliduser, Password: password123").
 8. "expectedResult": Detailed description of the correct system reaction (e.g., "Validation warning displays: 'Invalid email format' and login is blocked").
 9. "priority": Strictly one of: "High", "Medium", "Low".
+10. "sources": Where this test case comes from: "workflow" if the workflow or observed steps describe the behavior, "doc:N" for project documentation excerpt [N], or "assumed" if it is general QA practice not stated in either. Never cite an excerpt number that was not provided, and never invent limits, values or rules.
 
 Return your response strictly as a JSON object with a single key "test_cases" whose value is an array of test case objects, matching the exact format below:
 
@@ -37,7 +38,8 @@ Return your response strictly as a JSON object with a single key "test_cases" wh
     ],
     "inputData": "Valid Email, Valid Password",
     "expectedResult": "User is redirected to the dashboard page",
-    "priority": "High"
+    "priority": "High",
+    "sources": ["workflow"]
   }
 ]}
 
@@ -64,19 +66,23 @@ def _parse_test_cases(response, prompt, user_id, confirmed_mods):
         unwrap_list(test_cases, "test_cases"),
         context={"default_module": confirmed_mods[0] if confirmed_mods else None},
     )
-    return [tc.model_dump() for tc in parsed]
+    return [tc.model_dump(exclude_none=True) for tc in parsed]
 
 
 MAX_MANUAL_CASE_CHARS = 160
 
 
-def _manual_test_cases_section(manual_test_cases) -> str:
+def _manual_test_cases_section(manual_test_cases, token_budget: int | None = None) -> str:
     """Prompt block listing the project's manual test cases; empty when there are none."""
     lines = [
         f"- [{tc.get('module', '')}] {str(tc.get('description', ''))[:MAX_MANUAL_CASE_CHARS]}"
         for tc in manual_test_cases or []
         if tc.get("description")
     ]
+    if token_budget is not None:  # context-window budget: most recent cases first, as many as fit
+        from services.prompt_budget import fit_items
+
+        lines = fit_items(lines, str, token_budget)
     if not lines:
         return ""
     return f"""
@@ -101,6 +107,7 @@ def generate_test_cases_agent(
     observed_steps,
     user_id=None,
     manual_test_cases=None,
+    manual_cases_budget=None,
     knowledge=None,
     environment=None,
 ):
@@ -156,7 +163,7 @@ High Risk Areas (from the module agent):
 {untrusted_block(", ".join(high_risk_areas), source=Source.LLM, label="high_risk_areas", agent=AGENT)}
 
 {steps_section}
-{environment_section(environment, AGENT)}{knowledge_section(knowledge, AGENT)}{_manual_test_cases_section(manual_test_cases)}
+{environment_section(environment, AGENT)}{knowledge_section(knowledge, AGENT)}{_manual_test_cases_section(manual_test_cases, manual_cases_budget)}
 Task:
 Generate a list of execution-ready manual test cases covering Functional, Negative, Edge Case, Security, and Regression categories.
 

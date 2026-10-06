@@ -6,6 +6,7 @@ from langgraph.graph import StateGraph, START, END
 
 from models import WorkflowState
 from agents.coverage import coverage_report, is_near_duplicate
+from agents.grounding import ground_test_cases
 from agents.module_agent import identify_modules_agent
 from agents.checklist_agent import generate_checklist_agent
 from agents.test_case_agent import fill_coverage_gaps_agent, generate_test_cases_agent, number_test_cases
@@ -83,6 +84,7 @@ def test_case_node(state: WorkflowState):
         observed_steps=state.get("observed_steps"),
         user_id=state.get("user_id"),
         manual_test_cases=state.get("project_test_cases"),
+        manual_cases_budget=state.get("manual_cases_tokens"),
         knowledge=state.get("project_knowledge"),
         environment=state.get("test_environment"),
     )
@@ -148,6 +150,10 @@ def fill_gaps_node(state: WorkflowState):
         if is_near_duplicate(tc.get("description", ""), descriptions):
             continue
         descriptions.append(tc.get("description", ""))
+        # The fill-in prompt has no document excerpts, so a "doc:N" here can't be real.
+        if tc.get("sources"):
+            sources = [s for s in tc["sources"] if not s.startswith("doc:")]
+            tc["sources"] = sources + (["unseen-doc"] if len(sources) < len(tc["sources"]) else [])
         added.append(tc)
 
     number_test_cases(added, start=len(test_cases) + 1)
@@ -179,7 +185,20 @@ def route_after_test_cases(state: WorkflowState):
 def route_after_coverage(state: WorkflowState):
     if state["coverage"]["gaps"] and state.get("coverage_rounds", 0) < coverage_max_rounds():
         return "fill_gaps"
-    return END
+    return "grounding_check"
+
+
+# ── Node 6: Grounding / hallucination check (deterministic) ──
+def grounding_node(state: WorkflowState):
+    """Verify each test case's claimed sources against what the agents were given."""
+    test_cases, summary = ground_test_cases(
+        [dict(tc) for tc in state.get("test_cases") or []],
+        workflow=state.get("workflow", ""),
+        observed_steps=state.get("observed_steps"),
+        excerpts=state.get("project_knowledge"),
+    )
+    logger.info(json.dumps({"event": "grounding", **summary}, separators=(",", ":")))
+    return {"test_cases": test_cases, "grounding_summary": summary}
 
 
 # ── Build Graph ──
@@ -191,6 +210,7 @@ graph_builder.add_node("checklist_agent", checklist_node)
 graph_builder.add_node("test_case_agent", test_case_node)
 graph_builder.add_node("coverage_check", coverage_node)
 graph_builder.add_node("fill_gaps", fill_gaps_node)
+graph_builder.add_node("grounding_check", grounding_node)
 
 # Connect edges with conditional error routing
 graph_builder.add_edge(START, "module_agent")
@@ -199,6 +219,7 @@ graph_builder.add_conditional_edges("checklist_agent", route_after_checklist)
 graph_builder.add_conditional_edges("test_case_agent", route_after_test_cases)
 graph_builder.add_conditional_edges("coverage_check", route_after_coverage)
 graph_builder.add_edge("fill_gaps", "coverage_check")
+graph_builder.add_edge("grounding_check", END)
 
 # Compile graph
 workflow_graph = graph_builder.compile()

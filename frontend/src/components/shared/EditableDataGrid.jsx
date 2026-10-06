@@ -192,6 +192,7 @@ export default function EditableDataGrid({
           ? { rows: 8, cols: 60, maxLength: 10000 }
           : col.cellEditorParams,
         valueGetter: col.valueGetter,
+        cellRenderer: col.cellRenderer,
         valueSetter: col.valueSetter || ((params) => {
           params.data[col.field] = params.newValue;
           return true;
