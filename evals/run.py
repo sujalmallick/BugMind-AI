@@ -4,6 +4,7 @@ Run the quality evals against a real model.
     python -m evals.run                              # default provider/model from config.py, keys from .env
     python -m evals.run --model groq/openai/gpt-oss-20b --provider groq
     python -m evals.run --cases auth_signup_login,bank_transfer --repeat 2
+    python -m evals.run --pause 60                                # Groq free tier: one case per minute
     python -m evals.run --baseline evals/baseline.json            # exit 1 on regression
     python -m evals.run --update-baseline                         # record the current scores
 
@@ -38,6 +39,8 @@ def main(argv=None) -> int:
     parser.add_argument("--model", help="Override model (default: config.DEFAULT_MODEL)")
     parser.add_argument("--cases", help="Comma-separated case ids (default: all)")
     parser.add_argument("--repeat", type=int, default=1, help="Runs per case, to smooth out sampling noise")
+    parser.add_argument("--pause", type=float, default=0,
+                        help="Seconds to wait between runs, for per-minute token limits (e.g. 60 on Groq free tier)")
     parser.add_argument("--baseline", type=Path, help="Compare against this baseline; exit 1 on regression")
     parser.add_argument("--tolerance", type=float, default=0.1, help="Allowed absolute drop per metric")
     parser.add_argument("--update-baseline", action="store_true", help=f"Write aggregate scores to {DEFAULT_BASELINE.name}")
@@ -65,12 +68,13 @@ def main(argv=None) -> int:
     def show(run):
         print(" | ".join(_fmt(run.get(c)) for c in columns) + (f"   ({run['error']})" if run.get("error") else ""))
 
-    report = evaluate(cases, repeat=args.repeat, on_result=show)
+    report = evaluate(cases, repeat=args.repeat, on_result=show, pause_seconds=args.pause)
     report["meta"] = {
         "provider": provider,
         "model": model,
         "cases": [c["id"] for c in cases],
         "repeat": args.repeat,
+        "pause_seconds": args.pause,
         "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
 

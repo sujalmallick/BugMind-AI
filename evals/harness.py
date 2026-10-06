@@ -71,13 +71,20 @@ def run_pipeline(workflow: str, observed_steps: list[str] | None = None) -> dict
     return {"success": True, "workflow": workflow, **generated}
 
 
-def evaluate(cases: list[dict], repeat: int = 1, on_result=None) -> dict:
-    """Run every case `repeat` times. Returns per-run scores plus aggregates."""
+def evaluate(cases: list[dict], repeat: int = 1, on_result=None, pause_seconds: float = 0) -> dict:
+    """
+    Run every case `repeat` times. Returns per-run scores plus aggregates.
+
+    pause_seconds waits between runs so per-minute token limits (e.g. Groq's
+    free tier) reset; a full analysis can exceed one minute's budget on its own.
+    """
     from services.llm_usage import finish_request_collection, start_request_collection
 
     runs = []
     for case in cases:
         for attempt in range(1, repeat + 1):
+            if runs and pause_seconds:
+                time.sleep(pause_seconds)
             token = start_request_collection()
             start = time.perf_counter()
             try:

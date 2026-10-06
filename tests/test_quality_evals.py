@@ -169,3 +169,13 @@ def test_cli_end_to_end(scripted_llm, monkeypatch, tmp_path, capsys):
     strict.write_text(json.dumps({"ok_rate": 1.0, "quality": 1.0, "risk_coverage": 1.0}))
     assert cli.main(["--cases", "auth_signup_login", "--out", str(out), "--baseline", str(strict)]) == 1
     assert "REGRESSIONS" in capsys.readouterr().out
+
+
+def test_pause_between_runs_but_not_before_first(scripted_llm, monkeypatch):
+    import evals.harness as harness
+
+    sleeps = []
+    monkeypatch.setattr(harness.time, "sleep", sleeps.append)
+    cases = [{"id": f"c{i}", "workflow": "User logs in and pays by card.", "expect": EXPECT} for i in range(3)]
+    evaluate(cases, pause_seconds=60)
+    assert sleeps == [60, 60]

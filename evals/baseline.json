@@ -1,0 +1,33 @@
+{
+  "meta": {
+    "provider": "groq",
+    "model": "groq/openai/gpt-oss-120b",
+    "cases": [
+      "ecommerce_checkout",
+      "auth_signup_login",
+      "file_sharing",
+      "bank_transfer",
+      "appointment_booking",
+      "admin_roles",
+      "catalog_search",
+      "offline_notes_sync"
+    ],
+    "repeat": 1,
+    "pause_seconds": 60.0,
+    "ts": "2026-10-06T12:07:26+00:00",
+    "note": "Recorded on Groq free tier with --pause 60. Cost not captured in this run (fixed in fix/groq-retired-models)."
+  },
+  "runs": 8,
+  "ok_rate": 1.0,
+  "quality": 0.9043,
+  "module_recall": 0.9375,
+  "risk_coverage": 0.8854,
+  "category_coverage": 0.6875,
+  "uniqueness": 1.0,
+  "step_completeness": 0.9157,
+  "checklist_module_coverage": 1.0,
+  "category_diversity": 0.725,
+  "count_in_range_rate": 0.625,
+  "mean_seconds": 23.8687,
+  "total_tokens": 68872
+}
