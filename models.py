@@ -2,6 +2,15 @@ from pydantic import BaseModel, Field
 from typing import TypedDict
 
 
+class TargetEnvironment(BaseModel):
+    """What the user is testing on (the workspace's environment fields)."""
+
+    platform: str | None = Field(None, max_length=50)
+    os_version: str | None = Field(None, max_length=50)
+    build: str | None = Field(None, max_length=100)
+    device: str | None = Field(None, max_length=100)
+
+
 class WorkflowInput(BaseModel):
     workflow: str = Field(
         min_length=5,
@@ -12,8 +21,9 @@ class WorkflowInput(BaseModel):
     existing_checklist: list[dict] | None = None
     existing_test_cases: list[dict] | None = None
 
-    # Optional: lets the agents see the project's manual test cases (viewer role required).
+    # Optional: lets the agents see the project's manual test cases and documents (viewer role required).
     project_id: int | None = None
+    environment: TargetEnvironment | None = None
 
 
 class WorkflowState(TypedDict, total=False):
@@ -26,6 +36,8 @@ class WorkflowState(TypedDict, total=False):
 
     # Project context (server-loaded, read-only)
     project_test_cases: list[dict]
+    project_knowledge: list[dict]   # retrieved document excerpts (RAG)
+    test_environment: dict          # platform / OS / build / device
 
     # Shared Agent Knowledge
     modules: dict

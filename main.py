@@ -26,6 +26,7 @@ from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 from database.session import get_db
 from services.project_context import find_similar_issues, get_manual_test_cases, get_test_case_by_ref
+from services.knowledge_retrieval import retrieve as retrieve_knowledge, summarize_sources
 from auth.permissions import require_project_role
 from limiter import limiter
 from slowapi import _rate_limit_exceeded_handler
@@ -217,6 +218,23 @@ def analyze_workflow(
     if classifier_check.blocked:
         return classifier_check.error_response()
 
+    # Target test environment (user text): the same input checks as the workflow.
+    test_environment = {}
+    if data.environment:
+        for key, value in data.environment.model_dump().items():
+            if not value or not str(value).strip():
+                continue
+            env_check = input_guardrail.validate(str(value), source=Source.USER, field=f"environment.{key}")
+            if env_check.blocked:
+                return env_check.error_response()
+            test_environment[key] = env_check.sanitized_text
+
+    # RAG retrieval: excerpts of this project's documents that match the workflow.
+    project_knowledge = []
+    if data.project_id is not None:
+        query = "\n".join([data.workflow, *(data.observed_steps or [])])
+        project_knowledge = retrieve_knowledge(db, current_user.id, data.project_id, query)
+
     # Not sent to the LLM today, but they enter graph state (and traces).
     existing_checklist, _ = masker.mask_obj(data.existing_checklist)
     existing_test_cases, _ = masker.mask_obj(data.existing_test_cases)
@@ -228,6 +246,8 @@ def analyze_workflow(
             "user_id": current_user.id,
             "workflow_length": len(data.workflow) if data.workflow else 0,
             "has_observed_steps": bool(data.observed_steps),
+            "knowledge_excerpts": len(project_knowledge),
+            "has_test_environment": bool(test_environment),
         },
     }
 
@@ -239,6 +259,8 @@ def analyze_workflow(
             "existing_checklist": existing_checklist,
             "existing_test_cases": existing_test_cases,
             "project_test_cases": project_test_cases,
+            "project_knowledge": project_knowledge,
+            "test_environment": test_environment,
         },
         config=run_config,
     )
@@ -283,12 +305,16 @@ def analyze_workflow(
     if output_check.blocked:
         return output_check.error_response()
 
-    return {
+    response = {
         "success": True,
         # The caller's own input, echoed back unchanged (never the masked copy).
         "workflow": data.workflow,
         **generated,
     }
+    if project_knowledge:
+        # Which documents informed this analysis (only present when some did).
+        response["knowledgeSources"] = summarize_sources(project_knowledge)
+    return response
 
 
 @app.post("/analyze-issue")

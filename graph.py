@@ -30,7 +30,7 @@ def module_node(state: WorkflowState):
     workflow = state.get("workflow", "")
     user_id = state.get("user_id")
 
-    module_data = identify_modules_agent(workflow, user_id=user_id)
+    module_data = identify_modules_agent(workflow, user_id=user_id, knowledge=state.get("project_knowledge"))
 
     # Stop immediately if AI failed
     if isinstance(module_data, dict) and module_data.get("success") is False:
@@ -57,6 +57,7 @@ def checklist_node(state: WorkflowState):
         critical_workflows=state.get("critical_workflows", []),
         high_risk_areas=state.get("high_risk_areas", []),
         user_id=state.get("user_id"),
+        environment=state.get("test_environment"),
     )
 
     return {"checklist": checklist}
@@ -82,6 +83,8 @@ def test_case_node(state: WorkflowState):
         observed_steps=state.get("observed_steps"),
         user_id=state.get("user_id"),
         manual_test_cases=state.get("project_test_cases"),
+        knowledge=state.get("project_knowledge"),
+        environment=state.get("test_environment"),
     )
 
     return {"test_cases": test_cases}

@@ -344,6 +344,12 @@ useEffect(() => {
     workflow,
     observedSteps,
     projectId: Number(projectId),
+    environment: {
+      platform: testEnvironment.platform,
+      os_version: testEnvironment.osVersion,
+      build: testEnvironment.build,
+      device: testEnvironment.device,
+    },
 })
 
 if (result.success === false) {

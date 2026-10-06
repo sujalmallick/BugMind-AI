@@ -1,6 +1,7 @@
 from utils import call_llm, parse_json_response
 from utils import logger
 from guardrails import Source, untrusted_block
+from agents.context_blocks import environment_section
 from agents.output_schemas import ChecklistModule, parse_items, unwrap_list
 
 AGENT = "checklist_agent"
@@ -11,7 +12,8 @@ def generate_checklist_agent(
     modules: dict,
     critical_workflows: list,
     high_risk_areas: list,
-    user_id=None
+    user_id=None,
+    environment=None,
 ):
     confirmed = modules.get("confirmed_modules", []) if isinstance(modules, dict) else []
 
@@ -29,7 +31,7 @@ Critical Workflows (from the module agent):
 
 High Risk Areas (from the module agent):
 {untrusted_block(high_risk_areas, source=Source.LLM, label="high_risk_areas", agent=AGENT)}
-
+{environment_section(environment, AGENT)}
 Task:
 Generate a thorough exploratory testing checklist grouped by module.
 
