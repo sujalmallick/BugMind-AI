@@ -49,7 +49,8 @@ const TABS = [
   { key: 'issues', label: 'AI Bug Reports' },
 ]
 
-const EMPTY_ISSUE_FORM = { observation: '', expected: '', actual: '', mode: 'failed' }
+// testCaseRef: display id (e.g. "TC-003") of the test case the issue was raised from, if any.
+const EMPTY_ISSUE_FORM = { observation: '', expected: '', actual: '', mode: 'failed', testCaseRef: '' }
 export default function WorkspacePage() {
   const { projectId } = useParams();
   const location = useLocation();
@@ -436,7 +437,7 @@ async function handleStatusChange(id, status) {
   }
 
   function handleJumpToIssue(testCase) {
-    setIssueForm({ ...EMPTY_ISSUE_FORM, mode: 'failed', observation: testCase.description })
+    setIssueForm({ ...EMPTY_ISSUE_FORM, mode: 'failed', observation: testCase.description, testCaseRef: testCase.id })
     setActiveTab('issues')
   }
 async function handleGenerateIssue() {
@@ -466,6 +467,7 @@ async function handleGenerateIssue() {
     const result = await classifyIssue({
       ...issueForm,
       workflow,
+      projectId: Number(projectId),
     })
 
     // Handle API errors (quota exceeded, invalid key, etc.)
@@ -498,12 +500,21 @@ await saveIssue(
       issueForm.expected,
     actual_result:
       issueForm.actual,
+    linked_test_case_id:
+      result.linkedTestCase?.dbId ?? null,
   }
 );
 
 setIssueStatus("success");
+// The link applies to this report only; a new manual observation starts unlinked.
+setIssueForm((current) => ({ ...current, testCaseRef: '' }));
 
-showToast("Issue analysis completed!");
+const duplicateCount = result.possibleDuplicates?.length ?? 0;
+showToast(
+  duplicateCount > 0
+    ? `Issue saved. ${duplicateCount} similar existing issue${duplicateCount > 1 ? "s" : ""} found.`
+    : "Issue analysis completed!"
+);
 
   } catch (error) {
 
