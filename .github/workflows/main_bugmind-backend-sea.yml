@@ -10,6 +10,12 @@ on:
       - main
   workflow_dispatch:
 
+# Azure rejects a deploy while another is running (409 Conflict), so
+# queue deploys instead of overlapping them. The newest pending run wins.
+concurrency:
+  group: deploy-bugmind-backend-sea
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
