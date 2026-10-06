@@ -97,21 +97,37 @@ def claim_next(db: Session, worker_id: str) -> Job | None:
     return None
 
 
-def run_job(db: Session, job: Job) -> None:
+def _still_ours(db: Session, job_id: int, worker_id: str | None) -> Job | None:
+    """The job row, if this worker still holds its lease (None: it expired and was reclaimed)."""
+    job = db.get(Job, job_id)
+    if job is None:  # deleted meanwhile (e.g. its project was deleted)
+        return None
+    db.refresh(job)
+    if worker_id is not None and job.locked_by != worker_id:
+        logger.warning(f"Job {job_id} was reclaimed by {job.locked_by}; not recording this worker's result")
+        return None
+    return job
+
+
+def run_job(db: Session, job: Job, worker_id: str | None = None) -> None:
     registration = _registry[job.kind]
     job_id, kind = job.id, job.kind
     try:
         if job.attempts > job.max_attempts:  # reclaimed after repeated lease expiry
             raise RuntimeError("Job lease expired too many times")
         registration.handler(db, job)
-        job = db.get(Job, job_id)
+        job = _still_ours(db, job_id, worker_id)
+        if job is None:
+            return
         job.status, job.finished_at = "succeeded", datetime.utcnow()
         job.locked_by = job.locked_until = None
         job.last_error = None
         db.commit()
     except Exception as exc:
         db.rollback()
-        job = db.get(Job, job_id)
+        job = _still_ours(db, job_id, worker_id)
+        if job is None:
+            return
         job.last_error = str(exc)[:2000]
         job.locked_by = job.locked_until = None
         if isinstance(exc, PermanentJobError) or job.attempts >= job.max_attempts:
@@ -136,19 +152,60 @@ def run_pending_jobs(db: Session, worker_id: str = "inline", limit: int = 100) -
         job = claim_next(db, worker_id)
         if job is None:
             break
-        run_job(db, job)
+        run_job(db, job, worker_id)
         ran += 1
     return ran
 
 
+FINISHED_JOB_RETENTION_DAYS = 14
+MAINTENANCE_INTERVAL_SECONDS = 3600
+
+_maintenance: list[Callable[[Session], None]] = []
+
+
+def register_maintenance(task: Callable[[Session], None]) -> None:
+    """A periodic housekeeping task, run by each worker about once an hour."""
+    if task not in _maintenance:
+        _maintenance.append(task)
+
+
+def purge_finished_jobs(db: Session, older_than_days: int = FINISHED_JOB_RETENTION_DAYS) -> int:
+    cutoff = datetime.utcnow() - timedelta(days=older_than_days)
+    deleted = (
+        db.query(Job)
+        .filter(Job.status.in_(("succeeded", "failed")), Job.finished_at < cutoff)
+        .delete(synchronize_session=False)
+    )
+    db.commit()
+    return deleted
+
+
+register_maintenance(purge_finished_jobs)
+
+
+def run_maintenance(db: Session) -> None:
+    for task in list(_maintenance):
+        try:
+            task(db)
+        except Exception:
+            db.rollback()
+            logger.exception(f"Maintenance task {getattr(task, '__name__', task)} failed")
+
+
 def _worker_loop(worker_id: str) -> None:
+    import time
+
     from database.session import SessionLocal
 
     logger.info(f"Job worker {worker_id} started")
+    next_maintenance = 0.0
     while not _stop.is_set():
         try:
             with SessionLocal() as db:
                 ran = run_pending_jobs(db, worker_id)
+                if time.monotonic() >= next_maintenance:
+                    run_maintenance(db)
+                    next_maintenance = time.monotonic() + MAINTENANCE_INTERVAL_SECONDS
         except Exception:
             logger.exception("Job worker loop error")
             ran = 0

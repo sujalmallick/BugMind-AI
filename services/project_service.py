@@ -221,8 +221,21 @@ def delete_project(
 
     require_project_role(db, user_id, project_id, "owner")
 
+    # Uploaded documents live in storage outside the database; remove them too.
+    from database.models.project_document import DocumentChunk, ProjectDocument
+    from services import document_storage
+
+    stored_files = [
+        path for (path,) in db.query(ProjectDocument.storage_path).filter(ProjectDocument.project_id == project_id)
+    ]
+    db.query(DocumentChunk).filter(DocumentChunk.project_id == project_id).delete(synchronize_session=False)
+    db.query(ProjectDocument).filter(ProjectDocument.project_id == project_id).delete(synchronize_session=False)
+
     db.delete(project)
     db.commit()
+
+    for path in stored_files:
+        document_storage.delete(path)  # best effort, after the commit succeeded
 
     return {"message": "Project deleted successfully"}
 
