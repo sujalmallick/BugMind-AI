@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Bot, FileCode2, Globe, History } from 'lucide-react'
+import { Bot, FileCode2, Globe, History, LayoutDashboard } from 'lucide-react'
 import HeaderBar from '../components/layout/HeaderBar'
 import PageHeading from '../components/shared/PageHeading'
 import SegmentedControl from '../components/shared/SegmentedControl'
@@ -11,6 +11,7 @@ import EnvironmentsSection from '../components/automation/EnvironmentsSection'
 import ScriptsSection from '../components/automation/ScriptsSection'
 import ScriptEditor from '../components/automation/ScriptEditor'
 import RunsSection from '../components/automation/RunsSection'
+import OverviewSection from '../components/automation/OverviewSection'
 import { apiErrorMessage, listEnvironments, listScripts } from '../services/automationApi'
 import { getProject } from '../services/projectApi'
 
@@ -20,7 +21,8 @@ export default function AutomationPage() {
   const [project, setProject] = useState(null)
   const [environments, setEnvironments] = useState(null)
   const [scripts, setScripts] = useState(null)
-  const [section, setSection] = useState('scripts')
+  const [section, setSection] = useState('overview')
+  const [draftFor, setDraftFor] = useState(null)
   const [openScriptId, setOpenScriptId] = useState(null)
 
   useEffect(() => {
@@ -75,8 +77,9 @@ export default function AutomationPage() {
           <SegmentedControl
             label="Automation sections"
             value={section}
-            onChange={setSection}
+            onChange={(value) => { setDraftFor(null); setSection(value) }}
             options={[
+              { value: 'overview', label: 'Overview', icon: LayoutDashboard },
               { value: 'scripts', label: 'Scripts', icon: FileCode2, count: scripts.length },
               { value: 'environments', label: 'Environments', icon: Globe, count: environments.length },
               { value: 'runs', label: 'Runs', icon: History },
@@ -101,6 +104,14 @@ export default function AutomationPage() {
             onSaved={upsertScript}
             onDeleted={(id) => { setScripts((prev) => prev.filter((s) => s.id !== id)); setOpenScriptId(null) }}
           />
+        ) : section === 'overview' ? (
+          <OverviewSection
+            projectId={projectId}
+            showToast={showToast}
+            onGoTo={setSection}
+            onOpenScript={setOpenScriptId}
+            onDraftFor={(testCaseId) => { setDraftFor(testCaseId); setSection('scripts') }}
+          />
         ) : section === 'runs' ? (
           <RunsSection projectId={projectId} environments={environments} showToast={showToast}
                        onOpenScript={(id) => { refreshScripts(); setOpenScriptId(id) }} />
@@ -118,7 +129,9 @@ export default function AutomationPage() {
             environments={environments}
             showToast={showToast}
             onOpen={setOpenScriptId}
-            onCreated={(script) => { upsertScript(script); setOpenScriptId(script.id) }}
+            onCreated={(script) => { setDraftFor(null); upsertScript(script); setOpenScriptId(script.id) }}
+            draftFor={draftFor}
+            key={draftFor ?? 'scripts'}
           />
         )}
       </div>

@@ -7,9 +7,9 @@ import { getTestCases } from '../../services/testCaseApi'
 
 const STATUS = { draft: { tone: 'neutral', label: 'Draft' }, approved: { tone: 'verified', label: 'Approved' } }
 
-function DraftPanel({ projectId, environments, onCreated, onCancel, showToast }) {
+function DraftPanel({ projectId, environments, initialTestCaseId, onCreated, onCancel, showToast }) {
   const [testCases, setTestCases] = useState(null)
-  const [testCaseId, setTestCaseId] = useState('')
+  const [testCaseId, setTestCaseId] = useState(initialTestCaseId ? String(initialTestCaseId) : '')
   const [environmentId, setEnvironmentId] = useState(environments[0]?.id ?? '')
   const [busy, setBusy] = useState(false)
 
@@ -80,8 +80,9 @@ function DraftPanel({ projectId, environments, onCreated, onCancel, showToast })
   )
 }
 
-export default function ScriptsSection({ projectId, scripts, environments, onCreated, onOpen, showToast }) {
-  const [drafting, setDrafting] = useState(false)
+export default function ScriptsSection({ projectId, scripts, environments, onCreated, onOpen, showToast, draftFor }) {
+  // draftFor: a test case to draft a script for (from the overview's "Not automated yet").
+  const [drafting, setDrafting] = useState(Boolean(draftFor) && environments.length > 0)
   const [creating, setCreating] = useState(false)
 
   async function createBlank() {
@@ -120,7 +121,7 @@ export default function ScriptsSection({ projectId, scripts, environments, onCre
       )}
 
       {drafting && (
-        <DraftPanel projectId={projectId} environments={environments} showToast={showToast}
+        <DraftPanel projectId={projectId} environments={environments} showToast={showToast} initialTestCaseId={draftFor}
                     onCancel={() => setDrafting(false)}
                     onCreated={(script) => { setDrafting(false); onCreated(script) }} />
       )}
