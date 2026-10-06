@@ -8,10 +8,20 @@ counts the bytes actually received and aborts with 413 once over the limit.
 
 import json
 import os
+import re
 
 from fastapi import HTTPException
 
 DEFAULT_MAX_BODY_BYTES = 5 * 1024 * 1024
+# Document uploads (10 MB files) need a little more, on that one route only.
+DOCUMENT_UPLOAD_MAX_BODY_BYTES = 11 * 1024 * 1024
+_DOCUMENT_UPLOAD_PATH = re.compile(r"^/projects/\d+/documents/?$")
+
+
+def max_body_bytes_for(method: str, path: str, default: int) -> int:
+    if method == "POST" and _DOCUMENT_UPLOAD_PATH.match(path or ""):
+        return max(default, int(os.getenv("DOCUMENT_UPLOAD_MAX_BODY_BYTES", DOCUMENT_UPLOAD_MAX_BODY_BYTES)))
+    return default
 
 
 class _BodyTooLarge(HTTPException):
@@ -33,13 +43,14 @@ class StreamingBodyLimitMiddleware:
 
         received = 0
         response_started = False
+        max_bytes = max_body_bytes_for(scope.get("method", ""), scope.get("path", ""), self.max_bytes)
 
         async def limited_receive():
             nonlocal received
             message = await receive()
             if message["type"] == "http.request":
                 received += len(message.get("body", b""))
-                if received > self.max_bytes:
+                if received > max_bytes:
                     raise _BodyTooLarge()
             return message
 

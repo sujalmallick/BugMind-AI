@@ -36,6 +36,8 @@ os.environ.update({
     # The LLM injection classifier adds a model call per analysis; off by default
     # so call-count assertions stay stable. Its own tests switch it on.
     "PROMPT_INJECTION_LLM_CLASSIFIER_ENABLED": "false",
+    # Tests run background jobs explicitly with services.jobs.run_pending_jobs().
+    "JOBS_WORKER_ENABLED": "false",
 })
 
 import pytest  # noqa: E402

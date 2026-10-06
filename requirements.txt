@@ -62,6 +62,8 @@ zstandard==0.25.0
 slowapi==0.1.9
 Pillow==12.3.0
 gunicorn==23.0.0
+pypdf==6.19.0
+python-docx==1.2.0
 litellm==1.89.7
 
 azure-storage-blob==12.25.1
