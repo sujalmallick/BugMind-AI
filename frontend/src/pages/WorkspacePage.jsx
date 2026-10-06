@@ -7,6 +7,7 @@ import WorkflowInputPanel from "../components/layout/WorkflowInputPanel";
 import TabBar from "../components/layout/TabBar";
 import CommandPalette from "../components/layout/CommandPalette";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { Bot } from "lucide-react";
 import ToastStack from "../components/shared/ToastStack";
 import useToasts from "../components/shared/useToasts";
 import AIThinking from "../components/shared/AIThinking";
@@ -660,13 +661,29 @@ function handleCopyIssueResult() {
                 {project.name}
               </span>
             )}
+            <button
+              type="button"
+              onClick={() => navigate(`/project/${projectId}/automation`)}
+              className="btn-secondary ml-auto lg:hidden"
+            >
+              <Bot size={14} aria-hidden="true" /> Automation
+            </button>
           </div>
 
-          <TabBar
-            tabs={tabsWithCounts}
-            activeTab={activeTab}
-            onChange={setActiveTab}
-          />
+          <div className="flex min-w-0 items-center gap-2">
+            <TabBar
+              tabs={tabsWithCounts}
+              activeTab={activeTab}
+              onChange={setActiveTab}
+            />
+            <button
+              type="button"
+              onClick={() => navigate(`/project/${projectId}/automation`)}
+              className="btn-secondary hidden shrink-0 lg:inline-flex"
+            >
+              <Bot size={14} aria-hidden="true" /> Automation
+            </button>
+          </div>
         </div>
 
 

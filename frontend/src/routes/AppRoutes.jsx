@@ -25,6 +25,7 @@ const ProfilePage = lazy(() => import("../pages/settings/ProfilePage"));
 const OrganizationsPage = lazy(() => import("../pages/OrganizationsPage"));
 const InviteAcceptPage = lazy(() => import("../pages/InviteAcceptPage"));
 const ActivityFeedPage = lazy(() => import("../pages/ActivityFeedPage"));
+const AutomationPage = lazy(() => import("../pages/AutomationPage"));
 const DashboardPage = lazy(() => import("../pages/DashboardPage"));
 const ProjectDashboardPage = lazy(() => import("../pages/ProjectDashboardPage"));
 const TeamDashboardPage = lazy(() => import("../pages/TeamDashboardPage"));
@@ -167,6 +168,15 @@ export default function AppRoutes() {
 
             <WorkspacePage />
 
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/project/:projectId/automation"
+        element={
+          <ProtectedRoute>
+            <AutomationPage />
           </ProtectedRoute>
         }
       />

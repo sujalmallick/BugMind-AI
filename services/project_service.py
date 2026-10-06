@@ -233,6 +233,9 @@ def delete_project(
     from services.test_plan_service import delete_project_plans
 
     delete_project_plans(db, project_id)
+    from services.automation_service import delete_project_automation
+
+    delete_project_automation(db, project_id)
 
     db.delete(project)
     db.commit()
