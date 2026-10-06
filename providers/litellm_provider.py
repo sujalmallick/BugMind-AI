@@ -77,9 +77,10 @@ class LiteLLMProvider:
             if "/" not in model_name:
                 model_name = f"{prov}/{model_name}"
 
+        # The key is passed to completion() per call. Never write it to os.environ:
+        # that is process-global, so a user's BYOK key would become the fallback
+        # key for every other user served by this worker.
         env_var = _PROVIDER_KEY_MAP.get(prov)
-        if env_var and api_key:
-            os.environ[env_var] = api_key
 
         logger.debug(
             f"LiteLLM Provider={prov} | Model={model_name} | "
