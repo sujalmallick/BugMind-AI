@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Bot, FileCode2, Globe } from 'lucide-react'
+import HeaderBar from '../components/layout/HeaderBar'
 import PageHeading from '../components/shared/PageHeading'
 import SegmentedControl from '../components/shared/SegmentedControl'
 import SkeletonBlock from '../components/shared/SkeletonBlock'
@@ -59,7 +60,9 @@ export default function AutomationPage() {
   const loading = environments === null || scripts === null
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 pb-16 pt-5 sm:px-6 sm:pt-6">
+    <div className="workspace-atmosphere min-h-screen font-sans text-ink">
+    <HeaderBar connected projectName={project?.name} projectId={projectId} updatedAt={project?.updatedAt} />
+    <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-5 sm:px-6 sm:pt-6">
       <Link to={`/project/${projectId}/workspace`}
             className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[13px] font-medium text-muted transition-colors hover:bg-ink/[0.04] hover:text-ink">
         <span aria-hidden="true">←</span> Back to workspace
@@ -116,6 +119,7 @@ export default function AutomationPage() {
       </div>
 
       <ToastStack toasts={toasts} />
+    </main>
     </div>
   )
 }
