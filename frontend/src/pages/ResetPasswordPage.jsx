@@ -64,6 +64,7 @@ export default function ResetPasswordPage() {
 
   return (
     <AuthLayout
+      variant="centered"
       title="Set a new password"
       subtitle={subtitle}
       footer={

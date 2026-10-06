@@ -44,6 +44,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthLayout
+      variant="centered"
       title={sentMessage ? "Check your inbox" : "Reset your password"}
       subtitle={
         sentMessage

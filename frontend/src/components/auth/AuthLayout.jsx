@@ -78,30 +78,62 @@ function Showcase() {
   );
 }
 
-export default function AuthLayout({ title, subtitle, children, footer }) {
+function AuthHeader() {
+  return (
+    <header className="relative flex items-center justify-between gap-4">
+      <Link
+        to="/landing"
+        className="rounded-md transition-opacity hover:opacity-80"
+        aria-label="BugMind AI home"
+      >
+        <BrandMark size="md" />
+      </Link>
+      <Link
+        to="/landing"
+        className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[13px] font-medium text-muted transition-colors hover:bg-ink/[0.04] hover:text-ink"
+      >
+        <ArrowLeft size={14} aria-hidden="true" />
+        <span className="hidden xs:inline">Back to site</span>
+        <span className="xs:hidden">Home</span>
+      </Link>
+    </header>
+  );
+}
+
+// `variant="centered"` drops the showcase panel and puts the form in a frosted
+// card in the middle of the screen (used by the password-recovery screens).
+export default function AuthLayout({ title, subtitle, children, footer, variant = "split" }) {
   const year = new Date().getFullYear();
+
+  if (variant === "centered") {
+    return (
+      <div className="relative flex min-h-screen flex-col overflow-hidden bg-surface px-5 py-6 sm:px-10 sm:py-8">
+        <Orbs variant="hero" />
+        <AuthHeader />
+
+        <main className="relative flex flex-1 items-center justify-center py-10 sm:py-14">
+          <div className="auth-card-enter glass w-full max-w-[420px] rounded-2xl p-6 sm:p-8">
+            <h1 className="text-[1.625rem] font-semibold leading-tight tracking-[-0.03em] text-ink sm:text-[1.875rem]">
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="mt-2 text-[15px] leading-relaxed text-muted">{subtitle}</p>
+            )}
+            <div className="mt-7">{children}</div>
+            {footer && <div className="mt-7 border-t border-hairline pt-5 text-center text-sm text-muted">{footer}</div>}
+          </div>
+        </main>
+
+        <footer className="relative text-center text-[12px] text-muted">© {year} BugMind AI</footer>
+      </div>
+    );
+  }
 
   return (
     <div className="grid min-h-screen bg-surface lg:grid-cols-2">
       {/* Form column */}
       <div className="flex min-h-screen flex-col px-5 py-6 sm:px-10 sm:py-8">
-        <header className="flex items-center justify-between gap-4">
-          <Link
-            to="/landing"
-            className="rounded-md transition-opacity hover:opacity-80"
-            aria-label="BugMind AI home"
-          >
-            <BrandMark size="md" />
-          </Link>
-          <Link
-            to="/landing"
-            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[13px] font-medium text-muted transition-colors hover:bg-ink/[0.04] hover:text-ink"
-          >
-            <ArrowLeft size={14} aria-hidden="true" />
-            <span className="hidden xs:inline">Back to site</span>
-            <span className="xs:hidden">Home</span>
-          </Link>
-        </header>
+        <AuthHeader />
 
         <main className="flex flex-1 items-center justify-center py-10 sm:py-14">
           <div className="auth-card-enter w-full max-w-[360px]">
