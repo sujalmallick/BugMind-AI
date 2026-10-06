@@ -42,9 +42,13 @@ def call_llm(
     user_id: int | None = None,
     _retry_count: int = 0,
     agent: str | None = None,
+    json_mode: bool = False,
 ):
     """
     Sends a single request to the configured LLM provider.
+
+    json_mode asks the provider for a JSON object response where supported;
+    the caller must still validate the result (it is a hint, not a guarantee).
     """
     global _call_count
     _call_count += 1
@@ -61,7 +65,7 @@ def call_llm(
         else:
             manager = default_llm_manager
 
-        response = manager.generate(prompt, agent=agent)
+        response = manager.generate(prompt, agent=agent, json_mode=json_mode)
 
         if not response:
             return None
@@ -88,6 +92,7 @@ def call_llm(
                     user_id=user_id,
                     _retry_count=_retry_count + 1,
                     agent=agent,
+                    json_mode=json_mode,
                 )
             logger.error("Quota exceeded (after backoff retries).")
             return {"success": False, "error": "AI Quota exceeded. Please try again later."}
@@ -110,7 +115,7 @@ def call_llm(
         return {"success": False, "error": f"AI service error: {output_guardrail.sanitize_error(e)}"}
 
 
-def parse_json_response(response, prompt=None, user_id=None, agent=None):
+def parse_json_response(response, prompt=None, user_id=None, agent=None, json_mode=False):
     if response is None:
         return {
             "success": False,
@@ -149,7 +154,7 @@ Your previous response failed JSON parsing with this error:
 Please correct the response and return ONLY valid JSON.
 Do not wrap it in markdown. Do not include explanations.
 """
-            retry_response = call_llm(retry_prompt, user_id=user_id, agent=agent)
+            retry_response = call_llm(retry_prompt, user_id=user_id, agent=agent, json_mode=json_mode)
 
             if retry_response:
                 if isinstance(retry_response, dict):

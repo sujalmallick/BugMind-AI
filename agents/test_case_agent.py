@@ -1,6 +1,7 @@
 from utils import call_llm, parse_json_response
 from utils import logger
 from constants import TEST_CASE_STATUSES
+from agents.output_schemas import GeneratedTestCase, parse_items, unwrap_list
 from guardrails import Source, untrusted_block
 
 AGENT = "test_case_agent"
@@ -76,9 +77,9 @@ For each test case, provide:
 8. "expectedResult": Detailed description of the correct system reaction (e.g., "Validation warning displays: 'Invalid email format' and login is blocked").
 9. "priority": Strictly one of: "High", "Medium", "Low".
 
-Return your response strictly as a JSON array of test case objects matching the exact format below:
+Return your response strictly as a JSON object with a single key "test_cases" whose value is an array of test case objects, matching the exact format below:
 
-[
+{{"test_cases": [
   {{
     "module": "Authentication",
     "category": "Functional",
@@ -96,17 +97,17 @@ Return your response strictly as a JSON array of test case objects matching the 
     "expectedResult": "User is redirected to the dashboard page",
     "priority": "High"
   }}
-]
+]}}
 
 Rules:
-- Return ONLY the raw JSON array. Do NOT wrap it in markdown fences like ```json. Do NOT output intro/outro text.
+- Return ONLY the raw JSON object. Do NOT wrap it in markdown fences like ```json. Do NOT output intro/outro text.
 - Prioritize testing critical user journeys and high-risk areas.
 - category MUST be one of: "Functional", "Negative", "Edge Case", "Security", "Regression".
 - priority MUST be one of: "High", "Medium", "Low".
 """
 
     logger.info("Running Test Case Agent")
-    response = call_llm(prompt, user_id=user_id, agent=AGENT)
+    response = call_llm(prompt, user_id=user_id, agent=AGENT, json_mode=True)
 
     if response is None:
         return {
@@ -117,78 +118,23 @@ Rules:
     if isinstance(response, dict):
         test_cases = response
     else:
-        test_cases = parse_json_response(response, prompt, user_id=user_id, agent=AGENT)
+        test_cases = parse_json_response(response, prompt, user_id=user_id, agent=AGENT, json_mode=True)
 
     if isinstance(test_cases, dict) and test_cases.get("success") is False:
         return test_cases
-    if not isinstance(test_cases, list): test_cases = []
-   
 
-    valid_priorities = {"High", "Medium", "Low"}
-    valid_categories = {"Functional", "Negative", "Edge Case", "Security", "Regression"}
-
-    normalized_test_cases = []
-    for tc in test_cases:
-        if not isinstance(tc, dict):
-            continue
-
-        # Standard normalization & fallback assignment
-        module_val = str(tc.get("module", "")).strip()
-        if not module_val:
-            # Fallback to first confirmed module or a generic test module
-            module_val = confirmed_mods[0] if confirmed_mods else "General"
-
-        category_val = str(tc.get("category", "Functional")).strip()
-        # Normalization maps
-        category_map = {
-            "functional": "Functional",
-            "negative": "Negative",
-            "edge case": "Edge Case",
-            "edgecase": "Edge Case",
-            "security": "Security",
-            "regression": "Regression",
-        }
-        category_val = category_map.get(category_val.lower(), "Functional")
-        if category_val not in valid_categories:
-            category_val = "Functional"
-
-        priority_val = str(tc.get("priority", "Medium")).strip()
-        priority_map = {
-            "high": "High",
-            "critical": "High",
-            "p0": "High",
-            "p1": "High",
-            "medium": "Medium",
-            "p2": "Medium",
-            "low": "Low",
-            "p3": "Low",
-        }
-        priority_val = priority_map.get(priority_val.lower(), "Medium")
-        if priority_val not in valid_priorities:
-            priority_val = "Medium"
-
-        steps_val = tc.get("steps", [])
-        if isinstance(steps_val, list):
-            steps_val = [str(step).strip() for step in steps_val if step is not None]
-        else:
-            steps_val = [str(steps_val).strip()] if steps_val else []
-
-        normalized_tc = {
-            "module": module_val,
-            "category": category_val,
-            "description": str(tc.get("description", "Perform test case execution")).strip(),
-            "objective": str(tc.get("objective", "Verify correct system response")).strip(),
-            "preconditions": str(tc.get("preconditions", "None")).strip(),
-            "steps": steps_val,
-            "inputData": str(tc.get("inputData", "N/A")).strip(),
-            "expectedResult": str(tc.get("expectedResult", "System responds correctly")).strip(),
-            "priority": priority_val
-        }
-        normalized_test_cases.append(normalized_tc)
+    parsed = parse_items(
+        GeneratedTestCase,
+        unwrap_list(test_cases, "test_cases"),
+        context={"default_module": confirmed_mods[0] if confirmed_mods else None},
+    )
 
     # Post-process: assign ID and initial status (keeping original business logic intact)
-    for index, test_case in enumerate(normalized_test_cases, start=1):
+    normalized_test_cases = []
+    for index, tc in enumerate(parsed, start=1):
+        test_case = tc.model_dump()
         test_case["id"] = f"TC-{index:03d}"
         test_case["status"] = TEST_CASE_STATUSES["NOT_EXECUTED"]
+        normalized_test_cases.append(test_case)
 
     return normalized_test_cases

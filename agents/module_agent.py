@@ -2,6 +2,7 @@ import json
 from utils import logger
 from utils import call_llm, parse_json_response
 from guardrails import Source, untrusted_block
+from agents.output_schemas import ModuleAnalysis
 
 AGENT = "module_agent"
 
@@ -46,7 +47,7 @@ Rules:
 
     logger.debug(f"MODULE USER: {user_id}")
 
-    response = call_llm(prompt, user_id=user_id, agent=AGENT)
+    response = call_llm(prompt, user_id=user_id, agent=AGENT, json_mode=True)
     
     # Quota exhausted / API failure
     if response is None:
@@ -59,37 +60,9 @@ Rules:
     if isinstance(response, dict):
         modules = response
     else:
-        modules = parse_json_response(response, prompt, user_id=user_id, agent=AGENT)
+        modules = parse_json_response(response, prompt, user_id=user_id, agent=AGENT, json_mode=True)
 
     if isinstance(modules, dict) and modules.get("success") is False:
         return modules
 
-    # Validation safety
-    if not isinstance(modules, dict):
-        modules = {}
-
-    expected_keys = [
-        "confirmed_modules",
-        "assumed_modules",
-        "unknown_areas",
-        "critical_workflows",
-        "high_risk_areas"
-    ]
-
-    normalized_modules = {}
-
-    for key in expected_keys:
-        value = modules.get(key)
-
-        if isinstance(value, list):
-            normalized_modules[key] = [
-                str(item).strip()
-                for item in value
-                if item is not None and str(item).strip()
-            ]
-        else:
-            normalized_modules[key] = []
-
-            
-
-    return normalized_modules
+    return ModuleAnalysis.model_validate(modules).model_dump()

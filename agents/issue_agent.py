@@ -1,6 +1,7 @@
 from utils import logger
 from utils import call_llm, parse_json_response
 from guardrails import Source, untrusted_block
+from agents.output_schemas import BugReport, ObservationReport
 
 AGENT = "issue_agent"
 
@@ -77,7 +78,7 @@ Rules:
 
     logger.info("Running Issue Analysis Agent")
 
-    response = call_llm(prompt, user_id=user_id, agent=AGENT)
+    response = call_llm(prompt, user_id=user_id, agent=AGENT, json_mode=True)
 
     if response is None:
         return {
@@ -87,73 +88,12 @@ Rules:
     if isinstance(response, dict):
         result = response
     else:
-        result = parse_json_response(response, prompt, user_id=user_id, agent=AGENT)
+        result = parse_json_response(response, prompt, user_id=user_id, agent=AGENT, json_mode=True)
 
     if isinstance(result, dict) and result.get("success") is False:
         return result
 
     # Validate and normalize based on the conditional contract
-    if not isinstance(result, dict):
-        result = {}
-
-    valid_levels = {"High", "Medium", "Low"}
-    severity_priority_map = {
-        "high": "High",
-        "critical": "High",
-        "p0": "High",
-        "p1": "High",
-        "medium": "Medium",
-        "p2": "Medium",
-        "low": "Low",
-        "p3": "Low",
-    }
-
     if is_failed_test_case:
-        # Standard Bug Schema
-        severity_val = str(result.get("severity", "Medium")).strip()
-        severity_val = severity_priority_map.get(severity_val.lower(), "Medium")
-        if severity_val not in valid_levels:
-            severity_val = "Medium"
-
-        priority_val = str(result.get("priority", "Medium")).strip()
-        priority_val = severity_priority_map.get(priority_val.lower(), "Medium")
-        if priority_val not in valid_levels:
-            priority_val = "Medium"
-
-        bug_type_val = str(result.get("bugType", "Functional")).strip()
-        if not bug_type_val:
-            bug_type_val = "Functional"
-
-        title_val = str(result.get("title", "")).strip()
-        if not title_val:
-            # Generate a sensible default title
-            title_val = f"Bug observed during: {observation[:60]}..." if observation else "Unspecified system bug"
-
-        return {
-            "reportType": "Bug",
-            "title": title_val,
-            "bugType": bug_type_val,
-            "severity": severity_val,
-            "priority": priority_val
-        }
-    else:
-        # Standard Observation Schema
-        severity_val = str(result.get("severity", "Medium")).strip()
-        severity_val = severity_priority_map.get(severity_val.lower(), "Medium")
-        if severity_val not in valid_levels:
-            severity_val = "Medium"
-
-        obs_type_val = str(result.get("observationType", "UX Improvement")).strip()
-        if not obs_type_val:
-            obs_type_val = "UX Improvement"
-
-        suggested_action_val = str(result.get("suggestedAction", "")).strip()
-        if not suggested_action_val:
-            suggested_action_val = "No suggested action provided."
-
-        return {
-            "reportType": "Observation",
-            "observationType": obs_type_val,
-            "severity": severity_val,
-            "suggestedAction": suggested_action_val
-        }
+        return BugReport.model_validate(result, context={"observation": observation}).model_dump()
+    return ObservationReport.model_validate(result).model_dump()

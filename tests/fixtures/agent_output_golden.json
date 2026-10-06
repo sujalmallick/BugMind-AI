@@ -1,0 +1,266 @@
+{
+  "_comment": "Raw LLM outputs and the normalized agent output recorded from the pre-Pydantic agents (main@08db14e). Normalization must not drift.",
+  "cases": [
+    {
+      "agent": "module",
+      "name": "clean",
+      "raw": "{\"confirmed_modules\": [\"Authentication\", \"Payments\"], \"assumed_modules\": [\"Profile\"], \"unknown_areas\": [], \"critical_workflows\": [\"Login then pay\"], \"high_risk_areas\": [\"Payments\"]}",
+      "expected": {
+        "confirmed_modules": [
+          "Authentication",
+          "Payments"
+        ],
+        "assumed_modules": [
+          "Profile"
+        ],
+        "unknown_areas": [],
+        "critical_workflows": [
+          "Login then pay"
+        ],
+        "high_risk_areas": [
+          "Payments"
+        ]
+      }
+    },
+    {
+      "agent": "module",
+      "name": "messy",
+      "raw": "Here you go:\n```json\n{\"confirmed_modules\": [\"  Auth  \", null, \"\", 42, \"Cart\"], \"assumed_modules\": \"Profile\", \"critical_workflows\": [\"Checkout\"], \"high_risk_areas\": [\" \"], \"extra_key\": [\"ignored\"]}\n```\nHope this helps!",
+      "expected": {
+        "confirmed_modules": [
+          "Auth",
+          "42",
+          "Cart"
+        ],
+        "assumed_modules": [],
+        "unknown_areas": [],
+        "critical_workflows": [
+          "Checkout"
+        ],
+        "high_risk_areas": []
+      }
+    },
+    {
+      "agent": "module",
+      "name": "top_level_array",
+      "raw": "[\"Auth\", \"Cart\"]",
+      "expected": {
+        "confirmed_modules": [],
+        "assumed_modules": [],
+        "unknown_areas": [],
+        "critical_workflows": [],
+        "high_risk_areas": []
+      }
+    },
+    {
+      "agent": "checklist",
+      "name": "clean",
+      "raw": "[{\"module\": \"Authentication\", \"items\": [{\"id\": \"auth-001\", \"text\": \"Verify lockout after 5 failed logins\", \"confidence\": \"confirmed\"}]}]",
+      "expected": [
+        {
+          "module": "Authentication",
+          "items": [
+            {
+              "id": "AUTH-001",
+              "text": "Verify lockout after 5 failed logins",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "agent": "checklist",
+      "name": "messy",
+      "raw": "[{\"module\": \" Login Page \", \"items\": [{\"id\": \"\", \"text\": \" Check blank email \", \"confidence\": \"Assumed\"}, {\"text\": \"Check SQL injection\", \"confidence\": \"maybe\"}, {\"id\": \"lg-003\", \"text\": \"   \", \"confidence\": \"confirmed\"}, \"not a dict\", {\"id\": \" lg-004 \", \"text\": \"Check remember-me\"}]}, {\"module\": \"\", \"items\": [{\"id\": \"X-1\", \"text\": \"dropped: no module\"}]}, {\"module\": \"Empty\", \"items\": []}, {\"module\": \"Bad items\", \"items\": \"nope\"}, {\"module\": \"!!!\", \"items\": [{\"text\": \"symbol-only module name\"}]}, \"garbage\"]",
+      "expected": [
+        {
+          "module": "Login Page",
+          "items": [
+            {
+              "id": "LOGI-001",
+              "text": "Check blank email",
+              "confidence": "assumed"
+            },
+            {
+              "id": "LOGI-002",
+              "text": "Check SQL injection",
+              "confidence": "confirmed"
+            },
+            {
+              "id": "LG-004",
+              "text": "Check remember-me",
+              "confidence": "confirmed"
+            }
+          ]
+        },
+        {
+          "module": "!!!",
+          "items": [
+            {
+              "id": "TEST-001",
+              "text": "symbol-only module name",
+              "confidence": "confirmed"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "agent": "checklist",
+      "name": "not_json_list",
+      "raw": "{\"foo\": \"bar\"}",
+      "expected": []
+    },
+    {
+      "agent": "test_case",
+      "name": "clean",
+      "raw": "[{\"module\": \"Authentication\", \"category\": \"Security\", \"description\": \"Verify login lockout\", \"objective\": \"Brute force protection\", \"preconditions\": \"Account exists\", \"steps\": [\"Open login\", \"Enter wrong password 5 times\"], \"inputData\": \"Email: a, Password: b\", \"expectedResult\": \"Account locked\", \"priority\": \"p1\"}]",
+      "expected": [
+        {
+          "module": "Authentication",
+          "category": "Security",
+          "description": "Verify login lockout",
+          "objective": "Brute force protection",
+          "preconditions": "Account exists",
+          "steps": [
+            "Open login",
+            "Enter wrong password 5 times"
+          ],
+          "inputData": "Email: a, Password: b",
+          "expectedResult": "Account locked",
+          "priority": "High",
+          "id": "TC-001",
+          "status": "not-executed"
+        }
+      ]
+    },
+    {
+      "agent": "test_case",
+      "name": "messy",
+      "raw": "[{\"category\": \"edgecase\", \"priority\": \"CRITICAL\", \"steps\": \"Single step as string\", \"description\": \"  Edge  \"}, {\"module\": \"Cart\", \"category\": \"Integration\", \"priority\": \"urgent\", \"steps\": [\"a\", null, 3]}, {\"module\": \"Cart\", \"category\": \"EDGE CASE\", \"priority\": \"P3\", \"steps\": null}, {\"module\": \"Cart\", \"category\": \"negative\", \"priority\": \"Low\", \"steps\": []}, \"garbage\"]",
+      "expected": [
+        {
+          "module": "Authentication",
+          "category": "Edge Case",
+          "description": "Edge",
+          "objective": "Verify correct system response",
+          "preconditions": "None",
+          "steps": [
+            "Single step as string"
+          ],
+          "inputData": "N/A",
+          "expectedResult": "System responds correctly",
+          "priority": "High",
+          "id": "TC-001",
+          "status": "not-executed"
+        },
+        {
+          "module": "Cart",
+          "category": "Functional",
+          "description": "Perform test case execution",
+          "objective": "Verify correct system response",
+          "preconditions": "None",
+          "steps": [
+            "a",
+            "3"
+          ],
+          "inputData": "N/A",
+          "expectedResult": "System responds correctly",
+          "priority": "Medium",
+          "id": "TC-002",
+          "status": "not-executed"
+        },
+        {
+          "module": "Cart",
+          "category": "Edge Case",
+          "description": "Perform test case execution",
+          "objective": "Verify correct system response",
+          "preconditions": "None",
+          "steps": [],
+          "inputData": "N/A",
+          "expectedResult": "System responds correctly",
+          "priority": "Low",
+          "id": "TC-003",
+          "status": "not-executed"
+        },
+        {
+          "module": "Cart",
+          "category": "Negative",
+          "description": "Perform test case execution",
+          "objective": "Verify correct system response",
+          "preconditions": "None",
+          "steps": [],
+          "inputData": "N/A",
+          "expectedResult": "System responds correctly",
+          "priority": "Low",
+          "id": "TC-004",
+          "status": "not-executed"
+        }
+      ]
+    },
+    {
+      "agent": "issue",
+      "name": "bug_clean",
+      "failed_test_case": true,
+      "raw": "{\"reportType\": \"Bug\", \"title\": \"Login fails\", \"bugType\": \"Functional\", \"severity\": \"High\", \"priority\": \"Medium\"}",
+      "expected": {
+        "reportType": "Bug",
+        "title": "Login fails",
+        "bugType": "Functional",
+        "severity": "High",
+        "priority": "Medium"
+      }
+    },
+    {
+      "agent": "issue",
+      "name": "bug_messy",
+      "failed_test_case": true,
+      "raw": "{\"title\": \"  \", \"bugType\": \"\", \"severity\": \"Critical\", \"priority\": \"P2\"}",
+      "expected": {
+        "reportType": "Bug",
+        "title": "Bug observed during: Login button does nothing when clicked twice quickly...",
+        "bugType": "Functional",
+        "severity": "High",
+        "priority": "Medium"
+      }
+    },
+    {
+      "agent": "issue",
+      "name": "bug_wrong_shape",
+      "failed_test_case": true,
+      "raw": "[\"not\", \"an\", \"object\"]",
+      "expected": {
+        "reportType": "Bug",
+        "title": "Bug observed during: Login button does nothing when clicked twice quickly...",
+        "bugType": "Functional",
+        "severity": "Medium",
+        "priority": "Medium"
+      }
+    },
+    {
+      "agent": "issue",
+      "name": "obs_clean",
+      "failed_test_case": false,
+      "raw": "{\"reportType\": \"Observation\", \"observationType\": \"UX Improvement\", \"severity\": \"low\", \"suggestedAction\": \"Add a spinner\"}",
+      "expected": {
+        "reportType": "Observation",
+        "observationType": "UX Improvement",
+        "severity": "Low",
+        "suggestedAction": "Add a spinner"
+      }
+    },
+    {
+      "agent": "issue",
+      "name": "obs_messy",
+      "failed_test_case": false,
+      "raw": "{\"observationType\": \"\", \"severity\": \"sev1\", \"suggestedAction\": \"\"}",
+      "expected": {
+        "reportType": "Observation",
+        "observationType": "UX Improvement",
+        "severity": "Medium",
+        "suggestedAction": "No suggested action provided."
+      }
+    }
+  ]
+}
