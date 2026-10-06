@@ -22,6 +22,10 @@ from routes.activity import router as activity_router
 from auth.dependencies import get_current_user
 from database.models.user import User
 from fastapi import Depends, Request
+from sqlalchemy.orm import Session
+from database.session import get_db
+from services.project_context import find_similar_issues, get_test_case_by_ref
+from auth.permissions import require_project_role
 from limiter import limiter
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.middleware import SlowAPIASGIMiddleware
@@ -260,7 +264,12 @@ def analyze_issue(
     request: Request,
     data: IssueInput,
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
+    # Check project access before any guardrail or LLM work is done on its behalf.
+    if data.project_id is not None:
+        require_project_role(db, current_user.id, data.project_id, "viewer")
+
     sanitized = {}
     for field in ("workflow", "observation", "expected_result", "actual_result"):
         value = getattr(data, field)
@@ -272,11 +281,25 @@ def analyze_issue(
             return check.error_response()
         sanitized[field] = check.sanitized_text
 
+    # Project context (read-only, viewer role): the failing test case and possible duplicates.
+    test_case = None
+    if data.project_id is not None and data.test_case_ref:
+        test_case = get_test_case_by_ref(db, current_user.id, data.project_id, data.test_case_ref)
+
     result = analyze_issue_agent(
         failed_test_case=data.failed_test_case,
         user_id=current_user.id,
+        test_case=test_case,
         **sanitized,
     )
+
+    if data.project_id is not None and not (isinstance(result, dict) and result.get("success") is False):
+        result = {
+            **result,
+            # Keyword similarity against existing issues; computed locally, never sent to the LLM.
+            "possibleDuplicates": find_similar_issues(db, current_user.id, data.project_id, data.observation),
+            "linkedTestCase": {"dbId": test_case["dbId"], "id": test_case["id"]} if test_case else None,
+        }
 
     safe_result, output_check = output_guardrail.validate_obj(result, agent="issue_agent")
     if output_check.blocked:

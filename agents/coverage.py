@@ -22,7 +22,8 @@ _STOPWORDS = {
 }
 
 
-def _keywords(text: str) -> set[str]:
+def keywords(text: str) -> set[str]:
+    """Lower-cased, lightly stemmed content words (stopwords and <3-char words dropped)."""
     words = set()
     for word in re.findall(r"[a-z0-9]+", str(text).lower()):
         if len(word) < 3 or word in _STOPWORDS:
@@ -39,11 +40,11 @@ def _keywords(text: str) -> set[str]:
 def _test_case_keywords(tc: dict) -> set[str]:
     parts = [tc.get("module"), tc.get("description"), tc.get("objective"), tc.get("preconditions"),
              tc.get("inputData"), tc.get("expectedResult"), *(tc.get("steps") or [])]
-    return _keywords(" ".join(str(p) for p in parts if p))
+    return keywords(" ".join(str(p) for p in parts if p))
 
 
 def _is_covered(target: str, test_case_keywords: list[set[str]]) -> bool:
-    wanted = _keywords(target)
+    wanted = keywords(target)
     if not wanted:
         return True  # nothing meaningful to look for
     needed = 1 if len(wanted) <= 2 else 2
@@ -71,14 +72,14 @@ def coverage_report(
     kind is one of: module, critical_workflow, high_risk_area, category.
     """
     test_cases = [tc for tc in (test_cases or []) if isinstance(tc, dict)]
-    keywords = [_test_case_keywords(tc) for tc in test_cases]
+    tc_keywords = [_test_case_keywords(tc) for tc in test_cases]
     confirmed = modules.get("confirmed_modules", []) if isinstance(modules, dict) else []
     categories = {tc.get("category") for tc in test_cases}
 
     checks: list[tuple[str, str, bool]] = []
-    checks += [("module", m, _module_covered(m, test_cases, keywords)) for m in confirmed]
-    checks += [("critical_workflow", w, _is_covered(w, keywords)) for w in critical_workflows or []]
-    checks += [("high_risk_area", r, _is_covered(r, keywords)) for r in high_risk_areas or []]
+    checks += [("module", m, _module_covered(m, test_cases, tc_keywords)) for m in confirmed]
+    checks += [("critical_workflow", w, _is_covered(w, tc_keywords)) for w in critical_workflows or []]
+    checks += [("high_risk_area", r, _is_covered(r, tc_keywords)) for r in high_risk_areas or []]
     checks += [("category", c, c in categories) for c in required_categories]
 
     covered = sum(ok for _, _, ok in checks)

@@ -64,8 +64,18 @@ def save_issue(
 
     title = str(issue.get("title") or "New Reported Bug").strip() or "New Reported Bug"
 
+    # Link to the failing test case when the caller names one from this project.
+    linked_tc = None
+    linked_id = issue.get("linked_test_case_id")
+    if isinstance(linked_id, int) and not isinstance(linked_id, bool):
+        linked_tc = (
+            db.query(TestCase)
+            .filter(TestCase.id == linked_id, TestCase.workspace_id == workspace.id)
+            .first()
+        )
+
     new_issue = Issue(
-        test_case_id=default_tc.id,
+        test_case_id=(linked_tc or default_tc).id,
         bug_id=bug_id,
         title=title[:255],
         description=str(issue.get("description") or ""),

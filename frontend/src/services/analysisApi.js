@@ -39,6 +39,9 @@ export async function classifyIssue(payload) {
       actual_result: payload.actual,
       failed_test_case:
         payload.mode === "failed",
+      // Optional project context: duplicate detection + the failing test case's details.
+      project_id: payload.projectId ?? null,
+      test_case_ref: payload.testCaseRef || null,
     }
   );
 

@@ -152,6 +152,31 @@ export default function IssueAnalysisTab({ form, onFormChange, onGenerate, isGen
             </ResultRow>
           </div>
         )}
+
+        {!isGenerating && result && (result.linkedTestCase || result.possibleDuplicates?.length > 0) && (
+          <div className="mt-3 border-t border-hairline pt-1">
+            {result.linkedTestCase && (
+              <ResultRow label="Linked test case">
+                <span className="text-[13px] text-ink">{result.linkedTestCase.id}</span>
+              </ResultRow>
+            )}
+            {result.possibleDuplicates?.length > 0 && (
+              <div className="py-2.5">
+                <span className="text-[13px] text-muted">Possible duplicates</span>
+                <ul className="mt-1.5 flex flex-col gap-1">
+                  {result.possibleDuplicates.map((dup) => (
+                    <li key={dup.id} className="flex items-center justify-between gap-3 text-[13px]">
+                      <span className="truncate text-ink">{dup.bugId} · {dup.title}</span>
+                      <span className="shrink-0 text-muted">
+                        {dup.status} · {Math.round(dup.similarity * 100)}% match
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
