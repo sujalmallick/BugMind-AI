@@ -45,3 +45,7 @@ class IssueInput(BaseModel):
     actual_result: str | None = None
 
     failed_test_case: bool
+
+    # Optional project context: enables duplicate detection and the failing test case's details.
+    project_id: int | None = None
+    test_case_ref: str | None = Field(None, max_length=30)

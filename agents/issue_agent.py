@@ -14,6 +14,27 @@ except ImportError:
         return decorator
 
 
+def _test_case_section(test_case: dict | None) -> str:
+    """The failing test case from the project's suite, when the issue came from one."""
+    if not test_case:
+        return ""
+    steps = [f"{i}. {s}" for i, s in enumerate(test_case.get("steps") or [], start=1)]
+    details = "\n".join([
+        f"ID: {test_case.get('id', '')}",
+        f"Module: {test_case.get('module', '')}",
+        f"Description: {test_case.get('description', '')}",
+        f"Preconditions: {test_case.get('preconditions', '')}",
+        "Steps:",
+        *steps,
+        f"Expected Result: {test_case.get('expectedResult', '')}",
+    ])
+    return f"""
+Failing Test Case from the project's test suite (user-provided data):
+{untrusted_block(details, source=Source.USER, label="failing_test_case", agent=AGENT)}
+Use it to judge which behaviour broke and how severe that is.
+"""
+
+
 @traceable(name="Issue Analysis Agent", run_type="chain")
 def analyze_issue_agent(
     workflow,
@@ -22,6 +43,7 @@ def analyze_issue_agent(
     actual_result,
     failed_test_case,
     user_id=None,
+    test_case=None,
 ):
     # Enforce failed_test_case as a boolean
     is_failed_test_case = bool(failed_test_case)
@@ -63,7 +85,7 @@ Actual Result (user-provided data):
 
 Is Failed Test Case (True = Bug, False = Observation):
 {is_failed_test_case}
-
+{_test_case_section(test_case)}
 Task:
 Perform a deep analysis of the issue. Depending on whether this is a direct test case failure (Bug) or a general user observation, you MUST return a valid JSON object matching the exact structure below.
 
