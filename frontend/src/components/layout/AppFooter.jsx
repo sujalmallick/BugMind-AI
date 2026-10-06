@@ -27,8 +27,18 @@ function FooterColumn({ title, children }) {
   );
 }
 
-// Inside the app a slim one-line footer keeps focus on the work; the full
-// multi-column footer is only used on the marketing page (variant="full").
+const APP_FOOTER_LINKS = [
+  { label: "Projects", to: "/" },
+  { label: "Dashboard", to: "/dashboard" },
+  { label: "Organizations", to: "/organizations" },
+  { label: "AI keys", to: "/settings/profile?tab=keys" },
+  { label: "Settings", to: "/profile" },
+  { label: "Help & FAQ", to: "/details#faq" },
+];
+
+// Inside the app the footer is a slim inset glass bar that mirrors the header,
+// so screens stay focused on the work. The full multi-column footer is only
+// used on the marketing page (variant="full").
 export default function AppFooter({ variant = "compact" }) {
   const navigate = useNavigate();
   const { authenticated } = useAuth();
@@ -36,15 +46,43 @@ export default function AppFooter({ variant = "compact" }) {
 
   if (variant === "compact") {
     return (
-      <footer className="border-t border-hairline bg-surface">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-4 text-[12px] text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p>© {year} BugMind AI</p>
-          <nav aria-label="Footer" className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <button type="button" onClick={() => navigate("/details")} className="transition-colors hover:text-ink">Product</button>
-            <button type="button" onClick={() => navigate("/details#faq")} className="transition-colors hover:text-ink">FAQ</button>
-            <button type="button" onClick={() => navigate("/settings/profile?tab=keys")} className="transition-colors hover:text-ink">AI keys</button>
-            <button type="button" onClick={() => navigate("/profile")} className="transition-colors hover:text-ink">Settings</button>
-          </nav>
+      <footer className="mt-auto px-3 pb-3 pt-6 sm:px-4">
+        <div className="glass-header mx-auto flex max-w-7xl flex-col gap-3 rounded-2xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className="rounded-md transition-opacity hover:opacity-80"
+              aria-label="BugMind AI home"
+            >
+              <BrandMark size="sm" />
+            </button>
+            <span className="h-4 w-px bg-hairline-strong" aria-hidden="true" />
+            <p className="text-[12px] text-muted">© {year} BugMind AI</p>
+          </div>
+
+          <div className="flex items-center justify-between gap-4 sm:justify-end">
+            <nav aria-label="Footer" className="flex flex-wrap items-center gap-x-1 gap-y-1">
+              {APP_FOOTER_LINKS.map((l) => (
+                <button
+                  key={l.label}
+                  type="button"
+                  onClick={() => navigate(l.to)}
+                  className="rounded-md px-2 py-1 text-[12px] font-medium text-ink/60 transition-colors hover:bg-white/70 hover:text-ink"
+                >
+                  {l.label}
+                </button>
+              ))}
+            </nav>
+            <button
+              type="button"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              aria-label="Back to top"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted ring-1 ring-ink/[0.06] transition-colors hover:bg-white/70 hover:text-ink"
+            >
+              <ArrowUp size={14} aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </footer>
     );

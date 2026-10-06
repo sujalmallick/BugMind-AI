@@ -72,8 +72,10 @@ export default function ActivityItem({ activity }) {
 
   return (
     <div className="flex gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-ink/[0.03]">
-      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${meta.color}`}>
-        <IconComponent size={15} aria-hidden="true" />
+      <div className="relative h-8 w-8 shrink-0 rounded-lg bg-surface">
+        <div className={`flex h-8 w-8 items-center justify-center rounded-lg border ${meta.color}`}>
+          <IconComponent size={15} aria-hidden="true" />
+        </div>
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-[13px] leading-snug text-muted">

@@ -1,6 +1,7 @@
 import React from "react";
 import { BarChart3 } from "lucide-react";
 import EmptyState from "../shared/EmptyState";
+import { SEVERITY_COLORS } from "./chartColors";
 import {
   BarChart as RechartsBarChart,
   Bar,
@@ -12,13 +13,6 @@ import {
   Cell
 } from "recharts";
 
-// Palette tokens from index.css (high sits between flagged and ochre)
-const SEVERITY_COLORS = {
-  "critical": "#dc2626",      // flagged
-  "high": "#ea580c",
-  "medium": "#d97706",        // ochre
-  "low": "#94a3b8",           // muted
-};
 
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
