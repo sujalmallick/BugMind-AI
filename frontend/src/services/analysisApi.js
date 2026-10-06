@@ -14,6 +14,10 @@ export async function analyzeWorkflow(payload) {
       .filter((step) => step.trim() !== ""),
   };
 
+  // Optional: lets the agents avoid duplicating the project's manual test cases.
+  if (payload.projectId) {
+    body.project_id = payload.projectId;
+  }
   if (payload.existingChecklist) {
     body.existing_checklist = payload.existingChecklist;
   }

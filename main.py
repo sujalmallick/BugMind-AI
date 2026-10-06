@@ -24,7 +24,7 @@ from database.models.user import User
 from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 from database.session import get_db
-from services.project_context import find_similar_issues, get_test_case_by_ref
+from services.project_context import find_similar_issues, get_manual_test_cases, get_test_case_by_ref
 from auth.permissions import require_project_role
 from limiter import limiter
 from slowapi import _rate_limit_exceeded_handler
@@ -172,7 +172,18 @@ def health_check():
 
 @app.post("/analyze-workflow")
 @limiter.limit("10/minute")
-def analyze_workflow(request: Request, data: WorkflowInput,  current_user: User = Depends(get_current_user)):
+def analyze_workflow(
+    request: Request,
+    data: WorkflowInput,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # Project access first: no guardrail or LLM work on behalf of a project the caller can't view.
+    project_test_cases = []
+    if data.project_id is not None:
+        require_project_role(db, current_user.id, data.project_id, "viewer")
+        # Server-loaded (never client-supplied) manual test cases, masked like other graph state.
+        project_test_cases, _ = masker.mask_obj(get_manual_test_cases(db, current_user.id, data.project_id))
 
     # ── Input guardrail: injection check + PII/secret masking before any agent runs ──
     workflow_check = input_guardrail.validate(data.workflow, source=Source.USER, field="workflow")
@@ -206,6 +217,7 @@ def analyze_workflow(request: Request, data: WorkflowInput,  current_user: User 
             "observed_steps": observed_steps,
             "existing_checklist": existing_checklist,
             "existing_test_cases": existing_test_cases,
+            "project_test_cases": project_test_cases,
         },
         config=run_config,
     )
