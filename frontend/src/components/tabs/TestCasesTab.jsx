@@ -7,9 +7,20 @@ import ImportCsvModal from "../csv/ImportCsvModal";
 import { exportTestCasesCSV } from "../../lib/exportCSV";
 import { updateTestCase, deleteTestCase, createManualTestCase } from "../../services/testCaseApi";
 import { Table2, Plus, Download, Filter, X, Upload } from "lucide-react";
+import GroundingBadge from "../shared/GroundingBadge";
+import { groundingSummary } from "../../utils/grounding";
 
 const BASE_COLS = [
   { field: "test_case_id", headerName: "ID", width: 130, editable: false },
+  {
+    // Answer grounding: where the AI says this case comes from, as verified by the backend.
+    field: "grounding",
+    headerName: "Source",
+    width: 130,
+    editable: false,
+    valueGetter: (params) => groundingSummary(params.data?.grounding),
+    cellRenderer: GroundingBadge,
+  },
   { field: "description",  headerName: "Description", width: 320, isLargeText: true },
   { field: "module",       headerName: "Module",      width: 150 },
   { field: "category",     headerName: "Category",    width: 150 },

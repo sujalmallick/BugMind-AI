@@ -49,3 +49,28 @@ def test_upgrade_matches_models_and_downgrade_removes_tables(tmp_path):
             migration.downgrade()
     remaining = set(sa.inspect(engine).get_table_names())
     assert not remaining & {"jobs", "project_documents", "document_chunks"}
+
+
+def test_grounding_column_migration(tmp_path):
+    from database.models.test_case import TestCase
+
+    spec = importlib.util.spec_from_file_location(
+        "m_d7e3f9a2c615", MIGRATION.parent / "d7e3f9a2c615_add_grounding_to_test_cases.py")
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    migration.context = SimpleNamespace(is_offline_mode=lambda: False)
+
+    engine = sa.create_engine(f"sqlite:///{(tmp_path / 'g.db').as_posix()}")
+    table = TestCase.__table__
+    sa.Table(table.name, sa.MetaData(), *[c.copy() for c in table.columns if c.name != "grounding"]).create(engine)
+
+    with engine.begin() as conn:
+        with Operations.context(MigrationContext.configure(conn)):
+            migration.upgrade()
+            migration.upgrade()  # idempotent
+    assert "grounding" in {c["name"] for c in sa.inspect(engine).get_columns("test_cases")}
+
+    with engine.begin() as conn:
+        with Operations.context(MigrationContext.configure(conn)):
+            migration.downgrade()
+    assert "grounding" not in {c["name"] for c in sa.inspect(engine).get_columns("test_cases")}

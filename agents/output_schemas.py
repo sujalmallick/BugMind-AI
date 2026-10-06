@@ -9,6 +9,7 @@ Entries that can't be salvaged (non-objects, blank text, no module name) are
 dropped by parse_items() instead of failing the whole response.
 """
 
+import re
 from typing import Any, Literal
 
 from pydantic import BaseModel, ValidationError, ValidationInfo, model_validator
@@ -162,6 +163,9 @@ class GeneratedTestCase(BaseModel):
     inputData: str
     expectedResult: str
     priority: Level
+    # Where the model says the case comes from ("workflow", "doc:N", "assumed").
+    # Unverified claims: agents/grounding.py checks them. None when not given.
+    sources: list[str] | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -187,7 +191,40 @@ class GeneratedTestCase(BaseModel):
             "inputData": _text(data.get("inputData"), "N/A"),
             "expectedResult": _text(data.get("expectedResult"), "System responds correctly"),
             "priority": _level(data.get("priority")),
+            "sources": _sources(data["sources"]) if "sources" in data else None,
         }
+
+
+_DOC_REFS = re.compile(
+    r"(?:\bdoc(?:ument)?s?|\bexcerpts?|\bsources?)\s*[:#]?\s*\[?\s*(\d{1,3})\s*\]?|\[\s*(\d{1,3})\s*\]",
+    re.IGNORECASE,
+)
+_WORKFLOW_REF = re.compile(r"\bworkflow\b|\bsteps?\b")
+_ASSUMED_HINTS = ("assum", "general", "practice", "standard", "typical", "common", "heuristic", "best")
+
+
+def _sources(value: Any) -> list[str]:
+    """
+    Normalize the model's source labels to "workflow" / "doc:N" / "assumed".
+    A label that names none of these becomes "unrecognized" (checked as unverifiable),
+    never silently dropped: an empty claim would otherwise be checked as unlabeled.
+    """
+    items = value if isinstance(value, list) else [value]
+    normalized: list[str] = []
+    for item in items[:10]:
+        text = _text(item).lower()
+        if not text:
+            continue
+        labels = []
+        if _WORKFLOW_REF.search(text):
+            labels.append("workflow")
+        labels += [f"doc:{int(a or b)}" for a, b in _DOC_REFS.findall(text)]
+        if any(hint in text for hint in _ASSUMED_HINTS):
+            labels.append("assumed")
+        for label in labels or ["unrecognized"]:
+            if label not in normalized:
+                normalized.append(label)
+    return normalized
 
 
 # ── Issue agent ──────────────────────────────────────────────────────────────

@@ -38,6 +38,8 @@ class WorkflowState(TypedDict, total=False):
     project_test_cases: list[dict]
     project_knowledge: list[dict]   # retrieved document excerpts (RAG)
     test_environment: dict          # platform / OS / build / device
+    manual_cases_tokens: int        # context-window budget for the manual test case list
+    grounding_summary: dict         # counts from the grounding / hallucination check
 
     # Shared Agent Knowledge
     modules: dict

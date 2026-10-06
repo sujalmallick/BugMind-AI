@@ -113,6 +113,10 @@ class TestCase(Base):
 
     custom_fields: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)  # Stores any extra columns added by the user
 
+    # Grounding check result for AI-generated cases: {"status", "sources", "notes"} (agents/grounding.py).
+    # Set by the check; editors can still change it like any field, and content edits clear it.
+    grounding: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
     workspace = relationship(
         "Workspace",
         back_populates="test_cases",

@@ -134,6 +134,37 @@ def _apply_fields(row: TestCase, tc: dict, display_id: str) -> None:
         setattr(row, attr, _normalize_steps(value) if attr == "steps" else str(value or ""))
     if "custom_fields" in tc:
         row.custom_fields = dict(tc.get("custom_fields") or {})
+    if "grounding" in tc:
+        row.grounding = sanitize_grounding(tc.get("grounding"))
+
+
+_GROUNDING_STATUSES = {"grounded", "assumed"}
+
+
+def sanitize_grounding(value) -> dict | None:
+    """The client echoes grounding back on save; keep only the known shape, bounded in size."""
+    if not isinstance(value, dict) or value.get("status") not in _GROUNDING_STATUSES:
+        return None
+    raw_sources = value.get("sources")
+    raw_notes = value.get("notes")
+    raw_sources = raw_sources if isinstance(raw_sources, list) else []
+    raw_notes = raw_notes if isinstance(raw_notes, list) else []
+    sources = []
+    for ref in raw_sources[:10]:
+        if not isinstance(ref, dict):
+            continue
+        if ref.get("type") == "workflow":
+            sources.append({"type": "workflow"})
+        elif ref.get("type") == "document":
+            document_id = ref.get("documentId")
+            sources.append({
+                "type": "document",
+                "documentId": document_id if isinstance(document_id, int) and not isinstance(document_id, bool) else None,
+                "filename": str(ref.get("filename") or "")[:255],
+                "heading": str(ref.get("heading") or "")[:255] or None,
+            })
+    notes = [str(n)[:300] for n in raw_notes[:3] if isinstance(n, str) and n]
+    return {"status": value["status"], "sources": sources, "notes": notes}
 
 
 def get_or_create_placeholder_test_case(db: Session, workspace: Workspace) -> TestCase:
@@ -313,11 +344,16 @@ def update_test_case(db: Session, project_id: int, tc_id: int, current_user_id: 
             existing_custom.update(value)
             tc.custom_fields = existing_custom
         elif key in EDITABLE_TEST_CASE_FIELDS:
+            if key in _GROUNDED_CONTENT_FIELDS and value != getattr(tc, key):
+                tc.grounding = None  # the grounding check was about the old content
             setattr(tc, key, value)
-            
+
     db.commit()
     db.refresh(tc)
     return tc
+
+
+_GROUNDED_CONTENT_FIELDS = {"description", "preconditions", "steps", "expected_result"}
 
 
 def delete_test_case(db: Session, project_id: int, tc_id: int, current_user_id: int):

@@ -102,14 +102,15 @@ def test_flagged_chunks_are_never_retrieved(env):
 
 def test_token_budget_is_respected(env):
     add_doc(env.db, [
-        ("Big", "checkout card payment otp " * 50, 900),
-        ("Bigger", "checkout card payment otp refund " * 50, 1000),
-        ("Small", "checkout card payment otp limits", 100),
+        ("Big", "Checkout card payment needs an OTP for large orders. " * 200, 2000),
+        ("Bigger", "Refunds go back to the card used at checkout, and an OTP is never asked. " * 200, 3000),
+        ("Small", "Checkout card payment OTP limits are set per merchant.", 15),
     ])
     results = retrieve(env, "checkout card payment otp", token_budget=1200)
-    assert sum(1 for _ in results) == 2
-    assert sum(r for r in [900 if x["heading"] == "Big" else 1000 if x["heading"] == "Bigger" else 100
-                           for x in results]) <= 1200
+    assert results
+    assert sum(r["tokens"] for r in results) <= 1200          # real token counts, not estimates
+    assert all(r["tokens"] <= 600 for r in results)            # no excerpt takes more than half
+    assert any(r["compressed"] for r in results)               # long chunks were trimmed to fit
 
 
 def test_empty_or_stopword_queries_retrieve_nothing(env):

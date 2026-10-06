@@ -220,6 +220,7 @@ useEffect(() => {
             notes: tc.notes,
             is_manual: tc.is_manual,
             custom_fields: tc.custom_fields || {},
+            grounding: tc.grounding || null,
           };
         });
         setTestCases(loadedCases);
