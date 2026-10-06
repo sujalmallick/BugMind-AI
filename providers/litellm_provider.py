@@ -33,6 +33,10 @@ _PROVIDER_KEY_MAP = {
     "together":   "TOGETHERAI_API_KEY",
 }
 
+# Error fragments meaning the provider rejected JSON mode itself (unsupported
+# response_format, or Groq's json_validate_failed when output isn't valid JSON).
+_JSON_MODE_ERRORS = ("response_format", "json_validate_failed", "json mode", "json_object")
+
 # OpenRouter's "Free Models Router" — a stable id that routes to any currently free model.
 _OPENROUTER_FREE_ROUTER = "openrouter/openrouter/free"
 
@@ -69,6 +73,26 @@ class LiteLLMProvider:
         return None
 
     @staticmethod
+    def _supports_json_mode(model_name: str, provider: str) -> bool:
+        try:
+            params = litellm.get_supported_openai_params(model=model_name, custom_llm_provider=provider)
+        except Exception:
+            return False
+        return bool(params) and "response_format" in params
+
+    @staticmethod
+    def _complete(**kwargs):
+        """completion(), retried once without response_format if the provider rejects JSON mode."""
+        try:
+            return completion(**kwargs)
+        except Exception as err:
+            if "response_format" in kwargs and any(k in str(err).lower() for k in _JSON_MODE_ERRORS):
+                logger.warning(f"Model {kwargs.get('model')} rejected JSON mode. Retrying without it...")
+                kwargs.pop("response_format")
+                return completion(**kwargs)
+            raise
+
+    @staticmethod
     def _build_messages(prompt: str, system: str | None, merge: bool = False) -> list[dict]:
         if not system:
             return [{"role": "user", "content": prompt}]
@@ -79,7 +103,7 @@ class LiteLLMProvider:
             {"role": "user", "content": prompt},
         ]
 
-    def generate(self, prompt: str, system: str | None = None) -> str:
+    def generate(self, prompt: str, system: str | None = None, json_mode: bool = False) -> str:
         api_key = self._resolve_api_key()
         messages = self._build_messages(prompt, system)
 
@@ -88,6 +112,12 @@ class LiteLLMProvider:
         if prov and not model_name.startswith(f"{prov}/"):
             if "/" not in model_name:
                 model_name = f"{prov}/{model_name}"
+
+        json_kwargs = (
+            {"response_format": {"type": "json_object"}}
+            if json_mode and self._supports_json_mode(model_name, prov)
+            else {}
+        )
 
         # The key is passed to completion() per call. Never write it to os.environ:
         # that is process-global, so a user's BYOK key would become the fallback
@@ -112,9 +142,10 @@ class LiteLLMProvider:
                 "HTTP-Referer": "https://bugmind.ai",
                 "X-Title": "BugMind AI",
             }
-            response = completion(
+            response = self._complete(
                 model=model_name,
                 api_key=api_key,
+                **json_kwargs,
                 messages=messages,
                 extra_headers=extra_headers,
             )
@@ -123,32 +154,36 @@ class LiteLLMProvider:
             if system and any(k in err_str for k in ["system role", "system message", "developer instruction", "system_instruction", "system prompt is not supported"]):
                 # Some models (e.g. Gemma) reject system messages; keep the policy as a prefix of the user turn.
                 logger.warning(f"Model {model_name} rejected the system role. Retrying with a merged prompt...")
-                response = completion(
+                response = self._complete(
                     model=model_name,
                     api_key=api_key,
+                    **json_kwargs,
                     messages=self._build_messages(prompt, system, merge=True),
                     extra_headers=extra_headers,
                 )
             elif prov == "gemini" and model_name != "gemini/gemini-1.5-flash" and any(k in err_str for k in ["not found", "404", "does not exist", "unsupported"]):
                 logger.warning(f"Model {model_name} failed with '{err}'. Falling back to gemini/gemini-1.5-flash...")
-                response = completion(
+                response = self._complete(
                     model="gemini/gemini-1.5-flash",
                     api_key=api_key,
+                    **json_kwargs,
                     messages=messages,
                 )
             elif prov == "groq" and model_name != "groq/llama-3.3-70b-versatile" and any(k in err_str for k in ["not found", "404", "does not exist"]):
                 logger.warning(f"Model {model_name} failed with '{err}'. Falling back to groq/llama-3.3-70b-versatile...")
-                response = completion(
+                response = self._complete(
                     model="groq/llama-3.3-70b-versatile",
                     api_key=api_key,
+                    **json_kwargs,
                     messages=messages,
                 )
             elif prov == "openrouter" and model_name != _OPENROUTER_FREE_ROUTER and model_name.endswith(":free") and any(k in err_str for k in ["not found", "404", "does not exist", "no endpoints"]):
                 # OpenRouter retires :free models often; the free router always picks an available one.
                 logger.warning(f"Model {model_name} failed with '{err}'. Falling back to {_OPENROUTER_FREE_ROUTER}...")
-                response = completion(
+                response = self._complete(
                     model=_OPENROUTER_FREE_ROUTER,
                     api_key=api_key,
+                    **json_kwargs,
                     messages=messages,
                     extra_headers=extra_headers,
                 )

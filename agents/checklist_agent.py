@@ -1,6 +1,7 @@
 from utils import call_llm, parse_json_response
 from utils import logger
 from guardrails import Source, untrusted_block
+from agents.output_schemas import ChecklistModule, parse_items, unwrap_list
 
 AGENT = "checklist_agent"
 
@@ -44,9 +45,9 @@ For each module:
    - "text": Clear, actionable testing instruction (e.g., "Verify email field rejects domain names without a TLD like .com").
    - "confidence": Either "confirmed" (directly mapped to workflow text) or "assumed" (inferred standard industry practice).
 
-Return your response strictly as a JSON array of module objects matching the exact format below:
+Return your response strictly as a JSON object with a single key "checklist" whose value is an array of module objects, matching the exact format below:
 
-[
+{{"checklist": [
   {{
     "module": "Module Name",
     "items": [
@@ -57,16 +58,16 @@ Return your response strictly as a JSON array of module objects matching the exa
       }}
     ]
   }}
-]
+]}}
 
 Rules:
-- Return ONLY the raw JSON array. Do NOT wrap it in markdown fences like ```json. No introduction or extra text.
+- Return ONLY the raw JSON object. Do NOT wrap it in markdown fences like ```json. No introduction or extra text.
 - Standardize all IDs to uppercase.
 - Ensure "confidence" is strictly one of: "confirmed", "assumed".
 """
 
     logger.info("Running Checklist Agent")
-    response = call_llm(prompt, user_id=user_id, agent=AGENT)
+    response = call_llm(prompt, user_id=user_id, agent=AGENT, json_mode=True)
 
     if response is None:
         return {
@@ -78,60 +79,10 @@ Rules:
     if isinstance(response, dict):
         checklist = response
     else:
-        checklist = parse_json_response(response, prompt, user_id=user_id, agent=AGENT)
+        checklist = parse_json_response(response, prompt, user_id=user_id, agent=AGENT, json_mode=True)
 
     if isinstance(checklist, dict) and checklist.get("success") is False:
         return checklist
-    if not isinstance(checklist, list):
-        checklist = []
-    
 
-    normalized_checklist = []
-    for module_obj in checklist:
-        if not isinstance(module_obj, dict):
-            continue
-        
-        module_name = str(module_obj.get("module", "")).strip()
-        if not module_name:
-            continue
-            
-        items_list = module_obj.get("items", [])
-        if not isinstance(items_list, list):
-            items_list = []
-            
-        normalized_items = []
-        for idx, item in enumerate(items_list):
-            if not isinstance(item, dict):
-                continue
-                
-            text = str(item.get("text", "")).strip()
-            if not text:
-                continue
-                
-            # Normalize confidence
-            confidence = str(item.get("confidence", "confirmed")).strip().lower()
-            if confidence not in ["confirmed", "assumed"]:
-                confidence = "confirmed"
-                
-            # Make sure id exists or generate a fallback
-            item_id = str(item.get("id", "")).strip().upper()
-            if not item_id:
-                # Generate abbreviated fallback ID
-                prefix = "".join([c for c in module_name if c.isalnum()])[:4].upper()
-                if not prefix:
-                    prefix = "TEST"
-                item_id = f"{prefix}-{idx+1:03d}"
-                
-            normalized_items.append({
-                "id": item_id,
-                "text": text,
-                "confidence": confidence
-            })
-            
-        if normalized_items:
-            normalized_checklist.append({
-                "module": module_name,
-                "items": normalized_items
-            })
-            
-    return normalized_checklist
+    modules = parse_items(ChecklistModule, unwrap_list(checklist, "checklist"))
+    return [m.model_dump() for m in modules]

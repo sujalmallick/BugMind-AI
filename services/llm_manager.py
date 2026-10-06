@@ -29,7 +29,7 @@ class LLMManager:
             api_key=api_key,   # Pass through — LiteLLMProvider handles resolution
         )
 
-    def generate(self, prompt: str, agent: str | None = None) -> str:
+    def generate(self, prompt: str, agent: str | None = None, json_mode: bool = False) -> str:
         """
         Every LLM call passes through here:
           egress  — backstop masking of anything upstream missed
@@ -37,13 +37,13 @@ class LLMManager:
           output  — output guardrail (reasoning strip, prompt-leak check, redaction)
         """
         if not get_settings().enabled:
-            return self.provider_instance.generate(prompt)
+            return self.provider_instance.generate(prompt, json_mode=json_mode)
 
         egress = masker.mask(prompt, kinds=policy.mask_kinds(Stage.EGRESS), stage=Stage.EGRESS.value)
         if egress.changed:
             audit.event("egress", "sanitize", agent=agent, entities=egress.entity_counts)
 
-        raw = self.provider_instance.generate(egress.text, system=SECURITY_PREAMBLE)
+        raw = self.provider_instance.generate(egress.text, system=SECURITY_PREAMBLE, json_mode=json_mode)
         if not raw:
             return raw
 
