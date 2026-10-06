@@ -274,3 +274,45 @@ class ObservationReport(BaseModel):
             "severity": _level(data.get("severity")),
             "suggestedAction": _text(data.get("suggestedAction")) or "No suggested action provided.",
         }
+
+
+# ── Workflow draft agent ─────────────────────────────────────────────────────
+
+MAX_DRAFT_STEPS = 20
+MAX_DRAFT_GAPS = 5
+MAX_DRAFT_TEXT = 300
+
+
+class DraftStep(BaseModel):
+    text: str
+    # Claimed excerpt numbers ("doc:N" etc.). Unverified: agents/grounding.py checks them.
+    sources: list[str] = []
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce(cls, data: Any) -> dict:
+        if isinstance(data, str):
+            data = {"text": data}
+        if not isinstance(data, dict):
+            raise ValueError("step must be an object or a string")
+        text = _text(data.get("text") or data.get("step") or data.get("description"))
+        if not text:
+            raise ValueError("step has no text")
+        return {"text": text[:MAX_DRAFT_TEXT], "sources": _sources(data["sources"]) if data.get("sources") else []}
+
+
+class WorkflowDraft(BaseModel):
+    title: str
+    steps: list[DraftStep]
+    gaps: list[str]
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce(cls, data: Any) -> dict:
+        if not isinstance(data, dict):
+            data = {}
+        return {
+            "title": _text(data.get("title"))[:120],
+            "steps": parse_items(DraftStep, data.get("steps"))[:MAX_DRAFT_STEPS],
+            "gaps": [g[:MAX_DRAFT_TEXT] for g in _str_list(data.get("gaps") or data.get("questions"))][:MAX_DRAFT_GAPS],
+        }

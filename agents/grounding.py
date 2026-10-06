@@ -36,7 +36,11 @@ _GENERIC = keywords(
     "verify check ensure test validate valid invalid user system page screen button click tap enter "
     "open navigate display displayed shown show message error success successful successfully correct "
     "correctly field input value data result expected behavior application app attempt submit form "
-    "able allowed appear appears able should must when then"
+    "able allowed appear appears able should must when then "
+    # Inflections the stemmer doesn't fold onto the forms above.
+    "validates validated validating checks checked checking verifies verified ensures ensured "
+    "submits submitted clicks clicked opens opened enters entered displays navigates selects selected "
+    "requirement requirements"
 )
 
 _NUMBER = r"\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?"
@@ -54,6 +58,26 @@ _RANGE = re.compile(rf"{_FREE}({_NUMBER})\s*(?:-|–|to|and)\s*({_NUMBER})\s*(?:
 _FREE_NUMBER = re.compile(rf"{_FREE}({_NUMBER})(?![\w\-/:])")
 
 
+_UNIT_WORDS = ("zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen "
+               "fifteen sixteen seventeen eighteen nineteen").split()
+_TENS_WORDS = "twenty thirty forty fifty sixty seventy eighty ninety".split()
+_NUMBER_WORDS = re.compile(
+    rf"\b(?:({'|'.join(_TENS_WORDS)})(?:[\s-]+({'|'.join(_UNIT_WORDS[1:10])}))?|({'|'.join(_UNIT_WORDS)}))\b",
+    re.IGNORECASE,
+)
+
+
+def _words_to_digits(text: str) -> str:
+    """ "fifteen minutes" → "15 minutes", "twenty-five" → "25": spelled-out limits are checked too."""
+    def convert(match: re.Match) -> str:
+        tens, unit, single = match.groups()
+        if single:
+            return str(_UNIT_WORDS.index(single.lower()))
+        value = (_TENS_WORDS.index(tens.lower()) + 2) * 10
+        return str(value + (_UNIT_WORDS.index(unit.lower()) if unit else 0))
+    return _NUMBER_WORDS.sub(convert, text)
+
+
 def _norm(number: str) -> str:
     try:
         value = Decimal(number.replace(",", "")).normalize()
@@ -64,7 +88,7 @@ def _norm(number: str) -> str:
 
 def limit_claims(text: str) -> set[str]:
     """Numbers stated as limits or amounts ("50 characters", "3 attempts", "$20", "15%"), ignoring 0-2."""
-    text = text or ""
+    text = _words_to_digits(text or "")
     found = set()
     for pattern in (_UNIT_LIMIT, _PERCENT, _CURRENCY):
         found |= {_norm(n) for n in pattern.findall(text)}
@@ -73,7 +97,7 @@ def limit_claims(text: str) -> set[str]:
 
 def known_numbers(text: str) -> set[str]:
     """Numbers a source states: stated limits, both ends of ranges, and free-standing numbers in prose."""
-    text = text or ""
+    text = _words_to_digits(text or "")
     numbers = limit_claims(text) | {_norm(n) for n in _FREE_NUMBER.findall(text)}
     for low, high in _RANGE.findall(text):
         numbers |= {_norm(low), _norm(high)}
@@ -177,3 +201,70 @@ def ground_test_cases(
         summary[status] += 1
         tc["grounding"] = {"status": status, "sources": unique_refs, "notes": notes[:MAX_NOTES]}
     return test_cases, summary
+
+
+# ── Workflow drafts ──────────────────────────────────────────────────────────
+
+def _excerpt_ref(excerpt: dict) -> dict:
+    return {"documentId": excerpt.get("documentId"), "filename": excerpt.get("filename"),
+            "heading": excerpt.get("heading")}
+
+
+def ground_draft_steps(steps: list[dict], excerpts: list[dict]) -> list[dict]:
+    """
+    Checks each drafted workflow step against the excerpts the model was shown.
+    Every one of the step's numbers (digits or words) must be in the documents
+    and every cited excerpt must exist.
+
+    Returns [{text, status, sources, note}] with status:
+      "grounded"    — a provided excerpt supports it
+      "generic"     — only generic words ("User clicks Submit"): nothing to verify
+      "unsupported" — not found in the documents, invented numbers or a made-up citation
+    """
+    excerpt_terms = [keywords(f"{e.get('heading') or ''} {e.get('text', '')}") for e in excerpts]
+    known = set().union(*(known_numbers(e.get("text", "")) for e in excerpts)) if excerpts else set()
+    checked = []
+    for step in steps:
+        text = step.get("text", "")
+        claims = step.get("sources") or []
+        cited = []
+        for claim in claims:
+            if claim.startswith("doc:"):
+                cited.append(int(claim.split(":", 1)[1]))
+
+        result = {"text": text, "status": "unsupported", "sources": [], "note": None}
+        if any(not 1 <= n <= len(excerpts) for n in cited):
+            result["note"] = "Cites a document excerpt that doesn't exist"
+            checked.append(result)
+            continue
+        unverified = sorted((n for n in limit_claims(text) if not _near(n, known)), key=Decimal)
+        if unverified:
+            result["note"] = "Mentions " + ", ".join(unverified[:3]) + ", not found in your documents"
+            checked.append(result)
+            continue
+
+        distinctive = keywords(text) - _GENERIC
+        if not distinctive:
+            result["status"] = "generic"
+            checked.append(result)
+            continue
+
+        # A step is a few words, so one shared distinctive term can be enough, as long as
+        # it is a fair share of the step's own terms (new terms mean new, unbacked claims).
+        def supports(index: int) -> bool:
+            matched = distinctive & excerpt_terms[index]
+            return bool(matched) and len(matched) >= MIN_SUPPORT_RATIO * len(distinctive)
+
+        # Cited excerpts first; a step with a wrong or missing citation can still be found elsewhere.
+        supporting = [n - 1 for n in cited if supports(n - 1)] or \
+                     [i for i in range(len(excerpts)) if supports(i)][:1]
+        if supporting:
+            result["status"] = "grounded"
+            for i in supporting:
+                ref = _excerpt_ref(excerpts[i])
+                if ref not in result["sources"]:
+                    result["sources"].append(ref)
+        else:
+            result["note"] = "Not found in your documents"
+        checked.append(result)
+    return checked
