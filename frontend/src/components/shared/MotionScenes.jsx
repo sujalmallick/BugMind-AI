@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, CircleDot, Layers, AlertTriangle } from "lucide-react";
+import { Check, CircleDot, Layers, AlertTriangle, FileText, Wand2, Bug } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // "Video" cards: small looping product scenes rendered in the DOM.
@@ -60,7 +60,7 @@ export function MotionCard({ label, title, description, steps, interval, hold, c
         <div className="px-4 pt-3.5">
           <span className="font-mono text-[11px] text-muted">{label}</span>
         </div>
-        <div className={`px-4 pb-6 pt-3 ${compact ? "min-h-[210px]" : "min-h-[240px]"}`}>{children(step)}</div>
+        <div className={`overflow-hidden px-4 pb-6 pt-3 ${compact ? "h-[264px]" : "min-h-[240px]"}`}>{children(step)}</div>
         {/* playback bar */}
         <div className="absolute inset-x-0 bottom-0 h-[2px] bg-hairline/70" aria-hidden="true">
           <div
@@ -217,3 +217,160 @@ export function TriageScene({ step }) {
   );
 }
 TriageScene.steps = 6;
+
+// ── Scene: documents → grounded workflow draft ──────────────────────────────
+const DOCS = ["checkout-spec.pdf", "promo-rules.md"];
+const DRAFT_LINES = [
+  { text: "Shopper adds items and opens the cart", cite: 1 },
+  { text: "Applies a promo code before tax", cite: 2 },
+  { text: "Pays by card with 3-D Secure", cite: 1 },
+  { text: "Gets an email receipt", assumed: true },
+];
+
+export function GroundedScene({ step }) {
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-1.5">
+        {DOCS.map((d, i) => (
+          <Appear key={d} show={step >= i}>
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-hairline bg-surface px-2 py-1 text-[11px] text-ink">
+              <FileText size={12} className="text-signal" aria-hidden="true" />
+              {d}
+              <span className="font-mono text-[10px] text-muted">[{i + 1}]</span>
+            </span>
+          </Appear>
+        ))}
+      </div>
+      <ul className="relative min-h-[112px] space-y-1.5 rounded-lg border border-hairline bg-surface p-2.5">
+        {step < 2 && (
+          <li className="absolute inset-0 flex items-center justify-center gap-2 text-[11px] text-muted">
+            <span className="h-1.5 w-1.5 rounded-full bg-signal workflow-dot" aria-hidden="true" />
+            Drafting workflow…
+          </li>
+        )}
+        {DRAFT_LINES.map((l, i) => (
+          <Appear key={l.text} show={step >= i + 2}>
+            <li className="flex items-center justify-between gap-2 text-[12px] text-ink">
+              <span className="truncate">{l.text}</span>
+              {l.assumed ? (
+                <span className="shrink-0 rounded bg-ochre-soft px-1.5 font-mono text-[10px] text-ochre">assumed</span>
+              ) : (
+                <span className="shrink-0 rounded bg-signal-soft px-1.5 font-mono text-[10px] text-signal">[{l.cite}]</span>
+              )}
+            </li>
+          </Appear>
+        ))}
+      </ul>
+    </div>
+  );
+}
+GroundedScene.steps = 7;
+
+// ── Scene: phased test plan, approved one phase at a time ───────────────────
+const PHASES = [
+  { name: "Happy-path checkout", cases: 6 },
+  { name: "Promo & pricing rules", cases: 8 },
+  { name: "Payment failures", cases: 5 },
+  { name: "Accessibility", cases: 4 },
+];
+
+export function PlanScene({ step }) {
+  return (
+    <ul className="space-y-2">
+      {PHASES.map((p, i) => {
+        const approved = step > i + 1;
+        return (
+          <Appear key={p.name} show={step >= i}>
+            <li className="flex items-center justify-between gap-2 rounded-lg border border-hairline bg-surface px-3 py-2">
+              <span className="min-w-0">
+                <span className="block font-mono text-[10px] text-muted">Phase {i + 1}</span>
+                <span className="block truncate text-[12px] font-medium text-ink">{p.name}</span>
+              </span>
+              <span
+                className={`shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[10px] transition-colors duration-300 ${
+                  approved ? "bg-verified-soft text-verified" : "bg-paper text-muted"
+                }`}
+              >
+                {approved ? `✓ ${p.cases} cases` : "proposed"}
+              </span>
+            </li>
+          </Appear>
+        );
+      })}
+    </ul>
+  );
+}
+PlanScene.steps = 6;
+
+// ── Scene: approved script exported as a Playwright test ────────────────────
+const CODE = [
+  { t: "test('[BM-12 v3] Apply promo', async ({ page }) => {", c: "text-ink" },
+  { t: "  await page.goto(`${BASE_URL}/cart`);", c: "text-signal" },
+  { t: "  await page.getByLabel('Promo code').fill('SAVE20');", c: "text-signal" },
+  { t: "  await page.getByRole('button', { name: 'Apply' }).click();", c: "text-signal" },
+  { t: "  await expect(page.getByText('$80.00')).toBeVisible();", c: "text-verified" },
+  { t: "});", c: "text-ink" },
+];
+
+export function PlaywrightScene({ step }) {
+  return (
+    <div className="space-y-2.5">
+      <pre className="overflow-hidden rounded-lg border border-hairline bg-surface p-2.5 font-mono text-[10.5px] leading-relaxed">
+        {CODE.map((l, i) => (
+          <Appear key={i} show={step > i}>
+            <span className={`block truncate ${l.c}`}>{l.t}</span>
+          </Appear>
+        ))}
+      </pre>
+      <Appear show={step >= CODE.length}>
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-hairline bg-surface px-2.5 py-2 text-[11px]">
+          <span className="truncate text-ink">bugmind-e2e.zip</span>
+          <span className="shrink-0 font-mono text-[10px] text-muted">GitHub Actions ready</span>
+        </div>
+      </Appear>
+    </div>
+  );
+}
+PlaywrightScene.steps = 8;
+
+// ── Scene: failed run → self-healing suggestion → bug report ────────────────
+export function HealScene({ step }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2 rounded-lg border border-hairline bg-surface px-3 py-2.5">
+        <span className="min-w-0">
+          <span className="block font-mono text-[10px] text-muted">Run #12 · TC-102</span>
+          <span className="block truncate text-[12px] font-medium text-ink">Apply promo code</span>
+        </span>
+        <span className="shrink-0 rounded-md bg-flagged-soft px-1.5 py-0.5 font-mono text-[10px] text-flagged">fail</span>
+      </div>
+      <Appear show={step >= 1}>
+        <div className="rounded-lg border border-hairline bg-surface p-2.5 text-[11px]">
+          <p className="text-muted">Locator not found: <span className="font-mono text-ink">#promo-input</span></p>
+          <Appear show={step >= 2}>
+            <p className="mt-1.5 flex items-center justify-between gap-2">
+              <span className="flex min-w-0 items-center gap-1.5 text-ink">
+                <Wand2 size={12} className="shrink-0 text-signal" aria-hidden="true" />
+                <span className="truncate font-mono">getByLabel('Promo code')</span>
+              </span>
+              <span
+                className={`shrink-0 rounded px-1.5 font-mono text-[10px] transition-colors duration-300 ${
+                  step >= 3 ? "bg-verified-soft text-verified" : "bg-paper text-muted"
+                }`}
+              >
+                {step >= 3 ? "approved" : "suggested"}
+              </span>
+            </p>
+          </Appear>
+        </div>
+      </Appear>
+      <Appear show={step >= 4}>
+        <div className="flex items-center gap-2 rounded-lg border border-hairline bg-surface px-3 py-2 text-[11px] text-ink">
+          <Bug size={12} className="shrink-0 text-flagged" aria-hidden="true" />
+          <span className="truncate">BUG-418 filed from the failure</span>
+        </div>
+      </Appear>
+    </div>
+  );
+}
+HealScene.steps = 6;

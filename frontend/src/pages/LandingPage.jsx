@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   ArrowRight,
-  CheckCircle2,
   Layers,
   ShieldCheck,
   FileSpreadsheet,
@@ -21,6 +20,16 @@ import {
   LayoutDashboard,
   Menu,
   X,
+  FileText,
+  ClipboardList,
+  Code2,
+  Wand2,
+  BellRing,
+  Lock,
+  Quote,
+  Server,
+  GitBranch,
+  Upload,
 } from "lucide-react";
 
 import { useAuth } from "../auth/AuthContext";
@@ -31,16 +40,17 @@ import AppFooter from "../components/layout/AppFooter";
 import useReveal from "../hooks/useReveal";
 import {
   MotionCard,
-  WorkflowScene,
-  ChecklistScene,
-  TestCaseScene,
-  TriageScene,
+  GroundedScene,
+  PlanScene,
+  PlaywrightScene,
+  HealScene,
 } from "../components/shared/MotionScenes";
 
 const NAV_LINKS = [
   { href: "#pipeline", label: "Pipeline" },
+  { href: "#automation", label: "Automation" },
   { href: "#workspace", label: "Workspace" },
-  { href: "#collaboration", label: "Teams" },
+  { href: "#collaboration", label: "Security" },
   { href: "#faq", label: "FAQ" },
 ];
 
@@ -130,6 +140,21 @@ const AGENT_STEPS = [
   },
   {
     id: 3,
+    agent: "Planning Agent",
+    role: "Phased test planning",
+    icon: ClipboardList,
+    desc: "Proposes a test plan in phases. You approve or skip each phase, and only approved phases get test cases.",
+    codePreview: {
+      type: "Proposed test plan",
+      items: [
+        { name: "Phase 1: Happy-path checkout", status: "Approved", badge: "6 cases" },
+        { name: "Phase 2: Promo & pricing rules", status: "Approved", badge: "8 cases" },
+        { name: "Phase 3: Payment failures", status: "Proposed", badge: "5 cases" },
+      ],
+    },
+  },
+  {
+    id: 4,
     agent: "Test Case Agent",
     role: "Manual execution writer",
     icon: FileSpreadsheet,
@@ -144,7 +169,7 @@ const AGENT_STEPS = [
     },
   },
   {
-    id: 4,
+    id: 5,
     agent: "Issue Agent",
     role: "Defect analysis & triage",
     icon: Bug,
@@ -210,49 +235,116 @@ const STACKED_TEST_CASES = [
 
 const DEMO_TABS = [
   { id: "modules", label: "Modules", icon: Layers },
-  { id: "checklist", label: "Checklist", icon: ListChecks },
-  { id: "testcases", label: "Test cases", icon: FileSpreadsheet },
-  { id: "issues", label: "Issues", icon: Bug },
+  { id: "plan", label: "Plan", icon: ClipboardList },
+  { id: "testcases", label: "Cases", icon: FileSpreadsheet },
+  { id: "automation", label: "Playwright", icon: Code2 },
+  { id: "issues", label: "Bugs", icon: Bug },
+];
+
+const DEMO_DOCS = ["checkout-spec.pdf", "promo-rules.md"];
+
+const AUTOMATION_STEPS = [
+  {
+    icon: Server,
+    title: "Add your app's URL",
+    body: "Secrets stay encrypted.",
+  },
+  {
+    icon: ListChecks,
+    title: "Approve the steps",
+    body: "Nothing runs without your OK.",
+  },
+  {
+    icon: GitBranch,
+    title: "Run it free on GitHub",
+    body: "Download a ready Playwright project.",
+  },
+  {
+    icon: Upload,
+    title: "Upload the results",
+    body: "Test cases update and your team is notified.",
+  },
+];
+
+const AUTOMATION_FEATURES = [
+  {
+    icon: Wand2,
+    title: "Self-healing locators",
+    body: "Page changed? Get a fix to approve.",
+  },
+  {
+    icon: Bug,
+    title: "Failures become bugs",
+    body: "One click, full bug report.",
+  },
+  {
+    icon: BellRing,
+    title: "Status sync",
+    body: "Pass or fail lands on the test case.",
+  },
 ];
 
 const TEAM_FEATURES = [
   {
     icon: Users,
     title: "Organizations & teams",
-    body: "Group projects under central organizations. Invite members as Owner, Admin, Member or Viewer.",
+    body: "Invite your team with clear roles.",
   },
   {
     icon: ShieldCheck,
     title: "Role-based access",
-    body: "Control who can edit test cases, re-analyze workflows, manage API keys or delete project data.",
+    body: "Decide who can edit or delete.",
   },
   {
     icon: KeyRound,
     title: "Bring your own key",
-    body: "Connect your own Gemini, OpenAI or other provider keys for full control over AI quotas.",
+    body: "Gemini, OpenAI, Anthropic, Groq and more.",
+  },
+  {
+    icon: Quote,
+    title: "Grounded answers",
+    body: "Unsourced steps get flagged.",
+  },
+  {
+    icon: FileText,
+    title: "Private documents",
+    body: "PDF, Word or Markdown. Private to the project.",
+  },
+  {
+    icon: Lock,
+    title: "Encrypted secrets",
+    body: "Never shown, never sent to AI.",
   },
 ];
 
 const FAQS = [
   {
-    q: "What input does BugMind AI need to generate test cases?",
-    a: "BugMind accepts plain text descriptions of your application's user flows, feature specifications, or user stories. You don't need to write code, scripts, or formal syntax.",
+    q: "What do I need to give BugMind?",
+    a: "A short description of your app, or your spec documents (up to 20 per project).",
   },
   {
-    q: "Does BugMind AI scan repository code or run CI/CD bots?",
-    a: "No. BugMind is a QA workflow and test management tool designed for QA engineers, product managers, and developers. It generates structured test plans and manages execution directly from functional workflow descriptions — it does not analyze source code or run AST parsing.",
+    q: "How do you avoid made-up test cases?",
+    a: "Every step cites a source, and anything unsourced is flagged for you.",
+  },
+  {
+    q: "Does BugMind run my tests?",
+    a: "No. You run them free on GitHub, then upload the results.",
+  },
+  {
+    q: "Does BugMind read my source code?",
+    a: "No. Only your descriptions and documents.",
   },
   {
     q: "Can I import my existing spreadsheet test cases?",
-    a: "Yes. BugMind includes a built-in CSV and Excel (.xlsx) importer that auto-detects column headers and maps them into your project's spreadsheet grid.",
+    a: "Yes, from CSV or Excel.",
   },
   {
-    q: "How does Bring Your Own Key (BYOK) work?",
-    a: "You can enter your own API key (e.g., Google Gemini) in your account profile. BugMind uses your key directly for AI requests, keeping your usage separate and under your own provider quota.",
+    q: "How does bring-your-own-key work?",
+    a: "Add your key in Settings. Usage stays on your account.",
   },
   {
     q: "Can team members collaborate on the same project?",
-    a: "Yes. Projects can be created within Organizations or Teams. Multiple team members can view, edit, and track test case execution in real-time.",
+    a: "Yes, through organizations and teams.",
   },
 ];
 
@@ -286,7 +378,7 @@ export default function LandingPage() {
   const [swipeDir, setSwipeDir] = useState("right");
 
   const [demoWorkflow, setDemoWorkflow] = useState(
-    "User logs in → Navigates to Dashboard → Clicks 'Create Invoice' → Enters line items & client details → Applies 20% promo code → Submits payment"
+    "Shopper adds items to the cart → Opens the cart → Applies promo code SAVE20 → Pays by card with 3-D Secure → Gets an email receipt"
   );
   const [demoActiveTab, setDemoActiveTab] = useState("modules");
 
@@ -535,16 +627,16 @@ export default function LandingPage() {
           <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
             <div ref={heroTextRef} className="relative z-10 mx-auto max-w-3xl text-center will-change-transform">
               <p className="stagger eyebrow" style={{ "--d": "0ms" }}>
-                Four-agent QA pipeline
+                Plan · write · automate
               </p>
 
               <h1
                 className="stagger mt-5 text-[2.375rem] font-semibold leading-[1.04] tracking-[-0.035em] text-ink xs:text-[2.75rem] sm:text-6xl lg:text-[4.5rem]"
                 style={{ "--d": "80ms" }}
               >
-                Plain‑text workflows,{" "}
+                From specs to{" "}
                 <span className="text-signal">
-                  execution‑ready QA.
+                  automated tests.
                 </span>
               </h1>
 
@@ -552,8 +644,7 @@ export default function LandingPage() {
                 className="stagger mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-muted sm:mt-6 sm:text-lg"
                 style={{ "--d": "160ms" }}
               >
-                Describe how your application works. BugMind decomposes modules, drafts
-                exploratory checklists, writes manual test cases and classifies bug reports.
+                Attach your specs. Get a test plan, test cases and ready-to-run tests.
               </p>
 
               <div
@@ -583,7 +674,7 @@ export default function LandingPage() {
                 {authenticated && user ? (
                   <>Signed in as <span className="font-medium text-ink">{user.email}</span></>
                 ) : (
-                  <>No credit card required · Bring your own API key</>
+                  <>Free to start · Bring your own AI key</>
                 )}
               </p>
             </div>
@@ -600,11 +691,11 @@ export default function LandingPage() {
                         <span className="h-2.5 w-2.5 rounded-full bg-hairline-strong" />
                         <span className="h-2.5 w-2.5 rounded-full bg-hairline-strong" />
                       </div>
-                      <span className="truncate font-mono text-[11px] text-muted">invoice_workflow.txt</span>
+                      <span className="truncate font-mono text-[11px] text-muted">checkout_workflow.txt</span>
                     </div>
                     <span className="flex shrink-0 items-center gap-1.5 font-mono text-[11px] text-muted">
                       <span className="h-1.5 w-1.5 rounded-full bg-verified" aria-hidden="true" />
-                      4 agents ready
+                      Grounded in 2 docs
                     </span>
                   </div>
 
@@ -622,8 +713,20 @@ export default function LandingPage() {
                         className="mt-2 w-full flex-1 resize-none rounded-lg border border-hairline bg-paper p-3 font-mono text-[12px] leading-relaxed text-ink transition-colors placeholder:text-muted focus:border-signal focus:bg-surface focus:outline-none"
                         placeholder="Describe user flow…"
                       />
+                      <div className="mt-3">
+                        <p className="text-[11px] font-medium text-muted">Reference documents</p>
+                        <div className="mt-1.5 flex flex-wrap gap-1.5">
+                          {DEMO_DOCS.map((d, i) => (
+                            <span key={d} className="inline-flex items-center gap-1.5 rounded-md border border-hairline bg-paper px-2 py-1 text-[11px] text-ink">
+                              <FileText size={12} className="text-signal" aria-hidden="true" />
+                              {d}
+                              <span className="font-mono text-[10px] text-muted">[{i + 1}]</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                       <p className="mt-3 text-[12px] text-muted">
-                        Switch tabs to inspect what each agent produces.
+                        Switch tabs to see each step of the pipeline.
                       </p>
                     </div>
 
@@ -632,7 +735,7 @@ export default function LandingPage() {
                       <div
                         role="tablist"
                         aria-label="Agent outputs"
-                        className="grid grid-cols-2 gap-1 rounded-lg bg-paper p-1 sm:grid-cols-4"
+                        className="grid grid-cols-3 gap-1 rounded-lg bg-paper p-1 sm:grid-cols-5"
                       >
                         {DEMO_TABS.map((tab, i) => {
                           const Icon = tab.icon;
@@ -650,7 +753,7 @@ export default function LandingPage() {
                                   : "text-muted hover:text-ink"
                               }`}
                             >
-                              <span className="font-mono text-[10px] text-muted">0{i + 1}</span>
+                              <span className="hidden font-mono text-[10px] text-muted xs:inline">0{i + 1}</span>
                               <Icon size={12} className={active ? "text-signal" : ""} aria-hidden="true" />
                               {tab.label}
                             </button>
@@ -661,10 +764,10 @@ export default function LandingPage() {
                       <div key={demoActiveTab} role="tabpanel" className="animate-tab-enter mt-4 flex-1 space-y-2 text-xs">
                         {demoActiveTab === "modules" && (
                           <>
-                            <p className="mb-2 text-[12px] text-muted">Module Agent found 2 core modules</p>
+                            <p className="mb-2 text-[12px] text-muted">Module Agent found 2 core modules, cited from your docs</p>
                             {[
-                              { t: "Authentication & Session", s: "Protected", tone: "text-verified", d: "Validates user login, credentials, token persistence, and route guards." },
-                              { t: "Invoice & Billing Engine", s: "Critical path", tone: "text-signal", d: "Calculates line item sums, promo discounts, subtotal recalculation, and payment gateway trigger." },
+                              { t: "Cart & Promo Engine", s: "Critical path", tone: "text-signal", d: "Line totals, promo validation and subtotal recalculation before tax. [2]" },
+                              { t: "Payments & 3-D Secure", s: "Protected", tone: "text-verified", d: "Card payment, bank verification and timeout handling. [1]" },
                             ].map((m) => (
                               <div key={m.t} className="rounded-lg border border-hairline p-3">
                                 <div className="mb-1 flex items-center justify-between gap-2">
@@ -677,18 +780,20 @@ export default function LandingPage() {
                           </>
                         )}
 
-                        {demoActiveTab === "checklist" && (
+                        {demoActiveTab === "plan" && (
                           <>
-                            <p className="mb-2 text-[12px] text-muted">Checklist Agent drafted 4 exploratory checks</p>
+                            <p className="mb-2 text-[12px] text-muted">Planning Agent proposed 3 phases. Approve each one.</p>
                             {[
-                              "Verify subtotal recalculates instantly when discount code is applied",
-                              "Attempt submitting invoice with negative or non-numeric line item quantity",
-                              "Validate client details auto-complete on dropdown select",
-                              "Confirm payment gateway timeout handles fallback state gracefully",
-                            ].map((item) => (
-                              <div key={item} className="flex items-start gap-2.5 rounded-lg border border-hairline p-2.5">
-                                <CheckCircle2 size={14} className="mt-px shrink-0 text-verified" aria-hidden="true" />
-                                <span className="text-[12px] leading-relaxed text-ink">{item}</span>
+                              { n: "Happy-path checkout", c: 6, ok: true },
+                              { n: "Promo & pricing rules", c: 8, ok: true },
+                              { n: "Payment failures", c: 5, ok: false },
+                            ].map((p, i) => (
+                              <div key={p.n} className="flex items-center justify-between gap-2 rounded-lg border border-hairline p-2.5">
+                                <span className="min-w-0">
+                                  <span className="block font-mono text-[10px] text-muted">Phase {i + 1}</span>
+                                  <span className="block truncate text-[12px] font-medium text-ink">{p.n}</span>
+                                </span>
+                                <Tag tone={p.ok ? "text-verified" : "text-muted"}>{p.ok ? `Approved · ${p.c} cases` : "Proposed"}</Tag>
                               </div>
                             ))}
                           </>
@@ -703,11 +808,29 @@ export default function LandingPage() {
                                 <Tag tone="text-verified">Passed</Tag>
                               </div>
                               <p className="text-[12px] leading-relaxed text-muted">
-                                <span className="font-medium text-ink">Steps</span> 1. Open Invoice → 2. Enter $100 → 3. Type 'SAVE20' in promo field → 4. Click Apply
+                                <span className="font-medium text-ink">Steps</span> 1. Open a cart totalling $100 → 2. Type 'SAVE20' in the promo field → 3. Click Apply
                               </p>
                               <p className="text-[12px] leading-relaxed text-muted">
                                 <span className="font-medium text-ink">Expected</span> Subtotal updates to $80.00 without page refresh.
                               </p>
+                            </div>
+                          </>
+                        )}
+
+                        {demoActiveTab === "automation" && (
+                          <>
+                            <p className="mb-2 text-[12px] text-muted">Approved script, exported as a Playwright test</p>
+                            <pre className="overflow-x-auto rounded-lg border border-hairline bg-paper p-3 font-mono text-[11px] leading-relaxed text-ink">
+{`test('[BM-12 v3] Apply promo code', async ({ page }) => {
+  await page.goto(\`\${BASE_URL}/cart\`);
+  await page.getByLabel('Promo code').fill('SAVE20');
+  await page.getByRole('button', { name: 'Apply' }).click();
+  await expect(page.getByText('$80.00')).toBeVisible();
+});`}
+                            </pre>
+                            <div className="flex items-center justify-between gap-2 rounded-lg border border-hairline p-2.5">
+                              <span className="truncate text-[12px] text-ink">bugmind-e2e.zip · GitHub Actions workflow included</span>
+                              <Tag tone="text-signal">Export</Tag>
                             </div>
                           </>
                         )}
@@ -741,16 +864,16 @@ export default function LandingPage() {
         {/* ── Motion cards ─────────────────────────────────────────────────── */}
         <section className="border-t border-hairline py-16 sm:py-28">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <SectionHeading eyebrow="See it work" title="From a sentence to a" accent="test suite.">
-              Every step below is what BugMind does with a single workflow description.
+            <SectionHeading eyebrow="See it work" title="From your specs to" accent="running tests.">
+              One workflow, two docs, four steps.
             </SectionHeading>
 
             <div className="no-scrollbar -mx-4 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:mt-14 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:gap-y-10 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
               {[
-                { label: "01 · modules", title: "Understands the flow", description: "Splits a workflow into modules and critical paths.", Scene: WorkflowScene },
-                { label: "02 · checklist", title: "Plans exploration", description: "Drafts boundary, negative and UX checks.", Scene: ChecklistScene },
-                { label: "03 · test cases", title: "Writes the cases", description: "Execution-ready steps land in the grid.", Scene: TestCaseScene },
-                { label: "04 · issues", title: "Triages defects", description: "Classifies severity and links root cause.", Scene: TriageScene },
+                { label: "01 · documents", title: "Grounded in your specs", description: "Every step cites a source.", Scene: GroundedScene },
+                { label: "02 · test plan", title: "Plans in phases", description: "Approve one phase at a time.", Scene: PlanScene },
+                { label: "03 · playwright", title: "Exports real tests", description: "Ready-to-run Playwright code.", Scene: PlaywrightScene },
+                { label: "04 · results", title: "Heals and files bugs", description: "Fixes locators, files bugs.", Scene: HealScene },
               ].map(({ label, title, description, Scene }, i) => (
                 <div key={label} className="reveal w-[82%] shrink-0 snap-center xs:w-[70%] sm:w-auto" style={{ "--d": `${i * 90}ms` }}>
                   <MotionCard label={label} title={title} description={description} steps={Scene.steps} compact>
@@ -767,9 +890,8 @@ export default function LandingPage() {
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="grid gap-12 lg:grid-cols-12 lg:items-start lg:gap-16">
               <div className="lg:sticky lg:top-28 lg:col-span-5">
-                <SectionHeading eyebrow="The pipeline" title="Four specialized agents," accent="in sequence." align="left">
-                  Each agent works on the previous one's output, so coverage builds up from
-                  modules to checks to cases to defects.
+                <SectionHeading eyebrow="The pipeline" title="Five specialized agents," accent="in sequence." align="left">
+                  Each one builds on the last. Every answer cites its source.
                 </SectionHeading>
 
                 <ol className="reveal mt-10 border-l border-hairline" style={{ "--d": "100ms" }}>
@@ -818,7 +940,7 @@ export default function LandingPage() {
                         </div>
                       </div>
                       <span className="shrink-0 font-mono text-[11px] text-muted">
-                        0{step.id} / 04
+                        0{step.id} / 05
                       </span>
                     </div>
 
@@ -969,19 +1091,126 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── Teams ────────────────────────────────────────────────────────── */}
-        <section id="collaboration" className="scroll-mt-24 border-t border-hairline bg-surface py-16 sm:py-28">
+        {/* ── Automation ───────────────────────────────────────────────────── */}
+        <section id="automation" className="scroll-mt-24 border-t border-hairline bg-surface py-16 sm:py-28">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <SectionHeading eyebrow="For teams" title="Built for engineering" accent="organizations.">
-              Manage projects under organizations and teams, with role-based access and your own AI keys.
+            <div className="grid gap-12 lg:grid-cols-12 lg:items-center lg:gap-16">
+              <div className="lg:col-span-5">
+                <SectionHeading eyebrow="Automation" title="Automated tests," accent="free on GitHub." align="left">
+                  We write the Playwright tests. You run them on GitHub.
+                </SectionHeading>
+
+                <ol className="reveal mt-8 space-y-5" style={{ "--d": "100ms" }}>
+                  {AUTOMATION_STEPS.map(({ icon: Icon, title, body }, i) => (
+                    <li key={title} className="flex gap-3.5">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-signal-soft text-signal">
+                        <Icon size={15} aria-hidden="true" />
+                      </span>
+                      <div>
+                        <p className="text-[14px] font-medium text-ink">
+                          <span className="mr-1.5 font-mono text-[11px] text-muted">0{i + 1}</span>
+                          {title}
+                        </p>
+                        <p className="mt-0.5 text-[13px] leading-relaxed text-muted">{body}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              {/* Example automation overview */}
+              <div className="reveal lg:col-span-7" style={{ "--d": "150ms" }}>
+                <div
+                  role="img"
+                  aria-label="Example automation overview: 87% pass rate over recent runs, with one failed test offering a locator fix and a bug report"
+                  className="relative overflow-hidden rounded-2xl border border-hairline bg-paper p-3 sm:p-5"
+                >
+                  <Orbs variant="panel" className="opacity-70" />
+                  <div className="glass relative rounded-xl p-4 sm:p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[13px] font-semibold text-ink">Automation overview</p>
+                      <span className="font-mono text-[11px] text-muted">Last run #12 · 2h ago</span>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-3 gap-2">
+                      {[
+                        { l: "Pass rate", v: "87%" },
+                        { l: "Automated", v: "24 / 31" },
+                        { l: "Failing", v: "2", tone: "text-flagged" },
+                      ].map((m) => (
+                        <div key={m.l} className="rounded-lg border border-hairline bg-surface px-3 py-2.5">
+                          <p className="text-[11px] text-muted">{m.l}</p>
+                          <p className={`mt-1 text-lg font-semibold tabular-nums ${m.tone || "text-ink"}`}>{m.v}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-4 rounded-lg border border-hairline bg-surface p-3">
+                      <p className="text-[11px] text-muted">Pass rate, last 8 runs</p>
+                      <div className="mt-2 flex h-14 items-end gap-1.5">
+                        {[62, 70, 68, 78, 74, 85, 82, 87].map((v, i) => (
+                          <span key={i} className="flex-1 rounded-t bg-signal/80" style={{ height: `${v}%`, opacity: 0.45 + i * 0.07 }} />
+                        ))}
+                      </div>
+                    </div>
+
+                    <ul className="mt-4 divide-y divide-hairline rounded-lg border border-hairline bg-surface">
+                      {[
+                        { r: "#12", d: "18 passed · 2 failed", tone: "text-flagged", s: "fail" },
+                        { r: "#11", d: "20 passed", tone: "text-verified", s: "pass" },
+                        { r: "#10", d: "19 passed · 1 failed", tone: "text-flagged", s: "fail" },
+                      ].map((run) => (
+                        <li key={run.r} className="flex items-center justify-between gap-3 px-3 py-2 text-[12px]">
+                          <span className="font-mono text-muted">Run {run.r}</span>
+                          <span className="flex-1 truncate text-ink">{run.d}</span>
+                          <span className={`font-mono text-[11px] ${run.tone}`}>{run.s}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-flagged/20 bg-flagged-soft/60 px-3 py-2.5">
+                      <span className="min-w-0 text-[12px] text-ink">
+                        <span className="font-mono text-muted">TC-102</span> Apply promo code failed
+                      </span>
+                      <span className="flex gap-1.5">
+                        <span className="inline-flex items-center gap-1 rounded-md border border-hairline bg-surface px-2 py-1 text-[11px] font-medium text-ink">
+                          <Wand2 size={11} className="text-signal" aria-hidden="true" /> 1 locator fix
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-md border border-hairline bg-surface px-2 py-1 text-[11px] font-medium text-ink">
+                          <Bug size={11} className="text-flagged" aria-hidden="true" /> Create bug
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-14 grid gap-4 sm:grid-cols-3">
+              {AUTOMATION_FEATURES.map(({ icon: Icon, title, body }, i) => (
+                <div key={title} className="reveal rounded-xl border border-hairline p-5" style={{ "--d": `${i * 90}ms` }}>
+                  <Icon size={18} className="text-signal" aria-hidden="true" />
+                  <h3 className="mt-4 text-[15px] font-semibold tracking-[-0.01em] text-ink">{title}</h3>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-muted">{body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Teams ────────────────────────────────────────────────────────── */}
+        <section id="collaboration" className="scroll-mt-24 border-t border-hairline py-16 sm:py-28">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <SectionHeading eyebrow="Teams & security" title="Built for teams that" accent="ship safely.">
+              Roles, private docs and your own AI key.
             </SectionHeading>
 
-            <div className="mt-10 sm:mt-14 grid border-y border-hairline sm:grid-cols-3 sm:divide-x sm:divide-hairline">
+            <div className="mt-10 grid gap-x-10 gap-y-2 sm:mt-14 sm:grid-cols-2 lg:grid-cols-3">
               {TEAM_FEATURES.map(({ icon: Icon, title, body }, i) => (
                 <div
                   key={title}
-                  className="reveal border-b border-hairline px-1 py-8 last:border-b-0 sm:border-b-0 sm:px-8 sm:py-10 sm:first:pl-0 sm:last:pr-0"
-                  style={{ "--d": `${i * 90}ms` }}
+                  className="reveal border-t border-hairline py-7"
+                  style={{ "--d": `${(i % 3) * 90}ms` }}
                 >
                   <Icon size={20} className="text-signal" aria-hidden="true" />
                   <h3 className="mt-5 text-[16px] font-semibold tracking-[-0.01em] text-ink">{title}</h3>
@@ -1019,7 +1248,7 @@ export default function LandingPage() {
               <span className="text-signal">fully covered.</span>
             </h2>
             <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-muted">
-              Paste a workflow and get modules, checklists and test cases in minutes.
+              Attach a spec. Ship tested.
             </p>
             <div className="mt-8 flex justify-center">
               <button

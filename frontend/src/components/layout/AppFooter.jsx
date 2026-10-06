@@ -144,8 +144,9 @@ export default function AppFooter({ variant = "compact" }) {
 
           <FooterColumn title="Product">
             <FooterLink label="QA pipeline" onClick={() => navigate("/details#pipeline")} />
+            <FooterLink label="Automation" onClick={() => navigate("/details#automation")} />
             <FooterLink label="Test grid" onClick={() => navigate("/details#workspace")} />
-            <FooterLink label="Teams & access" onClick={() => navigate("/details#collaboration")} />
+            <FooterLink label="Teams & security" onClick={() => navigate("/details#collaboration")} />
             <FooterLink label="FAQ" onClick={() => navigate("/details#faq")} />
           </FooterColumn>
 
