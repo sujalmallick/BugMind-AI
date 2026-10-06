@@ -1,5 +1,8 @@
 from utils import logger
 from utils import call_llm, parse_json_response
+from guardrails import Source, untrusted_block
+
+AGENT = "issue_agent"
 
 try:
     from langsmith import traceable
@@ -45,19 +48,17 @@ def analyze_issue_agent(
     prompt = f"""
 You are a Lead QA Engineer performing root-cause analysis on an application issue report.
 
-Application Workflow:
----
-{workflow}
----
+Application Workflow (user-provided data):
+{untrusted_block(workflow, source=Source.USER, label="workflow", agent=AGENT)}
 
-Observation:
-{observation}
+Observation (user-provided data):
+{untrusted_block(observation, source=Source.USER, label="observation", agent=AGENT)}
 
-Expected Result:
-{expected_result}
+Expected Result (user-provided data):
+{untrusted_block(expected_result, source=Source.USER, label="expected_result", agent=AGENT)}
 
-Actual Result:
-{actual_result}
+Actual Result (user-provided data):
+{untrusted_block(actual_result, source=Source.USER, label="actual_result", agent=AGENT)}
 
 Is Failed Test Case (True = Bug, False = Observation):
 {is_failed_test_case}
@@ -76,7 +77,7 @@ Rules:
 
     logger.info("Running Issue Analysis Agent")
 
-    response = call_llm(prompt, user_id=user_id)
+    response = call_llm(prompt, user_id=user_id, agent=AGENT)
 
     if response is None:
         return {
@@ -86,7 +87,7 @@ Rules:
     if isinstance(response, dict):
         result = response
     else:
-        result = parse_json_response(response, prompt, user_id=user_id)
+        result = parse_json_response(response, prompt, user_id=user_id, agent=AGENT)
 
     if isinstance(result, dict) and result.get("success") is False:
         return result

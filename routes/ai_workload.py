@@ -45,7 +45,7 @@ def apply_suggestions_route(
     current_user: User = Depends(get_current_user),
 ):
     require_project_role(db, current_user.id, project_id, min_role="admin")
-    apply_suggestions(db, project_id, suggestion_id, payload.selected_indices)
+    apply_suggestions(db, project_id, suggestion_id, payload.selected_indices, current_user.id)
 
 @router.delete("/suggestions/{suggestion_id}", status_code=status.HTTP_204_NO_CONTENT)
 def dismiss_suggestion_route(

@@ -5,15 +5,22 @@ from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
+from guardrails import set_request_id
+
 logger = logging.getLogger("BugMind")
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         request_id = str(uuid.uuid4())
         request.state.request_id = request_id
-        
+        # Correlates guardrail audit events with this request.
+        set_request_id(request_id)
+
         # Redact sensitive headers for logging
-        redact = {"authorization", "cookie"}
+        redact = {
+            "authorization", "proxy-authorization", "cookie", "set-cookie",
+            "x-api-key", "api-key", "x-auth-token", "x-access-token", "x-csrf-token",
+        }
         safe_headers = {
             k: ("***" if k.lower() in redact else v)
             for k, v in request.headers.items()

@@ -68,8 +68,20 @@ class LiteLLMProvider:
 
         return None
 
-    def generate(self, prompt: str) -> str:
+    @staticmethod
+    def _build_messages(prompt: str, system: str | None, merge: bool = False) -> list[dict]:
+        if not system:
+            return [{"role": "user", "content": prompt}]
+        if merge:
+            return [{"role": "user", "content": f"{system}\n\n{prompt}"}]
+        return [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ]
+
+    def generate(self, prompt: str, system: str | None = None) -> str:
         api_key = self._resolve_api_key()
+        messages = self._build_messages(prompt, system)
 
         prov = self.provider.lower().strip()
         model_name = self.model or ""
@@ -103,39 +115,33 @@ class LiteLLMProvider:
             response = completion(
                 model=model_name,
                 api_key=api_key,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt,
-                    }
-                ],
+                messages=messages,
                 extra_headers=extra_headers,
             )
         except Exception as err:
             err_str = str(err).lower()
-            if prov == "gemini" and model_name != "gemini/gemini-1.5-flash" and any(k in err_str for k in ["not found", "404", "does not exist", "unsupported"]):
+            if system and any(k in err_str for k in ["system role", "system message", "developer instruction", "system_instruction", "system prompt is not supported"]):
+                # Some models (e.g. Gemma) reject system messages; keep the policy as a prefix of the user turn.
+                logger.warning(f"Model {model_name} rejected the system role. Retrying with a merged prompt...")
+                response = completion(
+                    model=model_name,
+                    api_key=api_key,
+                    messages=self._build_messages(prompt, system, merge=True),
+                    extra_headers=extra_headers,
+                )
+            elif prov == "gemini" and model_name != "gemini/gemini-1.5-flash" and any(k in err_str for k in ["not found", "404", "does not exist", "unsupported"]):
                 logger.warning(f"Model {model_name} failed with '{err}'. Falling back to gemini/gemini-1.5-flash...")
                 response = completion(
                     model="gemini/gemini-1.5-flash",
                     api_key=api_key,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": prompt,
-                        }
-                    ],
+                    messages=messages,
                 )
             elif prov == "groq" and model_name != "groq/llama-3.3-70b-versatile" and any(k in err_str for k in ["not found", "404", "does not exist"]):
                 logger.warning(f"Model {model_name} failed with '{err}'. Falling back to groq/llama-3.3-70b-versatile...")
                 response = completion(
                     model="groq/llama-3.3-70b-versatile",
                     api_key=api_key,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": prompt,
-                        }
-                    ],
+                    messages=messages,
                 )
             elif prov == "openrouter" and model_name != _OPENROUTER_FREE_ROUTER and model_name.endswith(":free") and any(k in err_str for k in ["not found", "404", "does not exist", "no endpoints"]):
                 # OpenRouter retires :free models often; the free router always picks an available one.
@@ -143,12 +149,7 @@ class LiteLLMProvider:
                 response = completion(
                     model=_OPENROUTER_FREE_ROUTER,
                     api_key=api_key,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": prompt,
-                        }
-                    ],
+                    messages=messages,
                     extra_headers=extra_headers,
                 )
             else:

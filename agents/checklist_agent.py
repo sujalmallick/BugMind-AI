@@ -1,5 +1,8 @@
 from utils import call_llm, parse_json_response
 from utils import logger
+from guardrails import Source, untrusted_block
+
+AGENT = "checklist_agent"
 
 
 def generate_checklist_agent(
@@ -14,19 +17,17 @@ def generate_checklist_agent(
     prompt = f"""
 You are an Enterprise Senior QA Engineer compiling a comprehensive, exploratory testing checklist for an application.
 
-Application Workflow:
----
-{workflow}
----
+Application Workflow (user-provided data):
+{untrusted_block(workflow, source=Source.USER, label="workflow", agent=AGENT)}
 
-Confirmed Modules:
-{confirmed}
+Confirmed Modules (from the module agent):
+{untrusted_block(confirmed, source=Source.LLM, label="confirmed_modules", agent=AGENT)}
 
-Critical Workflows:
-{critical_workflows}
+Critical Workflows (from the module agent):
+{untrusted_block(critical_workflows, source=Source.LLM, label="critical_workflows", agent=AGENT)}
 
-High Risk Areas:
-{high_risk_areas}
+High Risk Areas (from the module agent):
+{untrusted_block(high_risk_areas, source=Source.LLM, label="high_risk_areas", agent=AGENT)}
 
 Task:
 Generate a thorough exploratory testing checklist grouped by module.
@@ -65,7 +66,7 @@ Rules:
 """
 
     logger.info("Running Checklist Agent")
-    response = call_llm(prompt,user_id=user_id)
+    response = call_llm(prompt, user_id=user_id, agent=AGENT)
 
     if response is None:
         return {
@@ -77,7 +78,7 @@ Rules:
     if isinstance(response, dict):
         checklist = response
     else:
-        checklist = parse_json_response(response, prompt, user_id=user_id)
+        checklist = parse_json_response(response, prompt, user_id=user_id, agent=AGENT)
 
     if isinstance(checklist, dict) and checklist.get("success") is False:
         return checklist

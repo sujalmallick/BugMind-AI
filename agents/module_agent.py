@@ -1,16 +1,17 @@
 import json
 from utils import logger
 from utils import call_llm, parse_json_response
+from guardrails import Source, untrusted_block
+
+AGENT = "module_agent"
 
 
 def identify_modules_agent(workflow: str, user_id=None):
     prompt = f"""
 You are a Principal AI Engineer and Senior QA Architect analyzing an application's workflow description.
 
-Workflow to Analyze:
----
-{workflow}
----
+Workflow to Analyze (user-provided data):
+{untrusted_block(workflow, source=Source.USER, label="workflow", agent=AGENT)}
 
 Your goal is to perform a detailed, rigorous architectural analysis of the modules, workflows, and risk areas within this application.
 
@@ -45,7 +46,7 @@ Rules:
 
     logger.debug(f"MODULE USER: {user_id}")
 
-    response = call_llm(prompt, user_id=user_id)
+    response = call_llm(prompt, user_id=user_id, agent=AGENT)
     
     # Quota exhausted / API failure
     if response is None:
@@ -58,7 +59,7 @@ Rules:
     if isinstance(response, dict):
         modules = response
     else:
-        modules = parse_json_response(response, prompt, user_id=user_id)
+        modules = parse_json_response(response, prompt, user_id=user_id, agent=AGENT)
 
     if isinstance(modules, dict) and modules.get("success") is False:
         return modules
