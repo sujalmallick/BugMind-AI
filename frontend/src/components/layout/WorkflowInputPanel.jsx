@@ -1,4 +1,5 @@
 import { Route, Pencil, Loader2 } from "lucide-react";
+import WorkflowDocuments from "./WorkflowDocuments";
 
 export default function WorkflowInputPanel({
   workflow,
@@ -12,8 +13,10 @@ export default function WorkflowInputPanel({
   error,
   hasResult,
   analysisOutdated,
- testEnvironment,
-onTestEnvironmentChange,
+  testEnvironment,
+  onTestEnvironmentChange,
+  projectId,
+  showToast,
 }) {
   if (isCollapsed) {
     return (
@@ -82,6 +85,10 @@ onTestEnvironmentChange,
               className="field resize-none"
             />
           </div>
+
+          {projectId && (
+            <WorkflowDocuments projectId={projectId} showToast={showToast} />
+          )}
 
           <div>
             <p className="mb-3 text-[13px] font-medium text-ink">
