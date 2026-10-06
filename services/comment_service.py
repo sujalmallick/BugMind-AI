@@ -93,13 +93,20 @@ def create_comment(db: Session, comment_data: CommentCreate, author_id: int) -> 
     stmt = (
         select(Comment)
         .where(Comment.id == new_comment.id)
-        .options(
-            selectinload(Comment.author),
-            selectinload(Comment.reactions),
-            selectinload(Comment.mentions),
-        )
+        .options(*_COMMENT_LOADS)
     )
     return db.execute(stmt).scalar_one()
+
+# Eager loads for comment responses, including one level of replies and their details.
+_COMMENT_LOADS = (
+    selectinload(Comment.author),
+    selectinload(Comment.reactions),
+    selectinload(Comment.mentions),
+    selectinload(Comment.replies).selectinload(Comment.author),
+    selectinload(Comment.replies).selectinload(Comment.reactions),
+    selectinload(Comment.replies).selectinload(Comment.mentions),
+)
+
 
 def get_comments(db: Session, entity_type: str, entity_id: int, user_id: int | None = None) -> List[Comment]:
     """Returns top-level comments for an entity (replies are nested via relationship)"""
@@ -114,11 +121,7 @@ def get_comments(db: Session, entity_type: str, entity_id: int, user_id: int | N
             Comment.parent_id == None,
             Comment.deleted_at == None
         )
-        .options(
-            selectinload(Comment.author),
-            selectinload(Comment.reactions),
-            selectinload(Comment.mentions),
-        )
+        .options(*_COMMENT_LOADS)
         .order_by(Comment.created_at.asc())
     )
     return db.execute(stmt).scalars().all()
