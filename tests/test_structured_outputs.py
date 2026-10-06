@@ -108,7 +108,9 @@ def test_agents_request_json_mode(recorder, agent):
 def test_plain_generate_does_not_request_json_mode(recorder):
     from services.llm_manager import LLMManager
 
-    LLMManager(provider="groq", model="groq/llama-3.3-70b-versatile").generate("Say hi")
+    from config import DEFAULT_MODEL
+
+    LLMManager(provider="groq", model=DEFAULT_MODEL).generate("Say hi")
     assert "response_format" not in recorder.calls[0]
 
 

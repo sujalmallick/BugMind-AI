@@ -2,7 +2,7 @@
 Run the quality evals against a real model.
 
     python -m evals.run                              # default provider/model from config.py, keys from .env
-    python -m evals.run --model groq/llama-3.1-8b-instant --provider groq
+    python -m evals.run --model groq/openai/gpt-oss-20b --provider groq
     python -m evals.run --cases auth_signup_login,bank_transfer --repeat 2
     python -m evals.run --baseline evals/baseline.json            # exit 1 on regression
     python -m evals.run --update-baseline                         # record the current scores

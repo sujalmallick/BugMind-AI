@@ -17,7 +17,7 @@ from services.llm_errors import (
     classify_llm_error,
 )
 
-_KW = {"message": "provider said no", "llm_provider": "groq", "model": "groq/llama-3.3-70b-versatile"}
+_KW = {"message": "provider said no", "llm_provider": "groq", "model": "groq/openai/gpt-oss-120b"}
 _403 = httpx.Response(403, request=httpx.Request("POST", "https://api.groq.com"))
 
 
@@ -147,7 +147,9 @@ def test_successful_call_logs_tokens_cost_and_no_content(monkeypatch, caplog):
     assert event["outcome"] == "ok"
     assert event["agent"] == "module_agent"
     assert event["provider"] == "groq"
-    assert event["model"] == "groq/llama-3.3-70b-versatile"
+    from config import DEFAULT_MODEL
+
+    assert event["model"] == DEFAULT_MODEL
     assert event["json_mode"] is True
     assert event["byok"] is False
     assert (event["prompt_tokens"], event["completion_tokens"], event["total_tokens"]) == (1000, 500, 1500)
@@ -155,19 +157,33 @@ def test_successful_call_logs_tokens_cost_and_no_content(monkeypatch, caplog):
     assert "SECRET-PROMPT-TEXT" not in caplog.text
 
 
-def test_cost_estimate_uses_litellm_price_table():
+def _priced_response(model: str, hidden: dict | None = None):
     import litellm
 
-    from services.llm_usage import extract_usage
-
     response = litellm.ModelResponse(
-        model="llama-3.3-70b-versatile",
+        model=model,
         choices=[{"message": {"content": "{}", "role": "assistant"}}],
         usage={"prompt_tokens": 1000, "completion_tokens": 500, "total_tokens": 1500},
     )
-    usage = extract_usage(response, model="groq/llama-3.3-70b-versatile")
+    response._hidden_params = hidden or {}
+    return response
+
+
+def test_cost_prefers_litellm_computed_response_cost():
+    from services.llm_usage import extract_usage
+
+    response = _priced_response("openai/gpt-oss-120b", {"response_cost": 0.000123})
+    assert extract_usage(response, model="groq/openai/gpt-oss-120b")["cost_usd"] == 0.000123
+
+
+def test_cost_fallback_uses_the_called_provider_not_the_response_model_name():
+    """Groq answers with model "openai/gpt-oss-120b"; it must be priced as Groq, not looked up as OpenAI."""
+    from services.llm_usage import extract_usage
+
+    usage = extract_usage(_priced_response("openai/gpt-oss-120b"), model="groq/openai/gpt-oss-120b")
     assert usage["cost_usd"] > 0
-    assert extract_usage(response, model="openrouter/openrouter/free")["cost_usd"] is None  # unpriced, no crash
+    unpriced = extract_usage(_priced_response("openrouter/free"), model="openrouter/openrouter/free")
+    assert unpriced["cost_usd"] is None  # unpriced model: no crash, no number
 
 
 def test_each_failed_attempt_is_logged_with_its_code(monkeypatch, caplog, no_sleep):

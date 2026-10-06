@@ -20,8 +20,7 @@ const PROVIDERS = [
     label: "Groq",
     color: "#f55036",
     models: [
-      { id: "groq/llama-3.3-70b-versatile", label: "Llama 3.3 70B (Recommended)" },
-      { id: "groq/llama-3.1-8b-instant",   label: "Llama 3.1 8B (Ultra Fast)" },
+      { id: "groq/openai/gpt-oss-120b", label: "GPT-OSS 120B (Recommended)" },
     ],
   },
   {
@@ -29,9 +28,8 @@ const PROVIDERS = [
     label: "Google Gemini",
     color: "#1a73e8",
     models: [
-      { id: "gemini/gemini-1.5-flash", label: "Gemini 1.5 Flash" },
-      { id: "gemini/gemini-2.0-flash", label: "Gemini 2.0 Flash" },
-      { id: "gemini/gemini-1.5-pro",   label: "Gemini 1.5 Pro" },
+      { id: "gemini/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+      { id: "gemini/gemini-2.5-pro",   label: "Gemini 2.5 Pro" },
     ],
   },
   {
@@ -134,7 +132,7 @@ function ModelSelect({ models, value, onChange }) {
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 export default function AISettingsModal({ open, onClose, onKeySaved, onKeyDeleted }) {
   const [provider, setProvider]         = useState("groq");
-  const [model, setModel]               = useState("groq/llama-3.3-70b-versatile");
+  const [model, setModel]               = useState("groq/openai/gpt-oss-120b");
   const [apiKey, setApiKey]             = useState("");
   const [showKey, setShowKey]           = useState(false);
   // providers: { gemini: { configured: bool }, openai: { configured: bool }, ... }
@@ -162,7 +160,7 @@ export default function AISettingsModal({ open, onClose, onKeySaved, onKeyDelete
     getAISettings()
       .then((data) => {
         const p = data.provider ?? "groq";
-        const m = data.model    ?? "groq/llama-3.3-70b-versatile";
+        const m = data.model    ?? "groq/openai/gpt-oss-120b";
         setProvider(p);
         setModel(m);
         setProvidersStatus(data.providers ?? {});

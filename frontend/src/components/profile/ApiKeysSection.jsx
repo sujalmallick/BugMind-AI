@@ -24,17 +24,15 @@ const PROVIDERS = [
     id: "groq",
     label: "Groq",
     models: [
-      { id: "groq/llama-3.3-70b-versatile", label: "Llama 3.3 70B (Recommended)" },
-      { id: "groq/llama-3.1-8b-instant",   label: "Llama 3.1 8B (Ultra Fast)" },
+      { id: "groq/openai/gpt-oss-120b", label: "GPT-OSS 120B (Recommended)" },
     ],
   },
   {
     id: "gemini",
     label: "Google Gemini",
     models: [
-      { id: "gemini/gemini-1.5-flash", label: "Gemini 1.5 Flash" },
-      { id: "gemini/gemini-2.0-flash", label: "Gemini 2.0 Flash" },
-      { id: "gemini/gemini-1.5-pro",   label: "Gemini 1.5 Pro" },
+      { id: "gemini/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+      { id: "gemini/gemini-2.5-pro",   label: "Gemini 2.5 Pro" },
     ],
   },
   {
@@ -76,7 +74,7 @@ function getProviderMeta(id) {
 
 export default function ApiKeysSection({ showToast }) {
   const [provider, setProvider]   = useState("groq");
-  const [model, setModel]         = useState("groq/llama-3.3-70b-versatile");
+  const [model, setModel]         = useState("groq/openai/gpt-oss-120b");
   const [apiKey, setApiKey]       = useState("");
   const [showKey, setShowKey]     = useState(false);
   const [providersStatus, setProvidersStatus] = useState({});
@@ -95,7 +93,7 @@ export default function ApiKeysSection({ showToast }) {
     getAISettings()
       .then((data) => {
         setProvider(data.provider ?? "groq");
-        setModel(data.model ?? "groq/llama-3.3-70b-versatile");
+        setModel(data.model ?? "groq/openai/gpt-oss-120b");
         setProvidersStatus(data.providers ?? {});
       })
       .catch(() => setError("Failed to load AI settings."))

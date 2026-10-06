@@ -47,10 +47,16 @@ def extract_usage(response, model: str | None = None) -> dict:
         "cost_usd": None,
     }
     try:
-        import litellm
+        # LiteLLM prices the call during completion(); prefer that. Recomputing from
+        # the response alone can misread the provider (Groq's "openai/gpt-oss-120b"
+        # looks like an OpenAI model), so pass it explicitly in the fallback.
+        cost = (getattr(response, "_hidden_params", None) or {}).get("response_cost")
+        if cost is None:
+            import litellm
 
-        cost = litellm.completion_cost(completion_response=response, model=model)
-        data["cost_usd"] = round(float(cost), 6) if cost is not None else None
+            provider = model.split("/", 1)[0] if model and "/" in model else None
+            cost = litellm.completion_cost(completion_response=response, model=model, custom_llm_provider=provider)
+        data["cost_usd"] = round(float(cost), 8) if cost is not None else None
     except Exception:
         pass
     return data
