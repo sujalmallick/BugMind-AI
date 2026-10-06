@@ -34,7 +34,7 @@ jobs:
           npm run build
           rm -rf node_modules
         env:
-          VITE_API_URL: https://bugmind-backend-ahcpf7euhjcsebdu.eastasia-01.azurewebsites.net
+          VITE_API_URL: https://bugmind-backend-sea-h2epaudqf5gmcmhv.koreacentral-01.azurewebsites.net
 
       - name: Build And Deploy
         id: builddeploy
