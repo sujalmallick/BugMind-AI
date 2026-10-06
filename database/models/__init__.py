@@ -17,8 +17,13 @@ from database.models.invitation import Invitation
 from database.models.activity_log import ActivityLog
 from database.models.comment import Comment, CommentReaction, Mention
 from database.models.ai_assignment_suggestion import AIAssignmentSuggestion
+from database.models.job import Job
+from database.models.project_document import ProjectDocument, DocumentChunk
 
 __all__ = [
+    "Job",
+    "ProjectDocument",
+    "DocumentChunk",
     "User",
     "Project",
     "Workspace",

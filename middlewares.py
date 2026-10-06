@@ -55,7 +55,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 class MaxBodySizeMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        max_bytes = 5 * 1024 * 1024  # 5MB
+        from body_limit import max_body_bytes_for
+
+        max_bytes = max_body_bytes_for(request.method, request.url.path, 5 * 1024 * 1024)
         
         # Check header if present
         if request.headers.get("content-length"):

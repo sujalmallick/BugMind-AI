@@ -19,6 +19,7 @@ from routes.assignment import router as assignment_router
 from routes.comment import router as comment_router
 from routes.dashboard import router as dashboard_router
 from routes.activity import router as activity_router
+from routes.documents import router as documents_router
 from auth.dependencies import get_current_user
 from database.models.user import User
 from fastapi import Depends, Request
@@ -123,10 +124,20 @@ app.include_router(assignment_router, prefix="/api")
 app.include_router(comment_router, prefix="/api")
 app.include_router(dashboard_router)
 app.include_router(activity_router)
+app.include_router(documents_router)
 
 # Serve uploaded avatars as static files
 os.makedirs("uploads/avatars", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+
+@app.on_event("startup")
+def start_job_worker():
+    """Background jobs (e.g. document processing) run in a worker thread per process."""
+    from services import documents  # noqa: F401 — registers the document.process handler
+    from services.jobs import start_worker
+
+    start_worker()
 
 
 @app.on_event("startup")

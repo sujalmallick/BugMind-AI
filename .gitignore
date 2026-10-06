@@ -55,6 +55,8 @@ node_modules/
 *.db
 *.sqlite
 uploads/
+# Local Project Knowledge storage (when Azure Blob isn't configured)
+data/
 
 # Other env files (examples stay tracked)
 
