@@ -33,35 +33,46 @@ const NotificationPreferences = () => {
     }
   };
 
-  if (loading) return <div>Loading preferences...</div>;
+  if (loading) return <div className="signal-card p-5 text-sm text-muted sm:p-7" role="status">Loading preferences…</div>;
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Notification Preferences</h3>
-      <div className="space-y-4">
-        {preferences.map((pref) => (
-          <div key={pref.type} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
-            <div>
-              <p className="font-medium text-gray-900 dark:text-gray-200 capitalize">
-                {pref.type.replace('_', ' ')} Notifications
-              </p>
-              <p className="text-sm text-gray-500">
-                Receive notifications when a new {pref.type.replace('_', ' ')} occurs.
-              </p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="sr-only peer" 
-                checked={pref.enabled}
-                onChange={() => handleToggle(pref.type, pref.enabled)}
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-        ))}
-      </div>
-    </div>
+    <section className="signal-card p-5 sm:p-7">
+      <h2 className="mb-1 text-lg font-semibold text-ink">Notifications</h2>
+      <p className="mb-5 text-[13px] text-muted">Choose which events send you an in-app notification.</p>
+      <ul className="divide-y divide-hairline border-y border-hairline">
+        {preferences.map((pref) => {
+          const label = pref.type.replace(/_/g, ' ');
+          const id = `notif-pref-${pref.type}`;
+          return (
+            <li key={pref.type} className="flex items-center justify-between gap-6 py-4">
+              <div className="min-w-0">
+                <label htmlFor={id} className="block cursor-pointer text-[14px] font-medium capitalize text-ink">
+                  {label}
+                </label>
+                <p className="mt-0.5 text-[13px] text-muted">
+                  Notify me when a new {label} occurs.
+                </p>
+              </div>
+              <span className="relative inline-flex shrink-0 items-center">
+                <input
+                  id={id}
+                  type="checkbox"
+                  role="switch"
+                  aria-checked={pref.enabled}
+                  className="peer sr-only"
+                  checked={pref.enabled}
+                  onChange={() => handleToggle(pref.type, pref.enabled)}
+                />
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none h-6 w-11 rounded-full bg-hairline-strong transition-colors duration-200 peer-checked:bg-signal peer-focus-visible:shadow-[var(--ring-focus)] after:absolute after:left-[3px] after:top-[3px] after:h-[18px] after:w-[18px] after:rounded-full after:bg-white after:shadow-sm after:transition-transform after:duration-200 after:content-[''] peer-checked:after:translate-x-5"
+                />
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 };
 

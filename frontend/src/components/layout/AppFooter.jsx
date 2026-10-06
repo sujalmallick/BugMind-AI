@@ -27,10 +27,28 @@ function FooterColumn({ title, children }) {
   );
 }
 
-export default function AppFooter() {
+// Inside the app a slim one-line footer keeps focus on the work; the full
+// multi-column footer is only used on the marketing page (variant="full").
+export default function AppFooter({ variant = "compact" }) {
   const navigate = useNavigate();
   const { authenticated } = useAuth();
   const year = new Date().getFullYear();
+
+  if (variant === "compact") {
+    return (
+      <footer className="border-t border-hairline bg-surface">
+        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-4 text-[12px] text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <p>© {year} BugMind AI</p>
+          <nav aria-label="Footer" className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <button type="button" onClick={() => navigate("/details")} className="transition-colors hover:text-ink">Product</button>
+            <button type="button" onClick={() => navigate("/details#faq")} className="transition-colors hover:text-ink">FAQ</button>
+            <button type="button" onClick={() => navigate("/settings/profile?tab=keys")} className="transition-colors hover:text-ink">AI keys</button>
+            <button type="button" onClick={() => navigate("/profile")} className="transition-colors hover:text-ink">Settings</button>
+          </nav>
+        </div>
+      </footer>
+    );
+  }
 
   return (
     <footer className="border-t border-hairline bg-surface">

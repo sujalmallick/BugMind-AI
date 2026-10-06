@@ -53,7 +53,7 @@ export default function DangerZone({ showToast }) {
     <>
       {/* Red-bordered danger card — variant of .signal-card */}
       <section
-        className="signal-card p-6 sm:p-8"
+        className="signal-card p-5 sm:p-7"
         style={{ borderColor: "var(--color-flagged, #dc2626)", borderWidth: "1.5px" }}
       >
         <div className="flex items-center gap-3 mb-1">
@@ -77,7 +77,7 @@ export default function DangerZone({ showToast }) {
               autoComplete="current-password"
               placeholder="Enter your password…"
               required
-              className="w-full rounded-lg border border-flagged/40 bg-surface px-3 py-2.5 text-sm text-ink focus:border-flagged focus:outline-none focus:ring-2 focus:ring-flagged/20"
+              className="field !border-flagged/40 focus:!border-flagged focus:!shadow-[0_0_0_3px_rgba(220,38,38,0.15)]"
             />
           </div>
 
@@ -85,9 +85,9 @@ export default function DangerZone({ showToast }) {
             <button
               type="submit"
               disabled={deleting || !password}
-              className="flex items-center gap-2 rounded-lg bg-flagged px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 disabled:opacity-50"
+              className="btn-primary !border-flagged !bg-flagged hover:!border-red-700 hover:!bg-red-700"
             >
-              {deleting && <Loader2 size={14} className="animate-spin" />}
+              {deleting && <Loader2 size={14} className="spin" />}
               Delete my account
             </button>
           </div>

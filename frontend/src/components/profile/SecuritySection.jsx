@@ -53,7 +53,7 @@ export default function SecuritySection({ showToast }) {
   }
 
   return (
-    <section className="signal-card p-6 sm:p-8">
+    <section className="signal-card p-5 sm:p-7">
       <h2 className="text-lg font-semibold text-ink mb-1">Security</h2>
       <p className="text-sm text-muted mb-6">
         Changing your password will log out all other active sessions.
@@ -91,7 +91,7 @@ export default function SecuritySection({ showToast }) {
             className="btn-primary"
             disabled={saving || !currentPw || !newPw || !confirmPw}
           >
-            {saving && <Loader2 size={14} className="animate-spin" />}
+            {saving && <Loader2 size={14} className="spin" />}
             Update password
           </button>
         </div>
@@ -113,7 +113,7 @@ function PasswordField({ label, value, onChange, show, onToggle, autoComplete })
           onChange={(e) => onChange(e.target.value)}
           autoComplete={autoComplete}
           required
-          className="w-full rounded-lg border border-hairline bg-surface px-3 py-2.5 pr-10 text-sm text-ink focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20"
+          className="field !pr-10"
         />
         <button
           type="button"

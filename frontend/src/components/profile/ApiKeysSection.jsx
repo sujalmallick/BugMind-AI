@@ -194,7 +194,7 @@ export default function ApiKeysSection({ showToast }) {
   const currentModels = providerMeta.models;
 
   return (
-    <section className="signal-card p-6 sm:p-8">
+    <section className="signal-card p-5 sm:p-7">
       <h2 className="text-lg font-semibold text-ink mb-1">AI API Keys</h2>
       <p className="text-sm text-muted mb-6">
         Bring your own API keys to use your preferred AI provider. Keys are encrypted and stored securely.
@@ -202,14 +202,14 @@ export default function ApiKeysSection({ showToast }) {
 
       {loading ? (
         <div className="flex items-center gap-2 py-4 text-muted">
-          <Loader2 size={18} className="animate-spin" />
+          <Loader2 size={18} className="spin" />
           <span className="text-sm">Loading settings…</span>
         </div>
       ) : (
         <div className="flex flex-col gap-5 max-w-lg">
           {/* Provider grid */}
           <div>
-            <label className="mb-2.5 block text-xs font-semibold uppercase tracking-wide text-muted">
+            <label className="mb-2.5 block text-[13px] font-medium text-ink">
               Provider
             </label>
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
@@ -240,12 +240,12 @@ export default function ApiKeysSection({ showToast }) {
 
           {/* Model selector */}
           <div>
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted">Model</label>
+            <label className="mb-2 block text-[13px] font-medium text-ink">Model</label>
             <div className="relative">
               <select
                 value={model}
                 onChange={(e) => { setModel(e.target.value); setSaved(false); }}
-                className="w-full appearance-none rounded-lg border border-hairline bg-surface py-2.5 pl-3 pr-9 text-sm text-ink shadow-sm focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20"
+                className="field appearance-none !pr-9"
               >
                 {currentModels.map((m) => (
                   <option key={m.id} value={m.id}>{m.label}</option>
@@ -258,14 +258,14 @@ export default function ApiKeysSection({ showToast }) {
           {/* Divider */}
           <div className="flex items-center gap-3">
             <div className="h-px flex-1 bg-hairline" />
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">Bring Your Own Key (optional)</span>
+            <span className="text-[12px] font-medium text-muted">Bring Your Own Key (optional)</span>
             <div className="h-px flex-1 bg-hairline" />
           </div>
 
           {/* API Key input */}
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <label className="text-xs font-semibold uppercase tracking-wide text-muted">API Key</label>
+              <label className="text-[13px] font-medium text-ink">API Key</label>
               {hasKey ? (
                 <span className="flex items-center gap-1 text-xs font-semibold text-verified">
                   <CheckCircle2 size={12} /> API Key Saved
@@ -283,7 +283,7 @@ export default function ApiKeysSection({ showToast }) {
                   onChange={(e) => { setApiKey(e.target.value); setSaved(false); setTestResult(null); }}
                   placeholder={hasKey ? "Enter new key to replace existing…" : `Paste your ${providerMeta.label} API key…`}
                   autoComplete="off"
-                  className="w-full rounded-lg border border-hairline bg-paper py-2.5 pl-9 pr-10 font-mono text-sm text-ink placeholder-muted/60 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20"
+                  className="field !pl-9 !pr-10 font-mono"
                 />
                 <button
                   type="button"
@@ -349,15 +349,15 @@ export default function ApiKeysSection({ showToast }) {
                   type="button"
                   onClick={handleDeleteKey}
                   disabled={deleting}
-                  className="flex items-center gap-1.5 rounded-lg bg-flagged px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60"
+                  className="btn-primary !min-h-0 !py-1.5 !text-xs !border-flagged !bg-flagged hover:!bg-red-700"
                 >
-                  {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                  {deleting ? <Loader2 size={12} className="spin" /> : <Trash2 size={12} />}
                   Yes, delete it
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirmDelete(false)}
-                  className="rounded-lg border border-hairline px-3 py-1.5 text-xs font-semibold text-muted hover:bg-paper hover:text-ink"
+                  className="btn-secondary !min-h-0 !py-1.5 !text-xs"
                 >
                   Cancel
                 </button>
@@ -383,7 +383,7 @@ export default function ApiKeysSection({ showToast }) {
               disabled={saving}
               className="btn-primary ml-auto flex items-center gap-2"
             >
-              {saving ? <><Loader2 size={14} className="animate-spin" />Saving…</> : hasKey && apiKey.trim() ? "Update Key" : apiKey.trim() ? "Save Key" : "Save Settings"}
+              {saving ? <><Loader2 size={14} className="spin" />Saving…</> : hasKey && apiKey.trim() ? "Update Key" : apiKey.trim() ? "Save Key" : "Save Settings"}
             </button>
           </div>
         </div>

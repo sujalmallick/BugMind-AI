@@ -300,26 +300,40 @@
     overflow: hidden;
     pointer-events: none;
   }
+  /* Outer element: position + cursor drift (Orbs.jsx sets --mx/--my in
+     -1..1; each orb moves by its own --depth). Inner ::before: colour,
+     blur and the idle float. */
   .orb {
     --s: 320px;
+    --depth: 30px;
     position: absolute;
     width: var(--s);
     height: var(--s);
-    border-radius: 9999px;
-    filter: blur(36px);
-    opacity: 0.6;
-    animation: orbFloat 18s ease-in-out infinite alternate;
+    transform: translate3d(calc(var(--mx, 0) * var(--depth)), calc(var(--my, 0) * var(--depth)), 0);
+    transition: transform 1.6s var(--ease-out-expo);
     will-change: transform;
   }
-  .orb-a { background: radial-gradient(circle at 35% 35%, rgba(37, 99, 235, 0.55), rgba(37, 99, 235, 0) 68%); }
-  .orb-b { background: radial-gradient(circle at 40% 40%, rgba(5, 150, 105, 0.42), rgba(5, 150, 105, 0) 68%); animation-duration: 22s; animation-delay: -6s; }
-  .orb-c { background: radial-gradient(circle at 40% 40%, rgba(56, 189, 248, 0.5), rgba(56, 189, 248, 0) 68%); animation-duration: 20s; animation-delay: -11s; }
-  .orb-d { background: radial-gradient(circle at 40% 40%, rgba(217, 119, 6, 0.32), rgba(217, 119, 6, 0) 68%); animation-duration: 16s; animation-delay: -3s; }
+  .orb::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: var(--orb-bg);
+    filter: blur(36px);
+    opacity: 0.62;
+    animation: orbFloat var(--dur, 18s) ease-in-out infinite alternate;
+    animation-delay: var(--delay, 0s);
+  }
+  .orb-a { --depth: 46px; --dur: 17s; --orb-bg: radial-gradient(circle at 35% 35%, rgba(37, 99, 235, 0.58), rgba(37, 99, 235, 0) 68%); }
+  .orb-b { --depth: -38px; --dur: 21s; --delay: -6s; --orb-bg: radial-gradient(circle at 40% 40%, rgba(5, 150, 105, 0.45), rgba(5, 150, 105, 0) 68%); }
+  .orb-c { --depth: 30px; --dur: 19s; --delay: -11s; --orb-bg: radial-gradient(circle at 40% 40%, rgba(56, 189, 248, 0.52), rgba(56, 189, 248, 0) 68%); }
+  .orb-d { --depth: -60px; --dur: 14s; --delay: -3s; --orb-bg: radial-gradient(circle at 40% 40%, rgba(217, 119, 6, 0.36), rgba(217, 119, 6, 0) 68%); }
 
   @keyframes orbFloat {
     0% { transform: translate3d(0, 0, 0) scale(1); }
-    50% { transform: translate3d(18px, -22px, 0) scale(1.06); }
-    100% { transform: translate3d(-14px, 14px, 0) scale(0.97); }
+    33% { transform: translate3d(38px, -30px, 0) scale(1.1); }
+    66% { transform: translate3d(-26px, 22px, 0) scale(0.94); }
+    100% { transform: translate3d(18px, 34px, 0) scale(1.05); }
   }
 
   /* Landing hero */
@@ -331,17 +345,17 @@
   /* Closing call-to-action */
   .orbs-cta .orb-a { --s: 340px; bottom: -180px; left: 6%; }
   .orbs-cta .orb-b { --s: 300px; bottom: -160px; right: 8%; }
-  .orbs-cta .orb-c { --s: 220px; top: -120px; left: 42%; opacity: 0.45; }
+  .orbs-cta .orb-c { --s: 220px; top: -120px; left: 42%; }
   .orbs-cta .orb-d { --s: 160px; top: 20%; right: 30%; }
 
   /* Auth showcase panel */
   .orbs-panel .orb-a { --s: 360px; top: -80px; left: -100px; }
   .orbs-panel .orb-b { --s: 300px; bottom: -60px; right: -80px; }
-  .orbs-panel .orb-c { --s: 220px; top: 44%; right: 18%; opacity: 0.5; }
+  .orbs-panel .orb-c { --s: 220px; top: 44%; right: 18%; }
   .orbs-panel .orb-d { --s: 160px; bottom: 18%; left: 14%; }
 
   @media (max-width: 640px) {
-    .orb { filter: blur(30px); }
+    .orb::before { filter: blur(30px); }
     .orbs-hero .orb-a { --s: 260px; left: -110px; }
     .orbs-hero .orb-b { --s: 240px; right: -110px; top: 34%; }
     .orbs-hero .orb-c { --s: 200px; top: 70%; left: -40px; }

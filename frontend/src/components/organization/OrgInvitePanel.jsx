@@ -109,15 +109,15 @@ export default function OrgInvitePanel({ orgId }) {
       <div className="grid gap-6 md:grid-cols-2">
         {/* Email Invite */}
         <div className="rounded-xl border border-hairline bg-surface p-5">
-          <h3 className="text-sm font-semibold text-ink mb-1">Invite via Email</h3>
+          <h3 className="mb-1 text-[14px] font-semibold text-ink">Invite via Email</h3>
           <p className="text-xs text-muted mb-4">Send a direct email invitation to join this organization.</p>
           <form onSubmit={handleSendEmailInvite} className="space-y-3">
             <div>
-              <label className="text-xs font-semibold text-muted uppercase tracking-wide mb-1.5 block">Role</label>
+              <label className="mb-1.5 block text-[13px] font-medium text-ink">Role</label>
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value)}
-                className="w-full rounded-lg border border-hairline px-3 py-2 text-sm focus:outline-none focus:border-signal bg-white"
+                className="field"
               >
                 <option value="member">Member</option>
                 <option value="admin">Admin</option>
@@ -125,21 +125,21 @@ export default function OrgInvitePanel({ orgId }) {
               </select>
             </div>
             <div>
-              <label className="text-xs font-semibold text-muted uppercase tracking-wide mb-1.5 block">Email</label>
+              <label className="mb-1.5 block text-[13px] font-medium text-ink">Email</label>
               <div className="flex gap-2">
                 <input
                   type="email"
                   placeholder="colleague@company.com"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
-                  className="flex-1 rounded-lg border border-hairline px-3 py-2 text-sm focus:outline-none focus:border-signal"
+                  className="field flex-1"
                 />
                 <button
                   type="submit"
                   disabled={sending || !inviteEmail.trim()}
-                  className="flex items-center gap-1.5 rounded-lg bg-signal px-4 py-2 text-sm font-bold text-white hover:bg-signal/90 transition disabled:opacity-50"
+                  className="btn-primary"
                 >
-                  {sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                  {sending ? <Loader2 size={14} className="spin" /> : <Send size={14} />}
                   Send
                 </button>
               </div>
@@ -149,15 +149,15 @@ export default function OrgInvitePanel({ orgId }) {
 
         {/* Share Link */}
         <div className="rounded-xl border border-hairline bg-surface p-5">
-          <h3 className="text-sm font-semibold text-ink mb-1">Invite via Link</h3>
+          <h3 className="mb-1 text-[14px] font-semibold text-ink">Invite via Link</h3>
           <p className="text-xs text-muted mb-4">Generate a shareable link. Anyone with this link can join.</p>
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-semibold text-muted uppercase tracking-wide mb-1.5 block">Role</label>
+              <label className="mb-1.5 block text-[13px] font-medium text-ink">Role</label>
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value)}
-                className="w-full rounded-lg border border-hairline px-3 py-2 text-sm focus:outline-none focus:border-signal bg-white"
+                className="field"
               >
                 <option value="member">Member</option>
                 <option value="admin">Admin</option>
@@ -168,9 +168,9 @@ export default function OrgInvitePanel({ orgId }) {
               <button
                 onClick={handleGenerateLink}
                 disabled={generatingLink}
-                className="w-full flex items-center justify-center gap-2 rounded-lg border border-hairline bg-white py-2 text-sm font-semibold text-ink hover:bg-paper hover:border-signal/40 transition disabled:opacity-50"
+                className="btn-secondary w-full"
               >
-                {generatingLink ? <Loader2 size={14} className="animate-spin" /> : <Link2 size={14} />}
+                {generatingLink ? <Loader2 size={14} className="spin" /> : <Link2 size={14} />}
                 Generate & Copy Invite Link
               </button>
             </div>
@@ -182,7 +182,7 @@ export default function OrgInvitePanel({ orgId }) {
       {invites.length > 0 && (
         <div className="mt-8">
           <h3 className="text-sm font-semibold text-ink mb-3">Pending Invitations ({invites.length})</h3>
-          <div className="divide-y divide-hairline rounded-xl border border-hairline bg-white">
+          <div className="divide-y divide-hairline rounded-xl border border-hairline bg-surface">
             {invites.map((inv) => (
               <div key={inv.token} className="flex items-center justify-between p-3">
                 <div className="flex items-center gap-3 min-w-0">
@@ -207,7 +207,7 @@ export default function OrgInvitePanel({ orgId }) {
                       title="Copy link"
                     >
                       {copiedToken === inv.token ? (
-                        <Check size={14} className="text-green-500" />
+                        <Check size={14} className="text-verified" />
                       ) : (
                         <Copy size={14} />
                       )}

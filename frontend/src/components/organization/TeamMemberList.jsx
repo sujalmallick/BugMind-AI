@@ -24,7 +24,7 @@ export default function TeamMemberList({ members, currentUserId, canManage, onRe
   }
 
   if (!members?.length) {
-    return <p className="py-4 text-center text-xs text-muted">No team members yet.</p>;
+    return <p className="py-6 text-center text-[13px] text-muted">No team members yet.</p>;
   }
 
   return (
@@ -38,15 +38,14 @@ export default function TeamMemberList({ members, currentUserId, canManage, onRe
           return (
             <li key={m.user_id} className="flex items-center justify-between gap-3 py-2.5">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full
-                                bg-signal-soft text-signal text-[11px] font-bold overflow-hidden">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-signal-soft text-signal text-[12px] font-semibold overflow-hidden">
                   {m.user?.avatar_url
                     ? <img src={getAvatarUrl(m.user.avatar_url)} alt="" className="h-full w-full object-cover" />
                     : (m.user?.name || "?").charAt(0).toUpperCase()
                   }
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-xs font-medium text-ink">
+                  <p className="truncate text-[13px] font-medium text-ink">
                     {m.user?.name || "Unknown"}
                     {isMe && <span className="ml-1 text-[10px] text-muted">(you)</span>}
                   </p>
@@ -68,7 +67,7 @@ export default function TeamMemberList({ members, currentUserId, canManage, onRe
                     title="Remove from team"
                   >
                     {removing === m.user_id
-                      ? <Loader2 size={12} className="animate-spin" />
+                      ? <Loader2 size={12} className="spin" />
                       : <Trash2 size={12} />
                     }
                   </button>

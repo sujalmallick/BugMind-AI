@@ -71,18 +71,18 @@ export default function ActivityItem({ activity }) {
   }
 
   return (
-    <div className="flex gap-4 p-4 border border-hairline bg-surface rounded-xl hover:bg-paper/50 transition">
-      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${meta.color}`}>
-        <IconComponent size={18} />
+    <div className="flex gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-ink/[0.03]">
+      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${meta.color}`}>
+        <IconComponent size={15} aria-hidden="true" />
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm text-muted">
+      <div className="min-w-0 flex-1">
+        <div className="text-[13px] leading-snug text-muted">
           <strong className="text-ink font-semibold">{actorName}</strong>{" "}
           <span className="text-muted/80">{meta.label}</span>{" "}
           <strong className="text-ink font-semibold">{entityLabel}</strong>
         </div>
         {actionDetail}
-        <div className="text-xs text-muted/60 mt-1">
+        <div className="mt-0.5 text-[12px] text-muted/80">
           {formatTimeAgo(activity.created_at)}
         </div>
       </div>

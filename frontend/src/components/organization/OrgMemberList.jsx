@@ -35,7 +35,7 @@ function RoleDropdown({ current, onChange, disabled }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-xl border border-hairline bg-white p-1 shadow-lg">
+        <div className="glass glass-menu menu-enter absolute right-0 top-full z-20 mt-1 w-36 rounded-xl p-1">
           {ROLES.map((r) => {
             const R = r.icon;
             return (
@@ -118,7 +118,7 @@ export default function OrgMemberList({ members, currentUserId, myRole, onRoleCh
                     title="Remove member"
                   >
                     {removing === m.user_id
-                      ? <Loader2 size={13} className="animate-spin" />
+                      ? <Loader2 size={13} className="spin" />
                       : <Trash2 size={13} />
                     }
                   </button>

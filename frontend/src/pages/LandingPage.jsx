@@ -1035,7 +1035,7 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <AppFooter />
+      <AppFooter variant="full" />
     </div>
   );
 }

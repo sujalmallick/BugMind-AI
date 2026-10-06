@@ -1,19 +1,22 @@
 import React from "react";
+import { PieChart as PieIcon } from "lucide-react";
+import EmptyState from "../shared/EmptyState";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
+// Palette tokens from index.css
 const STATUS_COLORS = {
-  "pass": "#1a7f5a",          // verified
-  "fail": "#c4432b",          // flagged
-  "not-executed": "#5b6573",  // muted
-  "blocked": "#b8860b",       // ochre
-  "skipped": "#9ca3af",       // gray
+  "pass": "#059669",          // verified
+  "fail": "#dc2626",          // flagged
+  "not-executed": "#94a3b8",  // muted
+  "blocked": "#d97706",       // ochre
+  "skipped": "#cbd5e1",       // hairline-strong
 };
 
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="rounded-lg border border-hairline bg-surface p-3 shadow-sm">
+      <div className="glass glass-menu rounded-lg px-3 py-2">
         <p className="text-sm font-medium text-ink capitalize">{data.label}</p>
         <p className="text-xs text-muted mt-0.5">
           Count: <span className="font-semibold text-ink">{data.count}</span>
@@ -29,9 +32,12 @@ export default function DonutChart({ data, emptyMessage = "No data available" })
 
   if (!hasData) {
     return (
-      <div className="flex h-full w-full items-center justify-center rounded-xl border border-dashed border-hairline bg-paper">
-        <p className="text-sm text-muted">{emptyMessage}</p>
-      </div>
+      <EmptyState
+        className="h-full min-h-[220px]"
+        icon={<PieIcon size={18} />}
+        title={emptyMessage}
+        description="This chart fills in as test cases are assigned and executed."
+      />
     );
   }
 
@@ -46,16 +52,18 @@ export default function DonutChart({ data, emptyMessage = "No data available" })
             data={activeData}
             cx="50%"
             cy="50%"
-            innerRadius={60}
-            outerRadius={80}
-            paddingAngle={2}
+            innerRadius={62}
+            outerRadius={86}
+            paddingAngle={3}
+            cornerRadius={4}
+            stroke="none"
             dataKey="count"
             nameKey="label"
           >
             {activeData.map((entry, index) => (
               <Cell 
                 key={`cell-${index}`} 
-                fill={STATUS_COLORS[entry.key] || "#3454d1"} 
+                fill={STATUS_COLORS[entry.key] || "#2563eb"} 
               />
             ))}
           </Pie>
