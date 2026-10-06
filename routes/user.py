@@ -249,7 +249,9 @@ def change_password(
     # Bump credentials_updated_at. The auth middleware will now reject any
     # JWT whose iat < this timestamp, instantly invalidating all other sessions.
     # Future security events (email change, MFA) should also bump this field.
-    current_user.credentials_updated_at = datetime.utcnow()
+    # Truncated to whole seconds because JWT iat has second precision; with
+    # microseconds the fresh token below would look older and be rejected.
+    current_user.credentials_updated_at = datetime.utcnow().replace(microsecond=0)
     current_user.updated_at = datetime.utcnow()
     db.commit()
 

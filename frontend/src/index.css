@@ -486,6 +486,20 @@ body,
   color: #b91c1c;
 }
 
+/* Success box */
+.auth-success {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: 1px solid #86efac;
+  border-radius: 10px;
+  background: #f0fdf4;
+  padding: 11px 14px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #15803d;
+}
+
 /* Submit button */
 .auth-submit-btn {
   display: flex;

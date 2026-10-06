@@ -11,6 +11,8 @@ import ProtectedRoute from "../auth/ProtectedRoute";
 
 import LoginPage from "../pages/LoginPage";
 import RegisterPage from "../pages/RegisterPage";
+import ForgotPasswordPage from "../pages/ForgotPasswordPage";
+import ResetPasswordPage from "../pages/ResetPasswordPage";
 import LandingPage from "../pages/LandingPage";
 
 // Lazy-loaded heavy application routes for code-splitting
@@ -73,6 +75,21 @@ export default function AppRoutes() {
             ? <Navigate to="/" replace />
             : <RegisterPage />
         }
+      />
+
+      <Route
+        path="/forgot-password"
+        element={
+          authenticated
+            ? <Navigate to="/" replace />
+            : <ForgotPasswordPage />
+        }
+      />
+
+      {/* Public: reached from the emailed link; works whether or not a session exists */}
+      <Route
+        path="/reset-password"
+        element={<ResetPasswordPage />}
       />
 
       <Route

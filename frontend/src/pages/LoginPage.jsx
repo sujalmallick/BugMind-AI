@@ -118,9 +118,17 @@ export default function LoginPage() {
 
               {/* Password */}
               <div>
-                <label htmlFor="login-password" className="mb-2 block text-sm font-semibold text-ink">
-                  Password
-                </label>
+                <div className="mb-2 flex items-center justify-between">
+                  <label htmlFor="login-password" className="block text-sm font-semibold text-ink">
+                    Password
+                  </label>
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs font-semibold text-signal hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
                 <div className="auth-input-wrap">
                   <Lock size={16} className="auth-input-icon" />
                   <input
