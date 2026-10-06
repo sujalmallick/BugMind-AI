@@ -81,7 +81,7 @@ def _manual_test_cases_section(manual_test_cases) -> str:
     return f"""
 Manual test cases that already exist in this project (user-provided data). Do NOT generate
 test cases that duplicate these; spend the suite on what they do not cover:
-{untrusted_block(chr(10).join(lines), source=Source.USER, label="manual_test_cases", agent=AGENT)}
+{untrusted_block(chr(10).join(lines), source=Source.DATABASE, label="manual_test_cases", agent=AGENT)}
 """
 
 

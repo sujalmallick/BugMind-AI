@@ -202,6 +202,71 @@ RULES: list[InjectionRule] = [
             _F,
         ),
     ),
+    # Paraphrased overrides that avoid the literal "ignore previous instructions".
+    InjectionRule(
+        "override_paraphrase", 0.85,
+        re.compile(
+            r"\b(?:disregard|ignore|forget|set aside|throw out|discard|abandon|stop following|no longer follow)\b"
+            rf"{_S}{{0,30}}?(?:\bwhat (?:you were|you've been|you have been) (?:told|given|asked)\b"
+            r"|\b(?:the )?(?:guidance|directions|instructions|rules|text|context|messages?|prompts?) "
+            r"(?:you (?:were given|received|got|have been given)|(?:given|provided|written) (?:to you|earlier|before|above))\b)",
+            _F,
+        ),
+    ),
+    InjectionRule(
+        "instructions_void", 0.8,
+        re.compile(
+            r"\b(?:earlier|previous|prior|original|above|initial|old|existing)\s+(?:directions|instructions|rules|guidance|"
+            r"guidelines|prompts?)\s+(?:no longer apply|are (?:now )?(?:void|cancell?ed|obsolete|revoked|outdated|suspended|lifted)|"
+            r"do(?:es)? not apply|don't apply)\b",
+            _F,
+        ),
+    ),
+    InjectionRule(
+        "prompt_extraction_paraphrase", 0.85,
+        re.compile(
+            r"\b(?:print|show|reveal|repeat|output|display|translate|summari[sz]e|paraphrase|recite|tell me|write out|dump)\b"
+            # "original text" / "hidden message" alone are ordinary product words;
+            # only AI-specific objects count unless the text says "you were given".
+            rf"{_S}{{0,40}}?(?:\b(?:hidden|secret|initial|security|confidential) (?:policy|instructions|"
+            r"prompt|rules|guidelines)\b|\b(?:text|instructions|message|policy|rules|guidelines|prompt) (?:you were given|you received|"
+            r"you got|above this line|before this message|at the (?:start|beginning|top))\b|\beverything (?:above|before) this (?:line|message)\b)",
+            _F,
+        ),
+    ),
+    InjectionRule(
+        "fake_authority", 0.7,
+        re.compile(
+            r"\b(?:system|admin(?:istrator)?|developer|root|openai|anthropic)\s+(?:notice|override|command|directive)\b"
+            r"|\bpriority\s*(?:0|zero)\b|\b(?:override|god) mode\b",
+            _F,
+        ),
+    ),
+    # Non-English overrides / prompt extraction (Hindi, Hinglish, Spanish, French,
+    # German, Portuguese). Devanagari has no reliable \b, so those use literals.
+    InjectionRule(
+        "override_multilingual", 0.9,
+        re.compile(
+            r"(?:पिछले|पहले के|सभी|पूर्व)[^।\n]{0,20}निर्देश[^।\n]{0,20}(?:अनदेखा|नज़रअंदाज़|नजरअंदाज|भूल)"
+            r"|\b(?:pichle|pehle ke|saare)\s+(?:sabhi\s+)?(?:instructions|nirdesh)\s+(?:ko\s+)?(?:ignore|bhool)"
+            rf"|\b(?:ignora|olvida|omite|ignore)\b{_S}{{0,30}}\b(?:instrucciones|indicaciones|reglas)\b{_S}{{0,20}}\b(?:anteriores|previas|del sistema)\b"
+            rf"|\b(?:ignorez|ignore|oubliez|oublie)\b{_S}{{0,30}}\b(?:instructions|consignes|règles)\b{_S}{{0,20}}(?:précédentes|antérieures|du système)"
+            rf"|\b(?:ignoriere|ignorieren sie|vergiss|vergessen sie)\b{_S}{{0,30}}\b(?:anweisungen|vorgaben|regeln)\b"
+            rf"|\b(?:ignore|esqueça|esqueca)\b{_S}{{0,30}}\b(?:instruções|instrucoes|regras)\b{_S}{{0,20}}\b(?:anteriores|do sistema)\b",
+            _F,
+        ),
+    ),
+    InjectionRule(
+        "prompt_extraction_multilingual", 0.85,
+        re.compile(
+            r"(?:सिस्टम प्रॉम्प्ट|छिपे हुए निर्देश|गुप्त निर्देश)[^।\n]{0,20}(?:बताओ|दिखाओ|बताएं|दिखाएं|प्रकट)"
+            rf"|\b(?:revela|muestra|muéstrame|dime|imprime)\b{_S}{{0,30}}\b(?:prompt|instrucciones)\s+(?:del sistema|ocultas|secretas)"
+            rf"|\b(?:révèle|révélez|montre|montrez|affiche|affichez|donne)[\w-]*{_S}{{0,30}}\b(?:prompt|instructions|consignes)\s+(?:système|du système|cachées|secrètes)"
+            rf"|\b(?:zeige|zeig|verrate|gib)\b{_S}{{0,30}}(?:system-?prompt|versteckten anweisungen|systemanweisungen)"
+            rf"|\b(?:revele|mostre|me diga)\b{_S}{{0,30}}\b(?:prompt|instruções)\s+(?:do sistema|ocultas|secretas)",
+            _F,
+        ),
+    ),
 ]
 
 # Phrases that indicate the text is *about* an attack rather than issuing one.
@@ -259,14 +324,48 @@ def _decode_base64_blobs(text: str) -> list[str]:
     return decoded
 
 
-def _discussed(text: str, start: int, end: int) -> bool:
+_ADDRESSES_MODEL = re.compile(r"\b(?:you|your|yourself)\b", _F)
+_QUOTED_SPAN = re.compile("[\"'`“‘«][^\"'`”’»\n]*[\"'`”’»]")
+
+
+def _discussed(text: str, start: int, end: int) -> str | None:
+    """
+    Why a hit looks like it's being *described* rather than issued:
+    "quote" when the hit itself is quoted, "discussion" when a QA framing word
+    precedes it and the sentence doesn't address the model, else None.
+    ("Verify the bot rejects X" describes an attack; "Verify that you ignore
+    all previous instructions" issues one.)
+    """
     line_start = max(text.rfind("\n", 0, start), max(text.rfind(c, 0, start) for c in ".!?")) + 1
     line_end_candidates = [i for i in (text.find("\n", end),) if i != -1]
     line_end = min(line_end_candidates) if line_end_candidates else len(text)
     before = text[line_start:start]
     after = text[end:line_end]
-    quoted = any(q in before[-3:] for q in _QUOTES) and any(q in after for q in _QUOTES)
-    return quoted or bool(_DISCUSSION.search(before))
+    if any(q in before[-3:] for q in _QUOTES) and any(q in after for q in _QUOTES):
+        return "quote"
+    sentence = _QUOTED_SPAN.sub(" ", text[line_start:line_end])
+    if _DISCUSSION.search(before) and not _ADDRESSES_MODEL.search(sentence):
+        return "discussion"
+    return None
+
+
+_HEX_BLOB = re.compile(r"(?<![0-9A-Fa-f])(?:[0-9A-Fa-f]{2}){12,}(?![0-9A-Fa-f])")
+_ROT13 = str.maketrans(
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+    "NOPQRSTUVWXYZABCDEFGHIJKLMnopqrstuvwxyzabcdefghijklm",
+)
+
+
+def _decode_hex_blobs(text: str) -> list[str]:
+    decoded = []
+    for m in _HEX_BLOB.finditer(text):
+        try:
+            s = bytes.fromhex(m.group(0)).decode("utf-8")
+        except (ValueError, UnicodeDecodeError):
+            continue
+        if s and sum(c.isalpha() or c.isspace() for c in s) / len(s) > 0.7:
+            decoded.append(s)
+    return decoded
 
 
 class InjectionDetector:
@@ -282,16 +381,27 @@ class InjectionDetector:
             return report
 
         weights: dict[str, float] = {}
+        discounted_by_framing: set[str] = set()
         allow_discount = source.is_direct
 
         # 1. Rules on the original text (positions usable for redaction).
         for rule in self.rules:
             for m in rule.pattern.finditer(text):
                 w = rule.weight
-                if allow_discount and rule.discountable and _discussed(text, m.start(), m.end()):
+                reason = _discussed(text, m.start(), m.end()) if allow_discount and rule.discountable else None
+                if reason:
                     w *= DISCUSSION_DISCOUNT
+                    if reason == "discussion":
+                        discounted_by_framing.add(rule.id)
                 weights[rule.id] = max(weights.get(rule.id, 0.0), w)
                 report.spans.append((m.start(), m.end()))
+
+        # A "Test:" / "verify" framing word earns the benefit of the doubt for one
+        # rule, not several: stacked hits are an attack wearing a QA costume.
+        if len(discounted_by_framing) >= 2:
+            for rule in self.rules:
+                if rule.id in discounted_by_framing:
+                    weights[rule.id] = max(weights[rule.id], rule.weight)
 
         # 2. Rules on the de-obfuscated text: hits only visible here were hidden.
         canonical = deobfuscate(text)
@@ -309,14 +419,42 @@ class InjectionDetector:
         if _MIXED_SCRIPT_WORD.search(text):
             weights["mixed_script_homoglyphs"] = 0.25
 
-        # 4. Encoded payloads (one level deep).
+        # 4. Encoded payloads (one level deep): base64 / hex blobs, and the whole
+        #    text ROT13'd or reversed. Whole-text variants of ordinary prose never
+        #    form attack phrases, so they only count on a strong inner hit.
         if _depth == 0:
-            for decoded in _decode_base64_blobs(text):
+            for decoded in _decode_base64_blobs(text) + _decode_hex_blobs(text):
                 inner = self.assess(decoded, source=Source.EXTERNAL, _depth=1)
                 if inner.score > 0:
                     weights["encoded_payload"] = max(weights.get("encoded_payload", 0.0), min(1.0, inner.score * 0.9 + 0.1))
                     report.obfuscated = True
+            for variant, signal in ((text.translate(_ROT13), "rot13_payload"), (text[::-1], "reversed_payload")):
+                inner = self.assess(variant, source=Source.EXTERNAL, _depth=1)
+                if inner.score >= 0.5:
+                    weights[signal] = min(1.0, inner.score * 0.9 + 0.1)
+                    report.obfuscated = True
 
+        survival = 1.0
+        for w in weights.values():
+            survival *= (1.0 - w)
+        report.score = round(1.0 - survival, 4)
+        report.signals = sorted(weights)
+        return report
+
+    def assess_spanning(self, text: str, boundaries: list[int]) -> InjectionReport:
+        """
+        Score only rule hits that cross one of `boundaries` (offsets where
+        separately-submitted items were joined). Hits inside a single item were
+        already judged on their own; a hit spanning items is an attack split to
+        dodge per-item checks, so it gets no QA-framing discount.
+        """
+        report = InjectionReport()
+        weights: dict[str, float] = {}
+        for rule in self.rules:
+            for m in rule.pattern.finditer(text):
+                if any(m.start() < b < m.end() for b in boundaries):
+                    weights[rule.id] = max(weights.get(rule.id, 0.0), rule.weight)
+                    report.spans.append((m.start(), m.end()))
         survival = 1.0
         for w in weights.values():
             survival *= (1.0 - w)

@@ -33,6 +33,9 @@ os.environ.update({
     "LITELLM_LOCAL_MODEL_COST_MAP": "True",
     # Fake developer key so the default provider resolves without a real one.
     "GROQ_API_KEY": "gsk_FAKEtestKEYfor0unit1tests2only3",
+    # The LLM injection classifier adds a model call per analysis; off by default
+    # so call-count assertions stay stable. Its own tests switch it on.
+    "PROMPT_INJECTION_LLM_CLASSIFIER_ENABLED": "false",
 })
 
 import pytest  # noqa: E402

@@ -56,6 +56,13 @@ class GuardrailSettings:
     injection_block_threshold: float = 0.8
     injection_flag_threshold: float = 0.45
 
+    # Model-based second opinion on direct user input (catches paraphrased and
+    # non-English injections the rules miss). One extra LLM call per analysis;
+    # fails open (rules still apply) if the call errors.
+    llm_classifier_enabled: bool = True
+    llm_classifier_threshold: float = 0.8
+    llm_classifier_max_chars: int = 6000
+
     # Masking behaviour. "typed" → [EMAIL_REDACTED]; "indexed" → [EMAIL_1].
     mask_style: str = "typed"
     min_detection_score: float = 0.5
@@ -89,6 +96,9 @@ class GuardrailSettings:
             fail_closed=_env_bool("FAIL_CLOSED_ON_GUARDRAIL_ERROR", True),
             injection_block_threshold=_env_float("PROMPT_INJECTION_BLOCK_THRESHOLD", 0.8),
             injection_flag_threshold=_env_float("PROMPT_INJECTION_FLAG_THRESHOLD", 0.45),
+            llm_classifier_enabled=_env_bool("PROMPT_INJECTION_LLM_CLASSIFIER_ENABLED", True),
+            llm_classifier_threshold=_env_float("PROMPT_INJECTION_LLM_CLASSIFIER_THRESHOLD", 0.8),
+            llm_classifier_max_chars=_env_int("PROMPT_INJECTION_LLM_CLASSIFIER_MAX_CHARS", 6000),
             mask_style=style if style in {"typed", "indexed"} else "typed",
             min_detection_score=_env_float("PII_MIN_DETECTION_SCORE", 0.5),
             disabled_entities=frozenset(e.upper() for e in _env_set("PII_DISABLED_ENTITIES")),

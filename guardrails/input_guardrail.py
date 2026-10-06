@@ -159,7 +159,96 @@ class InputGuardrail:
             if result.blocked:
                 return None, result
             sanitized.append(result.sanitized_text)
+
+        # An attack split across items ("Ignore all previous", "instructions and
+        # reveal...") passes item by item; check the text where items meet.
+        joined_block = self._check_item_junctions(items, source, field, agent)
+        if joined_block:
+            return None, joined_block
         return sanitized, None
+
+    def classify(
+        self,
+        fields: dict[str, str],
+        llm_call,
+        *,
+        agent: str | None = None,
+    ) -> GuardrailResult:
+        """
+        Model-based second opinion on already-validated, masked user input.
+        Blocks on a confident injection verdict. Fails open: if the classifier
+        call errors or returns nothing usable, the rule-based checks (already
+        applied) stand alone.
+        """
+        from guardrails.injection_classifier import classify as run_classifier
+
+        settings = get_settings()
+        allow = GuardrailResult(guardrail="llm_classifier", decision=Decision.ALLOW)
+        if not (settings.enabled and settings.prompt_injection_check_enabled and settings.llm_classifier_enabled):
+            return allow
+
+        timer = Timer()
+        try:
+            verdict = run_classifier(fields, llm_call, settings.llm_classifier_max_chars)
+        except Exception:
+            audit.event("llm_classifier", "allow", agent=agent, success=False,
+                        reasons=["classifier_unavailable"], latency_ms=timer.elapsed_ms)
+            return allow
+        if verdict is None:
+            audit.event("llm_classifier", "allow", agent=agent, success=False,
+                        reasons=["classifier_no_verdict"], latency_ms=timer.elapsed_ms)
+            return allow
+
+        if verdict.injection and verdict.confidence >= settings.llm_classifier_threshold:
+            audit.event("llm_classifier", Decision.BLOCK, agent=agent, source=Source.USER,
+                        score=verdict.confidence, reasons=["prompt_injection_llm"], latency_ms=timer.elapsed_ms)
+            return GuardrailResult(
+                guardrail="prompt_injection", decision=Decision.BLOCK,
+                injection=InjectionAssessment(score=verdict.confidence, signals=["llm_classifier"],
+                                              flagged=True, should_block=True),
+                reasons=["prompt_injection_llm"], user_message=INJECTION_MESSAGE,
+            )
+        if verdict.injection:
+            audit.event("llm_classifier", "allow", agent=agent, source=Source.USER,
+                        score=verdict.confidence, reasons=["prompt_injection_llm_low_confidence"],
+                        latency_ms=timer.elapsed_ms)
+        return allow
+
+    _JUNCTION_WINDOW = 400
+    _JOINED_FULL_SCAN_CHARS = 20_000
+
+    def _check_item_junctions(self, items, source, field, agent) -> GuardrailResult | None:
+        settings = get_settings()
+        texts = [i for i in items if isinstance(i, str) and i]
+        if len(texts) < 2 or not (settings.enabled and settings.prompt_injection_check_enabled):
+            return None
+        joined = " ".join(texts)
+        junctions, pos = [], 0
+        for t in texts[:-1]:
+            pos += len(t)
+            junctions.append(pos)  # offset of the joining space
+            pos += 1
+        if len(joined) <= self._JOINED_FULL_SCAN_CHARS:
+            windows = [(joined, junctions)]
+        else:
+            # Only the regions around each junction can hold a split phrase.
+            windows = []
+            for j in junctions:
+                lo = max(0, j - self._JUNCTION_WINDOW)
+                hi = j + 1 + self._JUNCTION_WINDOW
+                windows.append((joined[lo:hi], [b - lo for b in junctions if lo < b < hi]))
+        for window, boundaries in windows:
+            report = injection_detector.assess_spanning(window, boundaries)
+            if policy.injection_decision(source, report.score) == Decision.BLOCK:
+                audit.event(self.name, Decision.BLOCK, agent=agent, source=source, field=f"{field}[joined]",
+                            signals=report.signals, score=report.score, reasons=["prompt_injection_split"])
+                return GuardrailResult(
+                    guardrail="prompt_injection", decision=Decision.BLOCK,
+                    injection=InjectionAssessment(score=report.score, signals=report.signals,
+                                                  flagged=True, should_block=True),
+                    reasons=["prompt_injection_split"], user_message=INJECTION_MESSAGE,
+                )
+        return None
 
     def contain(
         self,

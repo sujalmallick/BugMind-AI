@@ -30,7 +30,7 @@ def _test_case_section(test_case: dict | None) -> str:
     ])
     return f"""
 Failing Test Case from the project's test suite (user-provided data):
-{untrusted_block(details, source=Source.USER, label="failing_test_case", agent=AGENT)}
+{untrusted_block(details, source=Source.DATABASE, label="failing_test_case", agent=AGENT)}
 Use it to judge which behaviour broke and how severe that is.
 """
 
