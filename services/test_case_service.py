@@ -32,36 +32,105 @@ def save_test_cases(
     test_cases: list,
 ):
     """
-    Overwrites AI-generated test cases but preserves manual test cases.
+    Syncs the AI-generated test cases to `test_cases`; manual test cases are untouched.
+
+    Rows are matched by (display id, description). A match is updated in place, so
+    its database id, assignee, custom fields and linked issues survive. This is
+    what a status change re-sends. Unmatched incoming cases are inserted. Stored
+    AI cases that are no longer in the list (a re-analysis replaced them) are
+    deleted after their issues move to the IMPORT-DEFAULT placeholder, so no
+    bug report is lost or blocks the save.
     """
     require_project_role(db, current_user_id, project_id, "editor")
     workspace = _get_workspace(db, project_id)
 
-    # Delete all non-manual test cases
-    db.query(TestCase).filter(
-        TestCase.workspace_id == workspace.id,
-        TestCase.is_manual == False
-    ).delete()
+    existing = (
+        db.query(TestCase)
+        .filter(TestCase.workspace_id == workspace.id, TestCase.is_manual == False)
+        .order_by(TestCase.id)
+        .all()
+    )
+    unmatched: dict[tuple[str, str], TestCase] = {}
+    for row in existing:
+        unmatched.setdefault(_match_key(row.test_case_id, row.description), row)
 
     for tc in test_cases:
-        test_case = TestCase(
-            workspace_id=workspace.id,
-            test_case_id=tc.get("id", ""),
-            description=tc.get("description", ""),
-            module=tc.get("module", ""),
-            category=tc.get("category", ""),
-            priority=tc.get("priority", ""),
-            status=tc.get("status", "Not Executed"),
-            preconditions=str(tc.get("preconditions", "") or ""),
-            steps=_normalize_steps(tc.get("steps", "")),
-            expected_result=str(tc.get("expectedResult", "") or ""),
-            actual_result=str(tc.get("actualResult", "") or ""),
-            notes=str(tc.get("notes", "") or ""),
-            is_manual=False
-        )
-        db.add(test_case)
+        row = unmatched.pop(_match_key(tc.get("id", ""), tc.get("description", "")), None)
+        if row is None:
+            row = TestCase(workspace_id=workspace.id, is_manual=False)
+            db.add(row)
+        row.test_case_id = tc.get("id", "")
+        row.description = tc.get("description", "")
+        row.module = tc.get("module", "")
+        row.category = tc.get("category", "")
+        row.priority = tc.get("priority", "")
+        row.status = tc.get("status", "Not Executed")
+        row.preconditions = str(tc.get("preconditions", "") or "")
+        row.steps = _normalize_steps(tc.get("steps", ""))
+        row.expected_result = str(tc.get("expectedResult", "") or "")
+        row.actual_result = str(tc.get("actualResult", "") or "")
+        row.notes = str(tc.get("notes", "") or "")
+        if "custom_fields" in tc:
+            row.custom_fields = dict(tc.get("custom_fields") or {})
+
+    kept_ids = {row.id for row in existing} - {row.id for row in unmatched.values()}
+    stale_ids = [row.id for row in existing if row.id not in kept_ids]
+    if stale_ids:
+        _move_issues_to_placeholder(db, workspace, stale_ids)
+        db.query(TestCase).filter(TestCase.id.in_(stale_ids)).delete(synchronize_session=False)
+
     db.commit()
     return {"success": True}
+
+
+PLACEHOLDER_TEST_CASE_ID = "IMPORT-DEFAULT"
+
+
+def _match_key(display_id, description) -> tuple[str, str]:
+    return (str(display_id or "").strip(), str(description or "").strip())
+
+
+def get_or_create_placeholder_test_case(db: Session, workspace: Workspace) -> TestCase:
+    """The per-workspace row that issues without a real test case hang off."""
+    placeholder = (
+        db.query(TestCase)
+        .filter(TestCase.workspace_id == workspace.id, TestCase.test_case_id == PLACEHOLDER_TEST_CASE_ID)
+        .first()
+    )
+    if not placeholder:
+        placeholder = TestCase(
+            workspace_id=workspace.id,
+            test_case_id=PLACEHOLDER_TEST_CASE_ID,
+            description="Auto-created for CSV-imported issues",
+            module="General",
+            category="Bug",
+            priority="Medium",
+            status="Not Executed",
+            preconditions="",
+            steps="",
+            expected_result="",
+            actual_result="",
+            notes="",
+            is_manual=True,
+            custom_fields={},
+        )
+        db.add(placeholder)
+        db.flush()
+    return placeholder
+
+
+def _move_issues_to_placeholder(db: Session, workspace: Workspace, test_case_ids: list[int]) -> None:
+    """Keep bug reports whose test case is going away (TestCase.issues would cascade-delete them)."""
+    from database.models.issue import Issue
+
+    db.flush()  # persist pending edits before the bulk update + expire below
+    if not db.query(Issue.id).filter(Issue.test_case_id.in_(test_case_ids)).first():
+        return
+    placeholder = get_or_create_placeholder_test_case(db, workspace)
+    db.query(Issue).filter(Issue.test_case_id.in_(test_case_ids)).update(
+        {Issue.test_case_id: placeholder.id}, synchronize_session=False
+    )
+    db.expire_all()  # loaded test_case.issues collections are now stale
 
 
 def get_test_cases(
@@ -215,7 +284,21 @@ def delete_test_case(db: Session, project_id: int, tc_id: int, current_user_id: 
     ws = _get_workspace(db, project_id)
     if tc.workspace_id != ws.id:
         raise HTTPException(status_code=403, detail="Test case does not belong to this project.")
-        
+
+    from database.models.issue import Issue
+
+    if tc.test_case_id == PLACEHOLDER_TEST_CASE_ID:
+        if db.query(Issue.id).filter(Issue.test_case_id == tc.id).first():
+            # Deleting it would cascade-delete every issue filed without a real test case.
+            raise HTTPException(
+                status_code=409,
+                detail="This placeholder holds issues that aren't linked to a test case; it can't be deleted.",
+            )
+    else:
+        # Bugs reported from this test case outlive it.
+        _move_issues_to_placeholder(db, ws, [tc.id])
+        tc = db.get(TestCase, tc_id)
+
     db.delete(tc)
     db.commit()
     return {"success": True}

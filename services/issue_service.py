@@ -27,34 +27,8 @@ def save_issue(
         raise HTTPException(status_code=404, detail="Project workspace not found.")
 
     # Reuse or create the shared IMPORT-DEFAULT test case
-    default_tc = (
-        db.query(TestCase)
-        .filter(
-            TestCase.workspace_id == workspace.id,
-            TestCase.test_case_id == "IMPORT-DEFAULT",
-        )
-        .first()
-    )
-    if not default_tc:
-        default_tc = TestCase(
-            workspace_id=workspace.id,
-            test_case_id="IMPORT-DEFAULT",
-            description="Auto-created for CSV-imported issues",
-            module="General",
-            category="Bug",
-            priority="Medium",
-            status="Not Executed",
-            preconditions="",
-            steps="",
-            expected_result="",
-            actual_result="",
-            notes="",
-            is_manual=True,
-            custom_fields={},
-        )
-        db.add(default_tc)
-        db.commit()
-        db.refresh(default_tc)
+    from services.test_case_service import get_or_create_placeholder_test_case
+    default_tc = get_or_create_placeholder_test_case(db, workspace)
 
     # Auto-generate a unique bug_id if not provided
     raw_bug_id = str(issue.get("bug_id") or "").strip()
