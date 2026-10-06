@@ -126,7 +126,7 @@ function NoteList({ icon: Icon, tone, title, items }) {
   )
 }
 
-export default function ScriptEditor({ projectId, scriptId, environments, onBack, onSaved, onDeleted, showToast }) {
+export default function ScriptEditor({ projectId, scriptId, environments, onBack, onSaved, onDeleted, onDownloaded, showToast }) {
   const [script, setScript] = useState(null)
   const [form, setForm] = useState(null)
   const [dirty, setDirty] = useState(false)
@@ -282,7 +282,7 @@ export default function ScriptEditor({ projectId, scriptId, environments, onBack
         <div className="ml-auto flex flex-wrap gap-2">
           {script.status === 'approved' && !dirty && (
             <button type="button" className="btn-secondary" title="Download as a Playwright test file"
-                    onClick={() => exportScript(projectId, scriptId).catch((error) =>
+                    onClick={() => exportScript(projectId, scriptId).then(() => onDownloaded?.()).catch((error) =>
                       showToast(apiErrorMessage(error, 'Could not export the script.'), 'error'))}>
               <Download size={14} /> Export test
             </button>

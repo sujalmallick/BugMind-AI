@@ -12,7 +12,9 @@ import ScriptsSection from '../components/automation/ScriptsSection'
 import ScriptEditor from '../components/automation/ScriptEditor'
 import RunsSection from '../components/automation/RunsSection'
 import OverviewSection from '../components/automation/OverviewSection'
-import { apiErrorMessage, listEnvironments, listScripts } from '../services/automationApi'
+import GettingStarted from '../components/automation/GettingStarted'
+import { hasDownloaded, markDownloaded } from '../utils/automationOnboarding'
+import { apiErrorMessage, listEnvironments, listRuns, listScripts } from '../services/automationApi'
 import { getProject } from '../services/projectApi'
 
 export default function AutomationPage() {
@@ -23,16 +25,19 @@ export default function AutomationPage() {
   const [scripts, setScripts] = useState(null)
   const [section, setSection] = useState('overview')
   const [draftFor, setDraftFor] = useState(null)
+  const [hasRuns, setHasRuns] = useState(false)
+  const [downloaded, setDownloaded] = useState(() => hasDownloaded(projectId))
   const [openScriptId, setOpenScriptId] = useState(null)
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([getProject(projectId), listEnvironments(projectId), listScripts(projectId)])
-      .then(([proj, envs, scriptList]) => {
+    Promise.all([getProject(projectId), listEnvironments(projectId), listScripts(projectId), listRuns(projectId)])
+      .then(([proj, envs, scriptList, runList]) => {
         if (cancelled) return
         setProject(proj)
         setEnvironments(envs)
         setScripts(scriptList)
+        setHasRuns(runList.length > 0)
         if (!envs.length) setSection('environments')
       })
       .catch((error) => {
@@ -50,6 +55,11 @@ export default function AutomationPage() {
       const summary = { ...saved }
       return prev.some((s) => s.id === saved.id) ? prev.map((s) => (s.id === saved.id ? summary : s)) : [summary, ...prev]
     })
+  }
+
+  function recordDownload() {
+    markDownloaded(projectId)
+    setDownloaded(true)
   }
 
   async function refreshScripts() {
@@ -89,6 +99,16 @@ export default function AutomationPage() {
       </div>
 
       <div className="mt-5">
+        {!loading && !openScriptId && (
+          <GettingStarted
+            projectId={projectId}
+            environments={environments}
+            scripts={scripts}
+            hasRuns={hasRuns}
+            downloaded={downloaded}
+            onGoTo={(value) => { setDraftFor(null); setSection(value) }}
+          />
+        )}
         {loading ? (
           <div className="grid gap-3">
             {Array.from({ length: 3 }).map((_, i) => <SkeletonBlock key={i} className="h-20 w-full" />)}
@@ -98,6 +118,7 @@ export default function AutomationPage() {
             key={openScriptId}
             projectId={projectId}
             scriptId={openScriptId}
+            onDownloaded={recordDownload}
             environments={environments}
             showToast={showToast}
             onBack={() => setOpenScriptId(null)}
@@ -114,7 +135,8 @@ export default function AutomationPage() {
           />
         ) : section === 'runs' ? (
           <RunsSection projectId={projectId} environments={environments} showToast={showToast}
-                       onOpenScript={(id) => { refreshScripts(); setOpenScriptId(id) }} />
+                       onOpenScript={(id) => { refreshScripts(); setOpenScriptId(id) }}
+                       onImported={() => setHasRuns(true)} onDownloaded={recordDownload} />
         ) : section === 'environments' ? (
           <EnvironmentsSection
             projectId={projectId}
