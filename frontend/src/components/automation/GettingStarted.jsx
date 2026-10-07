@@ -33,7 +33,10 @@ export default function GettingStarted({ projectId, environments, scripts, hasRu
         <div className="min-w-0">
           <h2 id="getting-started-title" className="text-[15px] font-semibold text-ink">Get started with automation</h2>
           <p className="mt-0.5 text-[12.5px] text-muted">
-            Six steps from a test case to automated results. Tests run on your computer or your own CI, for free.
+            Six steps from a test case to automated results. Tests run on your computer or your own CI, for free.{' '}
+            <button type="button" className="font-medium text-signal hover:underline" onClick={() => onGoTo('guide')}>
+              Read the step-by-step guide
+            </button>
           </p>
         </div>
         <button type="button" aria-label="Hide the getting started checklist" title="Hide"
