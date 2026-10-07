@@ -2,6 +2,7 @@ import os
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -147,6 +148,20 @@ def delete_script(project_id: int, script_id: int, db: Session = Depends(get_db)
 
 # ── Export and results (tests run on the user's machine or their own CI) ─────
 
+def public_api_url(request: Request) -> str:
+    """
+    BugMind's API address for the exported workflow: PUBLIC_API_URL when configured,
+    otherwise the address this request came to (https unless it's localhost).
+    """
+    configured = os.getenv("PUBLIC_API_URL", "").strip().rstrip("/")
+    if configured:
+        return configured
+    url = str(request.base_url).rstrip("/")
+    if url.startswith("http://") and request.url.hostname not in ("localhost", "127.0.0.1"):
+        url = "https://" + url[len("http://"):]
+    return url
+
+
 def _download(content, filename: str, media_type: str) -> Response:
     # Always an attachment; the name is built from a slug and an id, so it is header-safe.
     return Response(content=content, media_type=media_type, headers={
@@ -167,7 +182,7 @@ def export_script(request: Request, project_id: int, script_id: int, db: Session
 @limiter.limit("10/minute")
 def export_project(request: Request, project_id: int, env_id: int, db: Session = Depends(get_db),
                    current_user: User = Depends(get_current_user)):
-    data = runs.export_project(db, current_user.id, project_id, env_id)
+    data = runs.export_project(db, current_user.id, project_id, env_id, public_api_url(request))
     return _download(data, f"bugmind-e2e-project-{project_id}.zip", "application/zip")
 
 
@@ -220,3 +235,36 @@ def automation_summary(project_id: int, db: Session = Depends(get_db), current_u
     from services.automation_summary import automation_summary as summary
 
     return summary(db, current_user.id, project_id)
+
+
+# ── Upload tokens (CI sends results without a person uploading them) ─────────
+
+class TokenCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=60)
+    expires_in_days: Literal[30, 90, 180, 365] = 90
+
+
+@router.get("/tokens")
+def list_upload_tokens(project_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from services.automation_tokens import list_tokens
+
+    return list_tokens(db, current_user.id, project_id)
+
+
+@router.post("/tokens", status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/hour")
+def create_upload_token(request: Request, project_id: int, body: TokenCreate, db: Session = Depends(get_db),
+                        current_user: User = Depends(get_current_user)):
+    """Returns the token once. Only its hash is stored."""
+    from services.automation_tokens import create_token
+
+    response = create_token(db, current_user.id, project_id, body.name.strip(), body.expires_in_days)
+    return JSONResponse(response, status_code=201, headers={"Cache-Control": "no-store"})
+
+
+@router.delete("/tokens/{token_id}")
+def revoke_upload_token(project_id: int, token_id: int, db: Session = Depends(get_db),
+                        current_user: User = Depends(get_current_user)):
+    from services.automation_tokens import revoke_token
+
+    return revoke_token(db, current_user.id, project_id, token_id)

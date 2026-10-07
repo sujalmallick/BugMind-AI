@@ -127,3 +127,23 @@ export async function createIssueFromResult(projectId, runId, scriptId) {
 export async function getAutomationSummary(projectId) {
   return (await api.get(`${base(projectId)}/summary`)).data;
 }
+
+// ---------- Upload tokens (CI sends results to one project) ----------
+
+export async function listUploadTokens(projectId) {
+  return (await api.get(`${base(projectId)}/tokens`)).data;
+}
+
+// Returns the token itself once ({ ..., token }); it can't be shown again.
+export async function createUploadToken(projectId, name, expiresInDays) {
+  return (await api.post(`${base(projectId)}/tokens`, { name, expires_in_days: expiresInDays })).data;
+}
+
+export async function revokeUploadToken(projectId, tokenId) {
+  return (await api.delete(`${base(projectId)}/tokens/${tokenId}`)).data;
+}
+
+// The API address CI should send results to (the same one this app talks to).
+export function apiAddress() {
+  return String(api.defaults.baseURL || window.location.origin).replace(/\/+$/, "");
+}

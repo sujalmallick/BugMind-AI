@@ -5,6 +5,7 @@ import Pill from '../shared/Pill'
 import SkeletonBlock from '../shared/SkeletonBlock'
 import HealPanel from './HealPanel'
 import BugReportButton from './BugReportButton'
+import UploadTokens from './UploadTokens'
 import { apiErrorMessage, exportProject, getRun, importResults, listRuns } from '../../services/automationApi'
 
 const MAX_REPORT_BYTES = 4 * 1024 * 1024
@@ -208,6 +209,8 @@ export default function RunsSection({ projectId, environments, showToast, onImpo
         </ol>
       </div>
 
+      <UploadTokens projectId={projectId} showToast={showToast} />
+
       {runs === null ? (
         <SkeletonBlock className="h-24 w-full" />
       ) : runs.length === 0 ? (
@@ -220,7 +223,10 @@ export default function RunsSection({ projectId, environments, showToast, onImpo
               <button type="button" onClick={() => setOpenRunId(run.id)}
                       className="glass-card flex w-full flex-col gap-2 p-4 text-left transition-shadow hover:shadow-[var(--shadow-card)] sm:flex-row sm:items-center">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[14px] font-medium text-ink">Run #{run.id}</p>
+                  <p className="text-[14px] font-medium text-ink">
+                    Run #{run.id}
+                    {run.source === 'ci' && <span className="ml-1.5 text-[12px] font-normal text-muted">· sent by GitHub</span>}
+                  </p>
                   <p className="text-[12px] text-muted">{formatDate(run.startedAt || run.createdAt)}</p>
                 </div>
                 <Totals totals={run.totals} />

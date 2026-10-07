@@ -205,7 +205,9 @@ def test_runs_are_listed_and_old_ones_trimmed(ready, monkeypatch):
 
     monkeypatch.setattr(service, "MAX_RUNS_KEPT", 2)
     sid = ready.ready["approved"]
-    ids = [upload(ready, report((f"Login [BM-{sid} v1]", "expected"))).json()["id"] for _ in range(3)]
+    # Different start times: an identical report is only recorded once.
+    ids = [upload(ready, report((f"Login [BM-{sid} v1]", "expected"), start=f"2026-10-07T10:0{i}:00.000Z")).json()["id"]
+           for i in range(3)]
     listed = ready.client.get(f"{BASE}/runs").json()
     assert [r["id"] for r in listed] == ids[:0:-1]
     assert ready.client.get(f"{BASE}/runs/{ids[0]}").status_code == 404
