@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Bot, FileCode2, Globe, History, LayoutDashboard } from 'lucide-react'
+import { BookOpen, Bot, FileCode2, Globe, History, LayoutDashboard } from 'lucide-react'
 import HeaderBar from '../components/layout/HeaderBar'
 import PageHeading from '../components/shared/PageHeading'
 import SegmentedControl from '../components/shared/SegmentedControl'
@@ -13,6 +13,7 @@ import ScriptEditor from '../components/automation/ScriptEditor'
 import RunsSection from '../components/automation/RunsSection'
 import OverviewSection from '../components/automation/OverviewSection'
 import GettingStarted from '../components/automation/GettingStarted'
+import GuideSection from '../components/automation/GuideSection'
 import { hasDownloaded, markDownloaded } from '../utils/automationOnboarding'
 import { apiErrorMessage, listEnvironments, listRuns, listScripts } from '../services/automationApi'
 import { getProject } from '../services/projectApi'
@@ -93,13 +94,14 @@ export default function AutomationPage() {
               { value: 'scripts', label: 'Scripts', icon: FileCode2, count: scripts.length },
               { value: 'environments', label: 'Environments', icon: Globe, count: environments.length },
               { value: 'runs', label: 'Runs', icon: History },
+              { value: 'guide', label: 'Guide', icon: BookOpen },
             ]}
           />
         )}
       </div>
 
       <div className="mt-5">
-        {!loading && !openScriptId && (
+        {!loading && !openScriptId && section !== 'guide' && (
           <GettingStarted
             projectId={projectId}
             environments={environments}
@@ -125,6 +127,8 @@ export default function AutomationPage() {
             onSaved={upsertScript}
             onDeleted={(id) => { setScripts((prev) => prev.filter((s) => s.id !== id)); setOpenScriptId(null) }}
           />
+        ) : section === 'guide' ? (
+          <GuideSection onGoTo={(value) => { setDraftFor(null); setSection(value) }} />
         ) : section === 'overview' ? (
           <OverviewSection
             projectId={projectId}
