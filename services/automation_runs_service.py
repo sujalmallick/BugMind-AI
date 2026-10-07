@@ -9,6 +9,7 @@ services/automation_runs_service.py — running automation at no cost to BugMind
         notified, activity logged.
 """
 
+import hashlib
 import logging
 from datetime import datetime
 
@@ -58,7 +59,7 @@ def export_script(db: Session, user_id: int, project_id: int, script_id: int) ->
     return spec_filename(script), script_to_spec(script, serialize_environment(env), tc.test_case_id if tc else None)
 
 
-def export_project(db: Session, user_id: int, project_id: int, environment_id: int) -> bytes:
+def export_project(db: Session, user_id: int, project_id: int, environment_id: int, api_url: str = "") -> bytes:
     """Zip of every approved script for one environment, ready to run."""
     require_project_role(db, user_id, project_id, "viewer")
     env = _get_environment(db, project_id, environment_id)
@@ -70,7 +71,7 @@ def export_project(db: Session, user_id: int, project_id: int, environment_id: i
         raise HTTPException(status_code=409, detail="No approved scripts use this environment yet.")
     cases = _case_codes(db, project_id, {s.test_case_id for s in scripts if s.test_case_id})
     pairs = [(s, cases[s.test_case_id].test_case_id if s.test_case_id in cases else None) for s in scripts]
-    return build_project_zip(pairs, serialize_environment(env))
+    return build_project_zip(pairs, serialize_environment(env), api_url)
 
 
 # ── Runs ─────────────────────────────────────────────────────────────────────
@@ -80,6 +81,7 @@ def serialize_run(run: AutomationRun, detail: bool = False) -> dict:
         "id": run.id,
         "source": run.source,
         "uploadedBy": run.uploaded_by,
+        "tokenId": run.token_id,
         "startedAt": run.started_at.isoformat() if run.started_at else None,
         "durationMs": run.duration_ms,
         "totals": run.totals or {},
@@ -115,13 +117,20 @@ def _masked_page(page: dict | None) -> dict | None:
     return {"url": masker.mask(page["url"]).text, "snapshot": masker.mask(page["snapshot"]).text}
 
 
-def import_results(db: Session, user_id: int, project_id: int, data: bytes) -> dict:
+def import_results(db: Session, user_id: int, project_id: int, data: bytes, source: str = "upload",
+                   token_id: int | None = None, report_hash: str | None = None) -> dict:
     """
     Records a run from an uploaded report and applies it to linked test cases.
     A script that changed since it was exported is recorded but not applied: only
     the reviewed, exported version may change a test case.
     """
     require_project_role(db, user_id, project_id, "editor")
+    # The same results file is recorded once (a re-run CI step, a second click on Upload).
+    report_hash = report_hash or hashlib.sha256(data).hexdigest()
+    duplicate = db.query(AutomationRun.id).filter(
+        AutomationRun.project_id == project_id, AutomationRun.report_hash == report_hash).first()
+    if duplicate:
+        raise HTTPException(status_code=409, detail=f"This results file was already uploaded as run #{duplicate[0]}.")
     try:
         report = parse_report(data)
     except ReportError as exc:
@@ -152,7 +161,8 @@ def import_results(db: Session, user_id: int, project_id: int, data: bytes) -> d
             "failedStep": outcome.get("failedStep"), "page": _masked_page(outcome.get("page")),
         })
 
-    run = AutomationRun(project_id=project_id, uploaded_by=user_id, source="upload",
+    run = AutomationRun(project_id=project_id, uploaded_by=user_id, source=source, token_id=token_id,
+                        report_hash=report_hash,
                         started_at=report["startedAt"], duration_ms=report["durationMs"], totals=totals, results=[])
     db.add(run)
     db.flush()

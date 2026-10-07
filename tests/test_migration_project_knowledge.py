@@ -174,7 +174,9 @@ def test_automation_runs_migration(tmp_path):
             migration.upgrade()
             migration.upgrade()  # idempotent
     inspector = sa.inspect(engine)
-    assert {c["name"] for c in inspector.get_columns("automation_runs")} == {c.name for c in AutomationRun.__table__.columns}
+    added_later = {"token_id", "report_hash"}  # by b4d7f9a1c235
+    assert {c["name"] for c in inspector.get_columns("automation_runs")} == \
+        {c.name for c in AutomationRun.__table__.columns} - added_later
     assert "automation" in {c["name"] for c in inspector.get_columns("test_cases")}
 
     with engine.begin() as conn:
@@ -183,3 +185,39 @@ def test_automation_runs_migration(tmp_path):
     inspector = sa.inspect(engine)
     assert "automation_runs" not in inspector.get_table_names()
     assert "automation" not in {c["name"] for c in inspector.get_columns("test_cases")}
+
+
+def test_upload_tokens_migration(tmp_path):
+    """Tokens table matches the model; runs gain token_id + report_hash; downgrade is clean."""
+    from database.models.automation import AutomationUploadToken
+    from database.models.project import Project
+    from database.models.user import User
+
+    spec = importlib.util.spec_from_file_location(
+        "m_b4d7f9a1c235", MIGRATION.parent / "b4d7f9a1c235_add_automation_upload_tokens.py")
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    migration.context = SimpleNamespace(is_offline_mode=lambda: False)
+
+    engine = sa.create_engine(f"sqlite:///{(tmp_path / 't.db').as_posix()}")
+    for model in (User, Project):
+        model.__table__.create(engine)
+    sa.Table("automation_runs", sa.MetaData(), sa.Column("id", sa.Integer, primary_key=True)).create(engine)
+
+    with engine.begin() as conn:
+        with Operations.context(MigrationContext.configure(conn)):
+            migration.upgrade()
+            migration.upgrade()  # idempotent
+    inspector = sa.inspect(engine)
+    created = {c["name"] for c in inspector.get_columns("automation_upload_tokens")}
+    assert created == {c.name for c in AutomationUploadToken.__table__.columns}
+    unique = {i["name"]: i["unique"] for i in inspector.get_indexes("automation_upload_tokens")}
+    assert unique["ix_automation_upload_tokens_token_hash"]
+    assert {"token_id", "report_hash"} <= {c["name"] for c in inspector.get_columns("automation_runs")}
+
+    with engine.begin() as conn:
+        with Operations.context(MigrationContext.configure(conn)):
+            migration.downgrade()
+    inspector = sa.inspect(engine)
+    assert "automation_upload_tokens" not in inspector.get_table_names()
+    assert not {"token_id", "report_hash"} & {c["name"] for c in inspector.get_columns("automation_runs")}

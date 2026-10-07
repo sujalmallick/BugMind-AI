@@ -356,9 +356,11 @@ def delete_script(db: Session, user_id: int, project_id: int, script_id: int) ->
 
 def delete_project_automation(db: Session, project_id: int) -> None:
     """For project deletion (caller commits)."""
-    from database.models.automation import AutomationRun
+    from database.models.automation import AutomationRun, AutomationUploadToken
 
     db.query(AutomationRun).filter(AutomationRun.project_id == project_id).delete(synchronize_session=False)
+    db.query(AutomationUploadToken).filter(AutomationUploadToken.project_id == project_id).delete(
+        synchronize_session=False)
     db.query(AutomationScript).filter(AutomationScript.project_id == project_id).delete(synchronize_session=False)
     db.query(AutomationEnvironment).filter(AutomationEnvironment.project_id == project_id).delete(
         synchronize_session=False)

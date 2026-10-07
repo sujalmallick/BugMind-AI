@@ -77,4 +77,31 @@ class AutomationRun(Base):
     # [{"scriptId", "scriptName", "exportedVersion", "currentVersion", "status", "error", "durationMs",
     #   "testCaseId", "testCaseCode", "applied"}]
     results: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    # Set when a CI job uploaded the run with an upload token (source "ci").
+    token_id: Mapped[int | None] = mapped_column(
+        ForeignKey("automation_upload_tokens.id", ondelete="SET NULL"), nullable=True)
+    # SHA-256 of the uploaded report: the same file is never recorded twice.
+    report_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class AutomationUploadToken(Base):
+    """
+    Lets a CI job (the user's own GitHub Actions) upload test results to ONE project.
+    It can do nothing else. Only a SHA-256 hash of the token is stored; the token
+    itself is shown once, when it's created.
+    """
+
+    __tablename__ = "automation_upload_tokens"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), index=True)
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    name: Mapped[str] = mapped_column(String(60))
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    # The first characters, safe to show, so a person can tell tokens apart.
+    prefix: Mapped[str] = mapped_column(String(16))
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

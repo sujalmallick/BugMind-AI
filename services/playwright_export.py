@@ -28,6 +28,8 @@ PLAYWRIGHT_VERSION = "1.63.0"
 DOTENV_VERSION = "16.6.1"
 MAX_SNAPSHOT_CHARS = 30_000
 _VAR_REF = re.compile(r"\{\{\s*vars\.([A-Za-z0-9_]+)\s*\}\}")
+# An address safe to place in the workflow YAML: scheme, host, optional port, nothing else.
+_SAFE_URL = re.compile(r"^https?://[A-Za-z0-9.-]+(:\d{1,5})?$")
 
 
 def _js(value) -> str:
@@ -258,7 +260,7 @@ def _env_example(environment: dict, names: list[str]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _workflow(names: list[str]) -> str:
+def _workflow(names: list[str], api_url: str) -> str:
     env_lines = "".join(f"      {name}: ${{{{ secrets.{name} }}}}\n" for name in names)
     return f"""# Runs the BugMind tests on GitHub's free runners in your own repository.
 # Add each variable below under Settings → Secrets and variables → Actions.
@@ -286,6 +288,29 @@ jobs:
       - run: if [ -f package-lock.json ]; then npm ci; else npm install; fi
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test
+      # Sends the results to BugMind when the BUGMIND_UPLOAD_TOKEN secret is set (an upload token
+      # from Automation → Runs: it can only upload results to this project). Without it, upload
+      # bugmind-results.json by hand. Runs even when tests failed; never fails the job itself.
+      - name: Send results to BugMind
+        if: always()
+        env:
+          BUGMIND_UPLOAD_TOKEN: ${{{{ secrets.BUGMIND_UPLOAD_TOKEN }}}}
+          BUGMIND_URL: ${{{{ vars.BUGMIND_URL || '{api_url}' }}}}
+        run: |
+          if [ -z "$BUGMIND_UPLOAD_TOKEN" ]; then
+            echo "BUGMIND_UPLOAD_TOKEN isn't set: upload bugmind-results.json in BugMind by hand."
+            exit 0
+          fi
+          if [ -z "$BUGMIND_URL" ] || [ ! -f bugmind-results.json ]; then
+            echo "::warning::Results not sent: set the BUGMIND_URL variable, and check the tests wrote bugmind-results.json."
+            exit 0
+          fi
+          if ! curl --fail-with-body --silent --show-error --max-time 60 \\
+              -H "Authorization: Bearer $BUGMIND_UPLOAD_TOKEN" \\
+              -F "file=@bugmind-results.json;type=application/json" \\
+              "$BUGMIND_URL/automation/runs/upload"; then
+            echo "::warning::Could not send the results to BugMind. Upload bugmind-results.json by hand."
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -296,7 +321,7 @@ jobs:
 """
 
 
-def _readme(environment: dict, names: list[str], count: int) -> str:
+def _readme(environment: dict, names: list[str], count: int, api_url: str) -> str:
     variables = "\n".join(f"- `{n}`" for n in names) or "- (none)"
     return f"""# BugMind E2E tests
 
@@ -321,15 +346,25 @@ the "BugMind E2E tests" workflow. Download the `bugmind-results` artifact when i
 
 ## Send the results to BugMind
 
-Each run writes `bugmind-results.json`. In BugMind open Automation → Runs → Upload results
-and choose that file: linked test cases are marked Passed or Failed and their assignees
-are notified. Results from tests whose script changed since this export are recorded but
-don't change test case statuses (export again to pick up the changes).
+Each run writes `bugmind-results.json`. Linked test cases are then marked Passed or Failed
+and their assignees are notified. Results from tests whose script changed since this export
+are recorded but don't change test case statuses (export again to pick up the changes).
+
+- **Automatically from GitHub Actions:** in BugMind open Automation → Runs → Upload tokens,
+  create a token, and add it to this repository as the secret `BUGMIND_UPLOAD_TOKEN`. The
+  workflow then sends the results after every run. The token can only upload results to
+  this one project; revoke it in BugMind at any time.{'' if api_url else '''
+  Also add a repository variable `BUGMIND_URL` with your BugMind API address.'''}
+- **By hand:** in BugMind open Automation → Runs → Upload results and choose the file.
 """
 
 
-def build_project_zip(scripts_with_codes: list[tuple], environment: dict) -> bytes:
-    """[(script, test_case_code)] → a zip of a ready-to-run Playwright project."""
+def build_project_zip(scripts_with_codes: list[tuple], environment: dict, api_url: str = "") -> bytes:
+    """
+    [(script, test_case_code)] → a zip of a ready-to-run Playwright project. api_url (BugMind's
+    public API address) is the default the workflow sends results to.
+    """
+    api_url = api_url if _SAFE_URL.match(api_url or "") else ""
     names = sorted({name for script, _ in scripts_with_codes for name in referenced_variables(script.steps or [])})
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
@@ -340,6 +375,6 @@ def build_project_zip(scripts_with_codes: list[tuple], environment: dict) -> byt
         archive.writestr("bugmind-e2e/.env.example", _env_example(environment, names))
         archive.writestr("bugmind-e2e/.gitignore", ".env\nnode_modules/\ntest-results/\nplaywright-report/\n"
                                                    "bugmind-results.json\n")
-        archive.writestr("bugmind-e2e/.github/workflows/bugmind-e2e.yml", _workflow(names))
-        archive.writestr("bugmind-e2e/README.md", _readme(environment, names, len(scripts_with_codes)))
+        archive.writestr("bugmind-e2e/.github/workflows/bugmind-e2e.yml", _workflow(names, api_url))
+        archive.writestr("bugmind-e2e/README.md", _readme(environment, names, len(scripts_with_codes), api_url))
     return buffer.getvalue()

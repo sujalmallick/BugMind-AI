@@ -22,6 +22,7 @@ from routes.activity import router as activity_router
 from routes.documents import router as documents_router
 from routes.test_plans import router as test_plans_router
 from routes.automation import router as automation_router
+from routes.automation_upload import router as automation_upload_router
 from auth.dependencies import get_current_user
 from database.models.user import User
 from fastapi import Depends, Request
@@ -135,6 +136,7 @@ app.include_router(activity_router)
 app.include_router(documents_router)
 app.include_router(test_plans_router)
 app.include_router(automation_router)
+app.include_router(automation_upload_router)
 
 # Serve uploaded avatars as static files
 os.makedirs("uploads/avatars", exist_ok=True)
