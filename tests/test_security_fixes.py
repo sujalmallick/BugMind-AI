@@ -319,9 +319,11 @@ def test_health_does_not_leak_database_errors(api, monkeypatch):
         raise RuntimeError('connection to server at "prod-db.internal" (10.1.2.3), user "bugmind_admin" failed')
 
     monkeypatch.setattr(Session, "execute", broken)
-    res = api.get("/health")
+    res = api.get("/health/db")
     assert res.status_code == 503 and res.json()["database"] == "error"
     assert "prod-db" not in res.text and "bugmind_admin" not in res.text
+    # Plain liveness never touches the database (lets a serverless DB sleep).
+    assert api.get("/health").json() == {"status": "healthy"}
 
 
 def test_docs_and_debug_endpoints_are_off_by_default(api, world):
