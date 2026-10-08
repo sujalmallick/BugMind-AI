@@ -122,6 +122,57 @@ def test_worker_thread_processes_jobs(queue, monkeypatch):
     assert calls == [{"outcome": "ok"}]
 
 
+def test_an_idle_worker_wakes_up_for_a_new_job(queue, monkeypatch):
+    """Idle, the worker sleeps long (so a serverless DB can scale to zero); enqueue() wakes it."""
+    import time
+
+    jobs, db, calls, _ = queue
+    monkeypatch.setenv("JOBS_WORKER_ENABLED", "true")
+    monkeypatch.setattr(jobs, "POLL_SECONDS", 0.1)
+    monkeypatch.setattr(jobs, "ACTIVE_WINDOW_SECONDS", 0.5)
+    monkeypatch.setattr(jobs, "IDLE_POLL_SECONDS", 60)
+
+    jobs.start_worker()
+    try:
+        time.sleep(1.5)  # past the active window: now in the long idle sleep
+        job_id = add(jobs, db)
+        deadline = time.time() + 10
+        while time.time() < deadline:
+            db.expire_all()
+            if db.get(Job, job_id).status == "succeeded":
+                break
+            time.sleep(0.1)
+    finally:
+        jobs.stop_worker()
+        jobs._worker.join(timeout=5)
+    assert db.get(Job, job_id).status == "succeeded"
+
+
+def test_seconds_until_next_job(queue):
+    jobs, db, _, _ = queue
+    assert jobs.seconds_until_next_job(db) is None  # nothing pending
+
+    job_id = add(jobs, db)
+    assert jobs.seconds_until_next_job(db) == 0  # due now
+
+    job = db.get(Job, job_id)
+    job.run_after = datetime.utcnow() + timedelta(seconds=120)  # a retry waiting out its backoff
+    db.commit()
+    assert 100 < jobs.seconds_until_next_job(db) <= 120
+
+    job.status, job.locked_until = "running", datetime.utcnow() + timedelta(seconds=30)  # lease expiry
+    db.commit()
+    assert 0 < jobs.seconds_until_next_job(db) <= 30
+
+    job.status = "succeeded"
+    db.commit()
+    assert jobs.seconds_until_next_job(db) is None
+
+    db.add(Job(kind="someone.else", payload={}, status="queued", run_after=datetime.utcnow()))
+    db.commit()
+    assert jobs.seconds_until_next_job(db) is None  # other kinds aren't ours to wait for
+
+
 def test_worker_respects_the_disable_flag(monkeypatch):
     import services.jobs as jobs
 

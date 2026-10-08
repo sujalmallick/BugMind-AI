@@ -174,6 +174,13 @@ def self_heal_database_schema():
 
 @app.get("/health")
 def health_check():
+    """Liveness only. It doesn't touch the database, so frequent pings (e.g. an
+    App Service health check) let a serverless database scale to zero."""
+    return {"status": "healthy"}
+
+
+@app.get("/health/db")
+def health_check_db():
     from sqlalchemy import text
     from database.session import SessionLocal
     db_status = "ok"

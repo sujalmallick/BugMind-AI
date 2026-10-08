@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Callable
 
-from sqlalchemy import and_, or_, update
+from sqlalchemy import and_, func, or_, update
 from sqlalchemy.orm import Session
 
 from database.models.job import Job
@@ -28,6 +28,12 @@ logger = logging.getLogger("BugMind")
 LEASE_SECONDS = 300
 POLL_SECONDS = 3.0
 BACKOFF_BASE_SECONDS = 30
+# After any activity the worker polls every POLL_SECONDS for this long (covers a
+# wake-up that fired before the enqueuing transaction committed).
+ACTIVE_WINDOW_SECONDS = 60
+# Otherwise it sleeps until the next job is due, at most this long, so a
+# serverless database (e.g. Neon) can scale to zero. enqueue() wakes it early.
+IDLE_POLL_SECONDS = float(os.getenv("JOBS_IDLE_POLL_SECONDS", "3600"))
 
 
 class PermanentJobError(Exception):
@@ -95,6 +101,19 @@ def claim_next(db: Session, worker_id: str) -> Job | None:
         if result.rowcount == 1:
             return db.get(Job, job_id)
     return None
+
+
+def seconds_until_next_job(db: Session) -> float | None:
+    """Seconds until a registered job becomes claimable (0: one is due now), or None if nothing is pending."""
+    if not _registry:
+        return None
+    kinds = list(_registry)
+    next_run = db.query(func.min(Job.run_after)).filter(Job.kind.in_(kinds), Job.status == "queued").scalar()
+    next_expiry = db.query(func.min(Job.locked_until)).filter(Job.kind.in_(kinds), Job.status == "running").scalar()
+    pending = [t for t in (next_run, next_expiry) if t is not None]
+    if not pending:
+        return None
+    return max(0.0, (min(pending) - datetime.utcnow()).total_seconds())
 
 
 def _still_ours(db: Session, job_id: int, worker_id: str | None) -> Job | None:
@@ -199,19 +218,28 @@ def _worker_loop(worker_id: str) -> None:
 
     logger.info(f"Job worker {worker_id} started")
     next_maintenance = 0.0
+    active_until = time.monotonic() + ACTIVE_WINDOW_SECONDS
     while not _stop.is_set():
+        _wake.clear()  # before polling, so an enqueue during this pass still wakes the next wait
+        wait = POLL_SECONDS
         try:
             with SessionLocal() as db:
                 ran = run_pending_jobs(db, worker_id)
                 if time.monotonic() >= next_maintenance:
                     run_maintenance(db)
                     next_maintenance = time.monotonic() + MAINTENANCE_INTERVAL_SECONDS
+                if ran:
+                    active_until = time.monotonic() + ACTIVE_WINDOW_SECONDS
+                    wait = 0
+                elif time.monotonic() >= active_until:
+                    due = seconds_until_next_job(db)
+                    wait = IDLE_POLL_SECONDS if due is None else min(max(due + 1, POLL_SECONDS), IDLE_POLL_SECONDS)
         except Exception:
             logger.exception("Job worker loop error")
-            ran = 0
-        if not ran:
-            _wake.wait(POLL_SECONDS)
-            _wake.clear()
+            wait = POLL_SECONDS
+        # stop_worker() sets _stop before _wake, so a stop the clear() above swallowed is seen here.
+        if wait and not _stop.is_set() and _wake.wait(wait):
+            active_until = time.monotonic() + ACTIVE_WINDOW_SECONDS
 
 
 def start_worker() -> None:
