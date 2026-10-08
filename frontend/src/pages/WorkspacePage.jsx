@@ -619,6 +619,7 @@ function handleCopyIssueResult() {
         isAnalyzing={isAnalyzing}
         isCollapsed={panelCollapsed && showWorkspace}
         onExpand={() => setPanelCollapsed(false)}
+        onCollapse={() => setPanelCollapsed(true)}
         error={analysisError}
         hasResult={showWorkspace}
         testEnvironment={testEnvironment}

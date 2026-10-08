@@ -10,6 +10,7 @@ export default function WorkflowInputPanel({
   isAnalyzing,
   isCollapsed,
   onExpand,
+  onCollapse,
   error,
   hasResult,
   analysisOutdated,
@@ -215,7 +216,7 @@ export default function WorkflowInputPanel({
             {hasResult && (
               <button
                 type="button"
-                onClick={onExpand}
+                onClick={onCollapse}
                 className="btn-secondary"
               >
                 Cancel
