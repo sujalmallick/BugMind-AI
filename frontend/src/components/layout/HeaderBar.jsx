@@ -98,7 +98,8 @@ export default function HeaderBar({
       const activeProvider = settings?.provider || "gemini";
       const providers = settings?.providers || {};
       const activeStatus = providers[activeProvider];
-      setHasApiKey(activeStatus ? activeStatus.has_key : false);
+      // The API reports a saved key as `configured` (same as the AI keys page).
+      setHasApiKey(Boolean(activeStatus?.configured));
     } catch {
       setHasApiKey(false);
     }
